@@ -1,21 +1,64 @@
-import { AppBar, Toolbar, Box, Typography, Button, InputBase, Chip, Stack } from '@mui/material'
+import { useState } from 'react'
+import {
+  AppBar, Toolbar, Box, Typography, Button, InputBase,
+  Chip, Stack, IconButton, Menu, MenuItem, Tooltip,
+} from '@mui/material'
 import SearchIcon from '@mui/icons-material/Search'
+import AddIcon    from '@mui/icons-material/Add'
+import CloseIcon  from '@mui/icons-material/Close'
 import { useNavigate, useLocation } from 'react-router-dom'
 
-const NAV_LINKS = [
+const ALL_TABS = [
   { label: 'Home',             path: '/' },
-  { label: 'Applications',     path: null },
-  { label: 'Views',            path: null, dropdown: true },
-  { label: 'Customer Journey', path: null },
-  { label: 'Incident Item',    path: null },
-  { label: 'SLO Corrector',    path: null, beta: true },
-  { label: 'Announcements',    path: null },
-  { label: 'Links',            path: null, dropdown: true },
+  { label: 'Applications',     path: '/applications' },
+  { label: 'Views',            path: '/views' },
+  { label: 'Customer Journey', path: '/customer-journey' },
+  { label: 'Incident Item',    path: '/incident-item' },
+  { label: 'SLO Corrector',    path: '/slo-corrector', beta: true },
+  { label: 'Announcements',    path: '/announcements' },
+  { label: 'Links',            path: '/links' },
 ]
 
+const STORAGE_KEY = 'obs-open-tabs'
+
+function loadTabs() {
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY)
+    if (saved) return JSON.parse(saved)
+  } catch { /* ignore */ }
+  return ['Home']
+}
+
+function saveTabs(tabs) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(tabs))
+}
+
 export default function TopNav() {
-  const navigate = useNavigate()
-  const { pathname } = useLocation()
+  const navigate           = useNavigate()
+  const { pathname }       = useLocation()
+  const [openTabs, setOpenTabs] = useState(loadTabs)
+  const [anchorEl, setAnchorEl] = useState(null)
+
+  const availableToAdd = ALL_TABS.filter(t => !openTabs.includes(t.label))
+
+  const addTab = (label) => {
+    const next = [...openTabs, label]
+    setOpenTabs(next)
+    saveTabs(next)
+    setAnchorEl(null)
+  }
+
+  const removeTab = (label, e) => {
+    e.stopPropagation()
+    const next = openTabs.filter(l => l !== label)
+    setOpenTabs(next)
+    saveTabs(next)
+    // if we removed the active tab, go home
+    const tab = ALL_TABS.find(t => t.label === label)
+    if (tab?.path && pathname === tab.path) navigate('/')
+  }
+
+  const visibleTabs = ALL_TABS.filter(t => openTabs.includes(t.label))
 
   return (
     <AppBar
@@ -23,13 +66,11 @@ export default function TopNav() {
       sx={{ bgcolor: '#0d1b2a', boxShadow: 'none', borderBottom: '1px solid rgba(255,255,255,0.1)' }}
     >
       <Toolbar sx={{ gap: 1.5, minHeight: '56px !important', px: '24px !important' }}>
+
         {/* Logo */}
         <Box
           onClick={() => navigate('/')}
-          sx={{
-            bgcolor: '#1a3a5c', borderRadius: 1, px: 1.5, py: 0.75,
-            cursor: 'pointer', flexShrink: 0,
-          }}
+          sx={{ bgcolor: '#1a3a5c', borderRadius: 1, px: 1.5, py: 0.75, cursor: 'pointer', flexShrink: 0 }}
         >
           <Typography variant="body1" fontWeight={800} color="white" lineHeight={1}>U</Typography>
         </Box>
@@ -44,39 +85,117 @@ export default function TopNav() {
           </Typography>
         </Box>
 
-        {/* Nav links */}
-        <Stack direction="row" spacing={0} sx={{ flexGrow: 1 }}>
-          {NAV_LINKS.map((link) => {
-            const active = link.path && pathname === link.path
+        {/* Nav tabs */}
+        <Stack direction="row" spacing={0} sx={{ flexGrow: 1, alignItems: 'center' }}>
+          {visibleTabs.map((tab) => {
+            const active = tab.path && pathname === tab.path
+            const isHome = tab.label === 'Home'
             return (
-              <Button
-                key={link.label}
+              <Box
+                key={tab.label}
+                sx={{ display: 'flex', alignItems: 'center', position: 'relative' }}
+              >
+                <Button
+                  size="small"
+                  onClick={() => tab.path && navigate(tab.path)}
+                  sx={{
+                    color: active ? 'white' : 'text.secondary',
+                    textTransform: 'none',
+                    fontSize: '0.8rem',
+                    px: isHome ? 1 : 0.75,
+                    pr: isHome ? 1 : 2.5,
+                    minWidth: 'auto',
+                    fontWeight: active ? 600 : 400,
+                    '&:hover': { color: 'white', bgcolor: 'rgba(255,255,255,0.05)' },
+                  }}
+                >
+                  {tab.label}
+                  {tab.beta && (
+                    <Chip
+                      label="Beta"
+                      size="small"
+                      sx={{ ml: 0.5, height: 16, fontSize: '0.6rem', bgcolor: '#7c3aed', color: 'white' }}
+                    />
+                  )}
+                  {tab.dropdown && (
+                    <Box component="span" sx={{ ml: 0.25, fontSize: '0.65rem' }}>▾</Box>
+                  )}
+                </Button>
+
+                {/* Close button — hidden for Home */}
+                {!isHome && (
+                  <Tooltip title={`Close ${tab.label}`} placement="bottom">
+                    <IconButton
+                      size="small"
+                      onClick={(e) => removeTab(tab.label, e)}
+                      sx={{
+                        position: 'absolute',
+                        right: 2,
+                        p: 0.1,
+                        color: 'rgba(255,255,255,0.3)',
+                        '&:hover': { color: 'white', bgcolor: 'transparent' },
+                      }}
+                    >
+                      <CloseIcon sx={{ fontSize: 11 }} />
+                    </IconButton>
+                  </Tooltip>
+                )}
+              </Box>
+            )
+          })}
+
+          {/* + Add tab button */}
+          {availableToAdd.length > 0 && (
+            <Tooltip title="Add tab">
+              <IconButton
                 size="small"
-                onClick={() => link.path && navigate(link.path)}
+                onClick={(e) => setAnchorEl(e.currentTarget)}
                 sx={{
-                  color: active ? 'white' : 'text.secondary',
-                  textTransform: 'none',
-                  fontSize: '0.8rem',
-                  px: 1,
-                  minWidth: 'auto',
-                  fontWeight: active ? 600 : 400,
-                  '&:hover': { color: 'white', bgcolor: 'rgba(255,255,255,0.05)' },
+                  ml: 0.5,
+                  color: 'rgba(255,255,255,0.35)',
+                  '&:hover': { color: 'white', bgcolor: 'rgba(255,255,255,0.07)' },
                 }}
               >
-                {link.label}
-                {link.beta && (
+                <AddIcon sx={{ fontSize: 18 }} />
+              </IconButton>
+            </Tooltip>
+          )}
+
+          <Menu
+            anchorEl={anchorEl}
+            open={Boolean(anchorEl)}
+            onClose={() => setAnchorEl(null)}
+            PaperProps={{
+              sx: {
+                bgcolor: '#131f2e',
+                border: '1px solid rgba(255,255,255,0.1)',
+                minWidth: 180,
+                mt: 0.5,
+              },
+            }}
+          >
+            {availableToAdd.map((tab) => (
+              <MenuItem
+                key={tab.label}
+                onClick={() => addTab(tab.label)}
+                sx={{
+                  fontSize: '0.82rem',
+                  color: 'text.secondary',
+                  '&:hover': { color: 'white', bgcolor: 'rgba(255,255,255,0.06)' },
+                  gap: 1,
+                }}
+              >
+                {tab.label}
+                {tab.beta && (
                   <Chip
                     label="Beta"
                     size="small"
-                    sx={{ ml: 0.5, height: 16, fontSize: '0.6rem', bgcolor: '#7c3aed', color: 'white' }}
+                    sx={{ height: 15, fontSize: '0.58rem', bgcolor: '#7c3aed', color: 'white' }}
                   />
                 )}
-                {link.dropdown && (
-                  <Box component="span" sx={{ ml: 0.25, fontSize: '0.65rem' }}>▾</Box>
-                )}
-              </Button>
-            )
-          })}
+              </MenuItem>
+            ))}
+          </Menu>
         </Stack>
 
         {/* Search */}
@@ -108,6 +227,7 @@ export default function TopNav() {
         >
           Support
         </Button>
+
       </Toolbar>
     </AppBar>
   )
