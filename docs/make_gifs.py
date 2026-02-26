@@ -172,43 +172,43 @@ def gif_blast_radius(page):
 
     # Click on nodes to show edge highlighting
     try:
-        # Click on the root node (first .react-flow__node)
+        # Click root node — highlights all its connected edges
         root_node = page.locator(".react-flow__node").first
         root_node.click()
-        page.wait_for_timeout(600)
-        for _ in range(4):
+        page.wait_for_timeout(800)
+        for _ in range(5):
             frames.append(shot(page))
             page.wait_for_timeout(200)
 
-        # Click on a dependency node (second node)
+        # Click a dependency node — shifts highlights to its edges
         dep_nodes = page.locator(".react-flow__node").all()
-        if len(dep_nodes) > 1:
-            dep_nodes[1].click()
-            page.wait_for_timeout(600)
-            for _ in range(4):
+        if len(dep_nodes) > 2:
+            dep_nodes[2].click()
+            page.wait_for_timeout(800)
+            for _ in range(5):
                 frames.append(shot(page))
                 page.wait_for_timeout(200)
 
-        # Click on another dependency node
-        if len(dep_nodes) > 3:
-            dep_nodes[3].click()
-            page.wait_for_timeout(600)
-            for _ in range(4):
+        # Click another node deeper in the graph
+        if len(dep_nodes) > 5:
+            dep_nodes[5].click()
+            page.wait_for_timeout(800)
+            for _ in range(5):
                 frames.append(shot(page))
                 page.wait_for_timeout(200)
 
-        # Click on an edge to highlight it
+        # Click an edge directly (force=True needed for SVG path interception)
         edge_paths = page.locator(".react-flow__edge").all()
-        if len(edge_paths) > 0:
-            edge_paths[0].click()
-            page.wait_for_timeout(600)
-            for _ in range(4):
+        if len(edge_paths) > 1:
+            edge_paths[1].click(force=True)
+            page.wait_for_timeout(800)
+            for _ in range(5):
                 frames.append(shot(page))
                 page.wait_for_timeout(200)
 
-        # Click background to clear
-        page.locator(".react-flow__pane").click()
-        page.wait_for_timeout(400)
+        # Click background to clear all highlights
+        page.locator(".react-flow__pane").click(force=True)
+        page.wait_for_timeout(500)
         for _ in range(3):
             frames.append(shot(page))
             page.wait_for_timeout(200)
