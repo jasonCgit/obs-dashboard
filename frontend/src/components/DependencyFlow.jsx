@@ -256,7 +256,7 @@ function buildGraphElements(apiData, mode) {
 export default function DependencyFlow({ apiData, mode, onNodeSelect }) {
   const [nodes, setNodes, onNodesChange] = useNodesState([])
   const [edges, setEdges, onEdgesChange] = useEdgesState([])
-  const [selectedEdgeId, setSelectedEdgeId] = useState(null)
+  const [highlightedEdges, setHighlightedEdges] = useState(new Set())
   const theme = useTheme()
   const isDark = theme.palette.mode === 'dark'
 
@@ -264,46 +264,74 @@ export default function DependencyFlow({ apiData, mode, onNodeSelect }) {
     const { nodes: rfNodes, edges: rfEdges } = buildGraphElements(apiData, mode)
     setNodes(rfNodes)
     setEdges(rfEdges)
-    setSelectedEdgeId(null)
+    setHighlightedEdges(new Set())
   }, [apiData, mode, setNodes, setEdges])
 
-  // Highlight connected edges when a node is clicked
-  const highlightConnectedEdges = useCallback((nodeId) => {
-    setSelectedEdgeId(null)
+  // Apply highlight/dim styling based on highlightedEdges set
+  const applyHighlights = useCallback((highlighted) => {
+    const hasAny = highlighted.size > 0
     setEdges(prev => prev.map(e => ({
       ...e,
       data: {
         ...e.data,
-        highlighted: e.source === nodeId || e.target === nodeId,
-        dimmed: nodeId ? (e.source !== nodeId && e.target !== nodeId) : false,
+        highlighted: highlighted.has(e.id),
+        dimmed: hasAny && !highlighted.has(e.id),
       },
     })))
   }, [setEdges])
 
   const onNodeClick = useCallback((_evt, node) => {
+    const isCtrl = _evt.ctrlKey || _evt.metaKey
     onNodeSelect?.(node.data)
-    highlightConnectedEdges(node.id)
-  }, [onNodeSelect, highlightConnectedEdges])
 
-  // Highlight a single edge when clicked
+    // Find edges connected to this node
+    setHighlightedEdges(prev => {
+      const connectedIds = new Set()
+      edges.forEach(e => {
+        if (e.source === node.id || e.target === node.id) connectedIds.add(e.id)
+      })
+
+      let next
+      if (isCtrl) {
+        // Add connected edges to existing selection
+        next = new Set(prev)
+        connectedIds.forEach(id => next.add(id))
+      } else {
+        next = connectedIds
+      }
+      applyHighlights(next)
+      return next
+    })
+  }, [onNodeSelect, edges, applyHighlights])
+
+  // Highlight edge(s) when clicked — Ctrl+click adds to selection
   const onEdgeClick = useCallback((_evt, edge) => {
-    setSelectedEdgeId(edge.id)
-    setEdges(prev => prev.map(e => ({
-      ...e,
-      data: {
-        ...e.data,
-        highlighted: e.id === edge.id,
-        dimmed: e.id !== edge.id,
-      },
-    })))
-    // Also select the target node to show details
+    const isCtrl = _evt.ctrlKey || _evt.metaKey
+
+    // Show target node details
     const targetNode = nodes.find(n => n.id === edge.target)
     if (targetNode) onNodeSelect?.(targetNode.data)
-  }, [setEdges, nodes, onNodeSelect])
+
+    setHighlightedEdges(prev => {
+      let next
+      if (isCtrl) {
+        next = new Set(prev)
+        if (next.has(edge.id)) {
+          next.delete(edge.id)  // Toggle off if already selected
+        } else {
+          next.add(edge.id)
+        }
+      } else {
+        next = new Set([edge.id])
+      }
+      applyHighlights(next)
+      return next
+    })
+  }, [nodes, onNodeSelect, applyHighlights])
 
   // Click on background to clear selection
   const onPaneClick = useCallback(() => {
-    setSelectedEdgeId(null)
+    setHighlightedEdges(new Set())
     setEdges(prev => prev.map(e => ({
       ...e,
       data: { ...e.data, highlighted: false, dimmed: false },
