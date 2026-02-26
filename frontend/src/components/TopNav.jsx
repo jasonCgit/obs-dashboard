@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from 'react'
+import { useState, useRef } from 'react'
 import {
   AppBar, Toolbar, Box, Typography, Button, InputBase,
   Chip, Stack, IconButton, Menu, MenuItem, Tooltip,
@@ -55,10 +55,10 @@ export default function TopNav() {
   const theme = useTheme()
   const isDark = theme.palette.mode === 'dark'
 
-  // Drag-and-drop state
-  const [dragIdx, setDragIdx]     = useState(null)
-  const [dragOverIdx, setDragOverIdx] = useState(null)
-  const dragCounter = useRef(0)
+  // Drag-and-drop state — label-based (no index math)
+  const dragLabel = useRef(null)
+  const [dragging, setDragging] = useState(null)   // label being dragged
+  const [dragOver, setDragOver] = useState(null)    // label being hovered
 
   const availableToAdd = ALL_TABS.filter(t => !openTabs.includes(t.label))
 
@@ -85,56 +85,40 @@ export default function TopNav() {
     .map(label => ALL_TABS.find(t => t.label === label))
     .filter(Boolean)
 
-  // ── Drag-and-drop handlers ──
-  const handleDragStart = useCallback((e, idx) => {
-    if (idx === 0) { e.preventDefault(); return } // Home not draggable
-    setDragIdx(idx)
+  // ── Drag-and-drop handlers (label-based, no index math) ──
+  const onDragStart = (e, label) => {
+    if (label === 'Home') { e.preventDefault(); return }
+    dragLabel.current = label
+    setDragging(label)
     e.dataTransfer.effectAllowed = 'move'
-    e.dataTransfer.setData('text/plain', String(idx))
-  }, [])
+    e.dataTransfer.setData('text/plain', label)
+  }
 
-  const handleDragEnter = useCallback((e, idx) => {
-    e.preventDefault()
-    dragCounter.current++
-    if (idx !== 0) setDragOverIdx(idx)
-  }, [])
-
-  const handleDragLeave = useCallback(() => {
-    dragCounter.current--
-    if (dragCounter.current <= 0) {
-      setDragOverIdx(null)
-      dragCounter.current = 0
-    }
-  }, [])
-
-  const handleDragOver = useCallback((e, idx) => {
+  const onDragOver = (e, label) => {
     e.preventDefault()
     e.dataTransfer.dropEffect = 'move'
-    if (idx !== 0) setDragOverIdx(idx)
-  }, [])
+    if (label !== 'Home') setDragOver(label)
+  }
 
-  const handleDrop = useCallback((e, dropIdx) => {
+  const onDrop = (e, dropLabel) => {
     e.preventDefault()
-    dragCounter.current = 0
-    if (dragIdx == null || dropIdx === 0 || dragIdx === dropIdx) {
-      setDragIdx(null)
-      setDragOverIdx(null)
+    const from = dragLabel.current
+    if (!from || from === dropLabel || dropLabel === 'Home') {
+      dragLabel.current = null; setDragging(null); setDragOver(null)
       return
     }
-    const next = [...openTabs]
-    const [moved] = next.splice(dragIdx, 1)
-    next.splice(dropIdx, 0, moved)
-    setOpenTabs(next)
-    saveTabs(next)
-    setDragIdx(null)
-    setDragOverIdx(null)
-  }, [dragIdx, openTabs])
+    // Remove dragged tab, then insert it before the drop target
+    const without = openTabs.filter(l => l !== from)
+    const dropPos = without.indexOf(dropLabel)
+    without.splice(dropPos, 0, from)
+    setOpenTabs(without)
+    saveTabs(without)
+    dragLabel.current = null; setDragging(null); setDragOver(null)
+  }
 
-  const handleDragEnd = useCallback(() => {
-    setDragIdx(null)
-    setDragOverIdx(null)
-    dragCounter.current = 0
-  }, [])
+  const onDragEnd = () => {
+    dragLabel.current = null; setDragging(null); setDragOver(null)
+  }
 
   const navBg      = isDark ? '#0d1b2a' : theme.palette.primary.dark
   const menuBg     = isDark ? '#131f2e' : theme.palette.background.paper
@@ -173,25 +157,23 @@ export default function TopNav() {
 
         {/* Nav tabs — draggable */}
         <Stack direction="row" spacing={0} sx={{ flexGrow: 1, alignItems: 'center' }}>
-          {visibleTabs.map((tab, idx) => {
+          {visibleTabs.map((tab) => {
             const active = tab.path && pathname === tab.path
             const isHome = tab.label === 'Home'
-            const isDragging = dragIdx === idx
-            const isDragOver = dragOverIdx === idx && dragIdx !== idx
+            const isTabDragging = dragging === tab.label
+            const isTabDragOver = dragOver === tab.label && dragging !== tab.label
             return (
               <Box
                 key={tab.label}
                 draggable={!isHome}
-                onDragStart={(e) => handleDragStart(e, idx)}
-                onDragEnter={(e) => handleDragEnter(e, idx)}
-                onDragLeave={handleDragLeave}
-                onDragOver={(e) => handleDragOver(e, idx)}
-                onDrop={(e) => handleDrop(e, idx)}
-                onDragEnd={handleDragEnd}
+                onDragStart={(e) => onDragStart(e, tab.label)}
+                onDragOver={(e) => onDragOver(e, tab.label)}
+                onDrop={(e) => onDrop(e, tab.label)}
+                onDragEnd={onDragEnd}
                 sx={{
                   display: 'flex', alignItems: 'center', position: 'relative',
-                  opacity: isDragging ? 0.4 : 1,
-                  borderLeft: isDragOver ? '2px solid rgba(96,165,250,0.8)' : '2px solid transparent',
+                  opacity: isTabDragging ? 0.4 : 1,
+                  borderLeft: isTabDragOver ? '2px solid rgba(96,165,250,0.8)' : '2px solid transparent',
                   transition: 'border-color 0.15s, opacity 0.15s',
                   cursor: isHome ? 'default' : 'grab',
                   '&:active': { cursor: isHome ? 'default' : 'grabbing' },

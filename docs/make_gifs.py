@@ -19,25 +19,19 @@ W, H = 1440, 900
 
 def shot(page) -> Image.Image:
     raw = page.screenshot()
-    img = Image.open(BytesIO(raw)).convert("RGB")
-    # Downscale to reduce GIF file size (720p width)
-    new_w = 720
-    new_h = int(img.height * new_w / img.width)
-    return img.resize((new_w, new_h), Image.LANCZOS)
+    return Image.open(BytesIO(raw)).convert("RGB")
 
 
 def save_gif(frames: list, name: str, fps: int = 5):
     path = OUT_DIR / name
     durations = [1000 // fps] * len(frames)
     durations[-1] = 2000
-    # Quantize to 128 colors for smaller file size
-    quantized = [f.quantize(colors=128, method=Image.Quantize.MEDIANCUT).convert("RGB") for f in frames]
-    quantized[0].save(
-        path, save_all=True, append_images=quantized[1:],
+    frames[0].save(
+        path, save_all=True, append_images=frames[1:],
         loop=0, duration=durations, optimize=True,
     )
-    size_kb = path.stat().st_size / 1024
-    print(f"  saved  {name}  ({len(frames)} frames, {size_kb:.0f} KB)")
+    size_mb = path.stat().st_size / (1024 * 1024)
+    print(f"  saved  {name}  ({len(frames)} frames, {size_mb:.1f} MB)")
 
 
 def scroll_page(page, frames, start=0, end=2000, step=120, delay=80):
@@ -267,31 +261,105 @@ def gif_links(page):
     save_gif(frames, "links.gif", fps=5)
 
 
-# ── GIF 11 — Dark / Light mode toggle ───────────────────────────────────────
+# ── GIF 11 — Draggable Tabs + Dark / Light mode toggle ────────────────────
 
-def gif_dark_light(page):
-    print("Capturing dark-light-mode.gif ...")
+def gif_tabs_and_theme(page):
+    print("Capturing tabs-and-theme.gif ...")
     frames = []
     page.goto(BASE_URL, wait_until="networkidle")
     page.wait_for_timeout(600)
-    # Capture dark mode
-    for _ in range(4):
+
+    # Clear localStorage so only Home tab is open
+    page.evaluate("localStorage.removeItem('obs-open-tabs')")
+    page.reload(wait_until="networkidle")
+    page.wait_for_timeout(600)
+
+    # Show starting state (only Home tab)
+    for _ in range(3):
         frames.append(shot(page))
         page.wait_for_timeout(200)
-    # Click light/dark toggle (the sun/moon icon button)
+
+    # Add several tabs via the + button
+    for label in ["Favorites", "View Central", "Blast Radius", "Applications"]:
+        try:
+            add_btn = page.locator('[data-testid="AddIcon"]').first
+            add_btn.click()
+            page.wait_for_timeout(400)
+            page.get_by_role("menuitem", name=label).click()
+            page.wait_for_timeout(500)
+            for _ in range(2):
+                frames.append(shot(page))
+                page.wait_for_timeout(150)
+        except Exception:
+            pass
+
+    # Capture tabs in their original order
+    for _ in range(3):
+        frames.append(shot(page))
+        page.wait_for_timeout(200)
+
+    # Drag-and-drop: reorder "Blast Radius" tab before "Favorites"
+    try:
+        source = page.locator("button:has-text('Blast Radius')").first
+        target = page.locator("button:has-text('Favorites')").first
+        source.drag_to(target)
+        page.wait_for_timeout(600)
+        for _ in range(3):
+            frames.append(shot(page))
+            page.wait_for_timeout(200)
+    except Exception:
+        pass
+
+    # Drag-and-drop: move "Applications" before "View Central"
+    try:
+        source = page.locator("button:has-text('Applications')").first
+        target = page.locator("button:has-text('View Central')").first
+        source.drag_to(target)
+        page.wait_for_timeout(600)
+        for _ in range(3):
+            frames.append(shot(page))
+            page.wait_for_timeout(200)
+    except Exception:
+        pass
+
+    # Close one tab (Blast Radius) via × button
+    try:
+        # Hover over the Blast Radius tab to reveal the close button
+        br_tab = page.locator("button:has-text('Blast Radius')").first
+        br_tab.hover()
+        page.wait_for_timeout(300)
+        # Click the close icon next to it
+        close_btn = br_tab.locator("..").locator('[data-testid="CloseIcon"]').first
+        close_btn.click()
+        page.wait_for_timeout(500)
+        for _ in range(2):
+            frames.append(shot(page))
+            page.wait_for_timeout(200)
+    except Exception:
+        pass
+
+    # Navigate back to Home for the theme toggle demo
+    page.goto(BASE_URL, wait_until="networkidle")
+    page.wait_for_timeout(400)
+    for _ in range(3):
+        frames.append(shot(page))
+        page.wait_for_timeout(200)
+
+    # Toggle to light mode
     try:
         toggle = page.locator('[data-testid="LightModeIcon"], [data-testid="DarkModeIcon"]').first
         toggle.click()
         page.wait_for_timeout(600)
     except Exception:
         pass
-    # Capture light mode
     for _ in range(4):
         frames.append(shot(page))
         page.wait_for_timeout(200)
+
     # Scroll in light mode
     scroll_page(page, frames, 0, 800, 120, 80)
-    # Switch back to dark
+
+    # Toggle back to dark mode
     try:
         toggle = page.locator('[data-testid="LightModeIcon"], [data-testid="DarkModeIcon"]').first
         toggle.click()
@@ -301,7 +369,8 @@ def gif_dark_light(page):
     for _ in range(3):
         frames.append(shot(page))
         page.wait_for_timeout(200)
-    save_gif(frames, "dark-light-mode.gif", fps=5)
+
+    save_gif(frames, "tabs-and-theme.gif", fps=5)
 
 
 # ── GIF 12 — Incident Zero ──────────────────────────────────────────────────
@@ -335,7 +404,7 @@ def main():
         gif_slo_agent(page)
         gif_announcements(page)
         gif_links(page)
-        gif_dark_light(page)
+        gif_tabs_and_theme(page)
         gif_incident_zero(page)
 
         browser.close()

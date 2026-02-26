@@ -78,10 +78,10 @@ A real-time observability platform purpose-built for AWM engineering — combini
 
 ---
 
-### Dark & Light Mode
-> Full dark/light theme toggle with theme-aware cards, graphs, nav bar, and components.
+### Draggable Tabs & Dark / Light Mode
+> Browser-style tab management — add, close, and drag-to-reorder tabs with persistent order via localStorage. Full dark/light theme toggle with theme-aware cards, graphs, nav bar, and components.
 
-<img src="docs/gifs/dark-light-mode.gif" alt="Dark and Light Mode" width="100%">
+<img src="docs/gifs/tabs-and-theme.gif" alt="Draggable Tabs and Dark/Light Mode" width="100%">
 
 ---
 
@@ -120,8 +120,7 @@ The frontend proxies all `/api/*` requests to the backend via Vite's dev server 
 
 Additional features:
 - **Incident Zero** — Proactive pre-incident management with burn rate alerts and error budgets
-- **Dark / Light Mode** — Full theme toggle with theme-aware components
-- **Draggable Tabs** — Browser-style tab reordering with drag-and-drop, persistent via localStorage
+- **Draggable Tabs & Dark / Light Mode** — Browser-style tab reordering with drag-and-drop + full theme toggle (see demo above)
 
 ---
 
@@ -236,4 +235,4 @@ playwright install chromium
 python docs/make_gifs.py
 ```
 
-GIFs are generated at 720p width with 128-color quantization for fast auto-play on GitHub.
+GIFs are generated at full 1440p resolution for best quality.
