@@ -1,0 +1,194 @@
+import { useState } from 'react'
+import {
+  Card, CardContent, CardActionArea, Box, Typography, Chip,
+  IconButton, Tooltip,
+} from '@mui/material'
+import StarIcon       from '@mui/icons-material/Star'
+import StarBorderIcon from '@mui/icons-material/StarBorder'
+import AccountTreeIcon  from '@mui/icons-material/AccountTree'
+import MapIcon          from '@mui/icons-material/Map'
+import BarChartIcon     from '@mui/icons-material/BarChart'
+import TimelineIcon     from '@mui/icons-material/Timeline'
+import DashboardIcon    from '@mui/icons-material/Dashboard'
+import RouteIcon        from '@mui/icons-material/Route'
+import ShieldIcon       from '@mui/icons-material/Shield'
+import StorageIcon      from '@mui/icons-material/Storage'
+import NotificationsIcon from '@mui/icons-material/Notifications'
+import AutoAwesomeIcon  from '@mui/icons-material/AutoAwesome'
+
+export const ALL_VIEWS = [
+  {
+    id: 'advisor-connect-deps',
+    title: 'Advisor Connect — Dependencies',
+    description: 'Full dependency graph for the Advisor Connect platform. Profile service, coverage apps, and notification pipelines mapped with 10+ downstream services.',
+    icon: AccountTreeIcon,
+    path: '/graph',
+    tag: 'Interactive',
+    color: '#60a5fa',
+    domain: 'CRM & Client Engagement',
+    favorite: true,
+  },
+  {
+    id: 'spectrum-deps',
+    title: 'Spectrum Equities — Dependencies',
+    description: 'SPIEQ API gateway through trade service, pricing engine, risk service, and settlement. 14 downstream services with cross-team visibility.',
+    icon: AccountTreeIcon,
+    path: '/graph',
+    tag: 'Interactive',
+    color: '#f87171',
+    domain: 'Equities & Trading',
+    favorite: true,
+  },
+  {
+    id: 'connect-os-deps',
+    title: 'Connect OS — Dependencies',
+    description: 'Cloud gateway dependency tree spanning home apps (NA/APAC/EMEA), team manager, search, and 20+ downstream services across 8 teams.',
+    icon: AccountTreeIcon,
+    path: '/graph',
+    tag: 'Interactive',
+    color: '#34d399',
+    domain: 'Platform Infrastructure',
+    favorite: false,
+  },
+  {
+    id: 'regional-health',
+    title: 'Regional Health Status',
+    description: 'Live health monitoring across US-East, US-West, EU-Central, and Asia-Pacific regions with real-time issue counts.',
+    icon: MapIcon,
+    path: '/',
+    tag: 'Live',
+    color: '#4ade80',
+    domain: 'Infrastructure',
+    favorite: false,
+  },
+  {
+    id: 'incident-trends',
+    title: 'Incident Trends (P1/P2)',
+    description: '90-day incident frequency line chart with P1/P2 breakdown, spike detection, and trend analysis.',
+    icon: BarChartIcon,
+    path: '/',
+    tag: 'Analytics',
+    color: '#fbbf24',
+    domain: 'Incidents & Analytics',
+    favorite: true,
+  },
+  {
+    id: 'slo-agent',
+    title: 'SLO Agent',
+    description: 'Autonomous SLO monitoring agent with error budget tracking, AI-powered breach prediction, and auto-remediation actions.',
+    icon: TimelineIcon,
+    path: '/slo-agent',
+    tag: 'AI Agent',
+    color: '#a78bfa',
+    domain: 'SLO Management',
+    favorite: true,
+  },
+  {
+    id: 'incident-zero',
+    title: 'Incident Zero',
+    description: 'Proactive pre-incident management — burn rate alerts, error budget dashboards, and prevention timelines before issues become P1s.',
+    icon: ShieldIcon,
+    path: '/incident-zero',
+    tag: 'Proactive',
+    color: '#fb923c',
+    domain: 'Risk & Prevention',
+    favorite: false,
+  },
+  {
+    id: 'dashboard',
+    title: 'Unified Dashboard',
+    description: 'Single pane of glass — critical apps, AI health analysis, active incidents, regional status, and recent activities.',
+    icon: DashboardIcon,
+    path: '/',
+    tag: 'Default',
+    color: '#94a3b8',
+    domain: 'Platform Overview',
+    favorite: false,
+  },
+  {
+    id: 'customer-journey',
+    title: 'Customer Journeys',
+    description: 'End-to-end path health for Trade Execution, Client Login, and Document Delivery with step-by-step latency and error rates.',
+    icon: RouteIcon,
+    path: '/customer-journey',
+    tag: 'Live',
+    color: '#38bdf8',
+    domain: 'Customer Experience',
+    favorite: false,
+  },
+  {
+    id: 'ai-health',
+    title: 'AI Health Analysis',
+    description: 'AI-powered critical alerts, trend analysis, and recommended actions — reducing mean time to detect and respond.',
+    icon: AutoAwesomeIcon,
+    path: '/',
+    tag: 'AI',
+    color: '#c084fc',
+    domain: 'Intelligence',
+    favorite: false,
+  },
+  {
+    id: 'active-incidents',
+    title: 'Active Incidents & Notifications',
+    description: 'P1/P2 incident donuts, Convey notifications, and Spectrum banner alerts in a unified activity feed.',
+    icon: NotificationsIcon,
+    path: '/',
+    tag: 'Live',
+    color: '#f87171',
+    domain: 'Incidents & Alerts',
+    favorite: false,
+  },
+  {
+    id: 'applications-registry',
+    title: 'Applications Registry',
+    description: 'Full inventory of 20+ registered applications with status, SLA, team ownership, and 30-day incident history.',
+    icon: StorageIcon,
+    path: '/applications',
+    tag: 'Registry',
+    color: '#60a5fa',
+    domain: 'Governance',
+    favorite: false,
+  },
+]
+
+export default function ViewCard({ view, navigate }) {
+  const [fav, setFav] = useState(view.favorite)
+  const Icon = view.icon
+  return (
+    <Card sx={{ height: '100%', position: 'relative' }}>
+      <Tooltip title={fav ? 'Remove from Favorites' : 'Add to Favorites'}>
+        <IconButton
+          size="small"
+          onClick={(e) => { e.stopPropagation(); setFav(f => !f) }}
+          sx={{
+            position: 'absolute', top: 8, right: 8, zIndex: 1,
+            color: fav ? '#fbbf24' : 'text.disabled',
+            '&:hover': { color: '#fbbf24' },
+          }}
+        >
+          {fav ? <StarIcon sx={{ fontSize: 16 }} /> : <StarBorderIcon sx={{ fontSize: 16 }} />}
+        </IconButton>
+      </Tooltip>
+      <CardActionArea onClick={() => navigate(view.path)} sx={{ height: '100%', p: 0.5 }}>
+        <CardContent>
+          <Box sx={{ display: 'flex', alignItems: 'flex-start', mb: 1.5 }}>
+            <Box sx={{ bgcolor: `${view.color}18`, borderRadius: 2, p: 1.25 }}>
+              <Icon sx={{ fontSize: 26, color: view.color }} />
+            </Box>
+          </Box>
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 0.3 }}>
+            <Typography variant="body1" fontWeight={700} sx={{ fontSize: '0.88rem' }}>{view.title}</Typography>
+            <Chip label={view.tag} size="small"
+              sx={{ fontSize: '0.62rem', height: 18, bgcolor: `${view.color}22`, color: view.color }} />
+          </Box>
+          <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.68rem', display: 'block', mb: 0.75 }}>
+            {view.domain}
+          </Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.6, fontSize: '0.8rem' }}>
+            {view.description}
+          </Typography>
+        </CardContent>
+      </CardActionArea>
+    </Card>
+  )
+}

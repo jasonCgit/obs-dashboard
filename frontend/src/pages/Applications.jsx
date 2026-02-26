@@ -84,7 +84,7 @@ export default function Applications() {
       <Card>
         <Table size="small">
           <TableHead>
-            <TableRow sx={{ '& th': { color: 'text.secondary', fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: 0.8, borderColor: 'rgba(255,255,255,0.08)' } }}>
+            <TableRow sx={{ '& th': { color: 'text.secondary', fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: 0.8, borderColor: 'divider' } }}>
               <TableCell>Application</TableCell>
               <TableCell>SEAL</TableCell>
               <TableCell>Team</TableCell>
@@ -96,7 +96,7 @@ export default function Applications() {
           </TableHead>
           <TableBody>
             {visible.map(app => (
-              <TableRow key={app.seal} hover sx={{ '& td': { borderColor: 'rgba(255,255,255,0.05)', fontSize: '0.82rem' }, cursor: 'pointer' }}>
+              <TableRow key={app.seal} hover sx={{ '& td': { borderColor: 'divider', fontSize: '0.82rem' }, cursor: 'pointer' }}>
                 <TableCell sx={{ fontWeight: 600, color: 'text.primary', maxWidth: 320 }}>{app.name}</TableCell>
                 <TableCell sx={{ color: 'text.secondary', fontFamily: 'monospace' }}>{app.seal}</TableCell>
                 <TableCell sx={{ color: 'text.secondary' }}>{app.team}</TableCell>

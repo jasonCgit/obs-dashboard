@@ -1,9 +1,11 @@
-import { Card, CardContent, CardHeader, Typography, Box, Chip, Button, Divider, Stack } from '@mui/material'
-import SearchIcon from '@mui/icons-material/Search'
-import { useNavigate } from 'react-router-dom'
+import {
+  Card, CardContent, CardHeader, Typography, Box, Chip,
+  Divider, Stack,
+} from '@mui/material'
+import WarningAmberIcon from '@mui/icons-material/WarningAmber'
+import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline'
 
 export default function CriticalApps({ data }) {
-  const navigate = useNavigate()
   if (!data || data.length === 0) return null
 
   return (
@@ -51,50 +53,65 @@ export default function CriticalApps({ data }) {
                 />
               </Box>
 
-              {/* Metrics */}
+              {/* Metrics row */}
               <Box sx={{ display: 'flex', gap: 4, mb: 1.5 }}>
                 <Box>
-                  <Typography variant="caption" color="text.secondary" display="block">
-                    Current Issues
-                  </Typography>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.4, mb: 0.2 }}>
+                    <WarningAmberIcon sx={{ fontSize: 12, color: 'text.secondary' }} />
+                    <Typography variant="caption" color="text.secondary">Current Issues</Typography>
+                  </Box>
                   <Typography variant="h6" fontWeight={700} color="error.main" lineHeight={1.3}>
                     {app.current_issues}
                   </Typography>
                 </Box>
                 <Box>
-                  <Typography variant="caption" color="text.secondary" display="block">
-                    Recurring (30d)
-                  </Typography>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.4, mb: 0.2 }}>
+                    <Box component="span" sx={{ fontSize: 12, color: 'text.secondary', lineHeight: 1 }}>↗</Box>
+                    <Typography variant="caption" color="text.secondary">Recurring (30d)</Typography>
+                  </Box>
                   <Typography variant="h6" fontWeight={700} lineHeight={1.3}>
                     {app.recurring_30d}
                   </Typography>
                 </Box>
                 <Box>
-                  <Typography variant="caption" color="text.secondary" display="block">
-                    Last Incident
-                  </Typography>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.4, mb: 0.2 }}>
+                    <Box component="span" sx={{ fontSize: 12, color: 'text.secondary', lineHeight: 1 }}>🕐</Box>
+                    <Typography variant="caption" color="text.secondary">Last Incident</Typography>
+                  </Box>
                   <Typography variant="h6" fontWeight={700} color="warning.main" lineHeight={1.3}>
                     {app.last_incident}
                   </Typography>
                 </Box>
               </Box>
 
-              {/* Search button → Graph Explorer */}
-              <Button
-                variant="outlined"
-                size="small"
-                startIcon={<SearchIcon sx={{ fontSize: '14px !important' }} />}
-                onClick={() => navigate(`/graph?service=${app.id}`)}
-                sx={{
-                  textTransform: 'none',
-                  fontSize: '0.75rem',
-                  color: 'text.secondary',
-                  borderColor: 'rgba(255,255,255,0.2)',
-                  '&:hover': { borderColor: 'primary.main', color: 'primary.light' },
-                }}
-              >
-                Search
-              </Button>
+              {/* Recent issues */}
+              {app.recent_issues?.length > 0 && (
+                <>
+                  <Typography variant="caption" color="text.secondary"
+                    sx={{ display: 'block', mb: 0.75, fontWeight: 500 }}>
+                    Recent Issues:
+                  </Typography>
+                  <Stack spacing={0.75}>
+                    {app.recent_issues.map((issue, i) => (
+                      <Box key={i} sx={{ display: 'flex', alignItems: 'flex-start', gap: 0.75 }}>
+                        {issue.severity === 'critical'
+                          ? <ErrorOutlineIcon   sx={{ fontSize: 14, color: 'error.main',   mt: 0.15, flexShrink: 0 }} />
+                          : <WarningAmberIcon   sx={{ fontSize: 14, color: 'warning.main', mt: 0.15, flexShrink: 0 }} />
+                        }
+                        <Box>
+                          <Typography variant="caption"
+                            sx={{ fontSize: '0.73rem', display: 'block', lineHeight: 1.35, color: 'text.primary' }}>
+                            {issue.description}
+                          </Typography>
+                          <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.65rem' }}>
+                            {issue.time_ago}
+                          </Typography>
+                        </Box>
+                      </Box>
+                    ))}
+                  </Stack>
+                </>
+              )}
             </Box>
           ))}
         </Stack>

@@ -18,36 +18,50 @@ W, H = 1440, 900
 # ── helpers ───────────────────────────────────────────────────────────────────
 
 def shot(page) -> Image.Image:
-    return Image.open(BytesIO(page.screenshot())).convert("RGB")
+    raw = page.screenshot()
+    img = Image.open(BytesIO(raw)).convert("RGB")
+    # Downscale to reduce GIF file size (720p width)
+    new_w = 720
+    new_h = int(img.height * new_w / img.width)
+    return img.resize((new_w, new_h), Image.LANCZOS)
 
 
 def save_gif(frames: list, name: str, fps: int = 5):
     path = OUT_DIR / name
     durations = [1000 // fps] * len(frames)
     durations[-1] = 2000
-    frames[0].save(path, save_all=True, append_images=frames[1:], loop=0, duration=durations, optimize=True)
-    print(f"  saved  {name}  ({len(frames)} frames)")
+    # Quantize to 128 colors for smaller file size
+    quantized = [f.quantize(colors=128, method=Image.Quantize.MEDIANCUT).convert("RGB") for f in frames]
+    quantized[0].save(
+        path, save_all=True, append_images=quantized[1:],
+        loop=0, duration=durations, optimize=True,
+    )
+    size_kb = path.stat().st_size / 1024
+    print(f"  saved  {name}  ({len(frames)} frames, {size_kb:.0f} KB)")
 
 
-def scroll_page(page, frames, start=0, end=2000, step=100, delay=80):
+def scroll_page(page, frames, start=0, end=2000, step=120, delay=80):
     for y in range(start, end, step):
         page.evaluate(f"window.scrollTo(0,{y})")
         page.wait_for_timeout(delay)
         frames.append(shot(page))
 
 
-def select_service(page, hint: str):
-    inp = page.get_by_placeholder("Select service...")
-    inp.click()
-    inp.fill("")
-    for ch in hint[:8]:
-        inp.press_sequentially(ch, delay=60)
-    page.wait_for_timeout(500)
-    page.locator(".MuiAutocomplete-listbox li").first.click()
-    page.wait_for_timeout(900)
+def add_tab_if_needed(page, label):
+    """Click the + button and add a tab if it's not already open."""
+    try:
+        add_btn = page.locator('[data-testid="AddIcon"]').first
+        if not add_btn.is_visible(timeout=500):
+            return
+        add_btn.click()
+        page.wait_for_timeout(300)
+        page.get_by_role("menuitem", name=label).click()
+        page.wait_for_timeout(600)
+    except Exception:
+        pass
 
 
-# ── GIF 1 — Dashboard overview ────────────────────────────────────────────────
+# ── GIF 1 — Dashboard overview (Home) ───────────────────────────────────────
 
 def gif_dashboard(page):
     print("Capturing dashboard-overview.gif ...")
@@ -57,7 +71,7 @@ def gif_dashboard(page):
     for _ in range(3):
         frames.append(shot(page))
         page.wait_for_timeout(180)
-    scroll_page(page, frames, 0, 2000, 100, 80)
+    scroll_page(page, frames, 0, 2000, 120, 80)
     page.evaluate("window.scrollTo(0,0)")
     page.wait_for_timeout(300)
     for _ in range(3):
@@ -65,73 +79,49 @@ def gif_dashboard(page):
     save_gif(frames, "dashboard-overview.gif", fps=6)
 
 
-# ── GIF 2 — Knowledge graph ───────────────────────────────────────────────────
+# ── GIF 2 — Favorites ───────────────────────────────────────────────────────
 
-def gif_dependencies(page):
-    print("Capturing knowledge-graph-dependencies.gif ...")
+def gif_favorites(page):
+    print("Capturing favorites.gif ...")
     frames = []
-    page.goto(f"{BASE_URL}/graph", wait_until="networkidle")
-    page.wait_for_timeout(800)
-    for _ in range(3):
-        frames.append(shot(page))
-    for hint in ["MERIDIAN", "PAYMENT", "API-GATEWAY"]:
-        select_service(page, hint)
-        for _ in range(5):
-            frames.append(shot(page))
-            page.wait_for_timeout(200)
-    save_gif(frames, "knowledge-graph-dependencies.gif", fps=4)
-
-
-# ── GIF 3 — Blast radius ──────────────────────────────────────────────────────
-
-def gif_blast_radius(page):
-    print("Capturing blast-radius.gif ...")
-    frames = []
-    page.goto(f"{BASE_URL}/graph", wait_until="networkidle")
-    page.wait_for_timeout(800)
-    select_service(page, "POSTGRES")
-    page.get_by_role("button", name="Blast Radius").click()
-    page.wait_for_timeout(800)
+    page.goto(f"{BASE_URL}/favorites", wait_until="networkidle")
+    page.wait_for_timeout(600)
     for _ in range(4):
         frames.append(shot(page))
         page.wait_for_timeout(180)
-    for hint in ["KAFKA", "REDIS", "MERIDIAN"]:
-        select_service(page, hint)
-        for _ in range(4):
-            frames.append(shot(page))
-            page.wait_for_timeout(180)
-    save_gif(frames, "blast-radius.gif", fps=4)
+    scroll_page(page, frames, 0, 600, 100, 80)
+    save_gif(frames, "favorites.gif", fps=5)
 
 
-# ── GIF 4 — Incident trends ───────────────────────────────────────────────────
+# ── GIF 3 — View Central ────────────────────────────────────────────────────
 
-def gif_incident_trends(page):
-    print("Capturing incident-trends.gif ...")
+def gif_view_central(page):
+    print("Capturing view-central.gif ...")
     frames = []
-    page.goto(BASE_URL, wait_until="networkidle")
+    page.goto(f"{BASE_URL}/view-central", wait_until="networkidle")
     page.wait_for_timeout(600)
-    page.evaluate("window.scrollTo(0, document.body.scrollHeight)")
-    page.wait_for_timeout(500)
-    frames.append(shot(page))
-    chart = page.locator(".recharts-wrapper").first
-    try:
-        chart.wait_for(timeout=4000)
-        box = chart.bounding_box()
-        if box:
-            x0, x1 = box["x"] + 30, box["x"] + box["width"] - 30
-            y = box["y"] + box["height"] * 0.55
-            for i in range(31):
-                page.mouse.move(x0 + (x1 - x0) * i / 30, y)
-                page.wait_for_timeout(80)
-                frames.append(shot(page))
-    except Exception:
-        for _ in range(10):
-            frames.append(shot(page))
-            page.wait_for_timeout(200)
-    save_gif(frames, "incident-trends.gif", fps=8)
+    for _ in range(3):
+        frames.append(shot(page))
+        page.wait_for_timeout(150)
+    scroll_page(page, frames, 0, 1400, 100, 80)
+    save_gif(frames, "view-central.gif", fps=5)
 
 
-# ── GIF 5 — Applications ──────────────────────────────────────────────────────
+# ── GIF 4 — Product Catalog ─────────────────────────────────────────────────
+
+def gif_product_catalog(page):
+    print("Capturing product-catalog.gif ...")
+    frames = []
+    page.goto(f"{BASE_URL}/product-catalog", wait_until="networkidle")
+    page.wait_for_timeout(600)
+    for _ in range(3):
+        frames.append(shot(page))
+        page.wait_for_timeout(150)
+    scroll_page(page, frames, 0, 1000, 100, 80)
+    save_gif(frames, "product-catalog.gif", fps=5)
+
+
+# ── GIF 5 — Applications ────────────────────────────────────────────────────
 
 def gif_applications(page):
     print("Capturing applications.gif ...")
@@ -153,7 +143,41 @@ def gif_applications(page):
     save_gif(frames, "applications.gif", fps=4)
 
 
-# ── GIF 6 — Customer Journey ─────────────────────────────────────────────────
+# ── GIF 6 — Blast Radius (Dependency Graphs) ────────────────────────────────
+
+def gif_blast_radius(page):
+    print("Capturing blast-radius.gif ...")
+    frames = []
+    page.goto(f"{BASE_URL}/graph", wait_until="networkidle")
+    page.wait_for_timeout(800)
+    for _ in range(4):
+        frames.append(shot(page))
+        page.wait_for_timeout(200)
+    # Switch between scenarios via the dropdown
+    try:
+        select = page.locator(".MuiSelect-select").first
+        select.click()
+        page.wait_for_timeout(400)
+        options = page.locator(".MuiMenuItem-root").all()
+        for opt in options[:3]:
+            opt.click()
+            page.wait_for_timeout(1200)
+            for _ in range(4):
+                frames.append(shot(page))
+                page.wait_for_timeout(200)
+            # Reopen dropdown for next option
+            if opt != options[2]:
+                select = page.locator(".MuiSelect-select").first
+                select.click()
+                page.wait_for_timeout(400)
+    except Exception:
+        for _ in range(8):
+            frames.append(shot(page))
+            page.wait_for_timeout(200)
+    save_gif(frames, "blast-radius.gif", fps=4)
+
+
+# ── GIF 7 — Customer Journey ────────────────────────────────────────────────
 
 def gif_customer_journey(page):
     print("Capturing customer-journey.gif ...")
@@ -175,44 +199,21 @@ def gif_customer_journey(page):
     save_gif(frames, "customer-journey.gif", fps=4)
 
 
-# ── GIF 7 — Incident Item ─────────────────────────────────────────────────────
+# ── GIF 8 — SLO Agent ───────────────────────────────────────────────────────
 
-def gif_incident_item(page):
-    print("Capturing incident-item.gif ...")
+def gif_slo_agent(page):
+    print("Capturing slo-agent.gif ...")
     frames = []
-    page.goto(f"{BASE_URL}/incident-item", wait_until="networkidle")
-    page.wait_for_timeout(600)
-    for _ in range(4):
-        frames.append(shot(page))
-        page.wait_for_timeout(150)
-    try:
-        items = page.locator(".MuiListItem-root").all()
-        for item in items[:3]:
-            item.click()
-            page.wait_for_timeout(500)
-            for _ in range(4):
-                frames.append(shot(page))
-                page.wait_for_timeout(120)
-    except Exception:
-        scroll_page(page, frames, 0, 800, 80, 100)
-    save_gif(frames, "incident-item.gif", fps=4)
-
-
-# ── GIF 8 — SLO Corrector ────────────────────────────────────────────────────
-
-def gif_slo_corrector(page):
-    print("Capturing slo-corrector.gif ...")
-    frames = []
-    page.goto(f"{BASE_URL}/slo-corrector", wait_until="networkidle")
+    page.goto(f"{BASE_URL}/slo-agent", wait_until="networkidle")
     page.wait_for_timeout(600)
     for _ in range(4):
         frames.append(shot(page))
         page.wait_for_timeout(150)
     scroll_page(page, frames, 0, 1200, 80, 80)
-    save_gif(frames, "slo-corrector.gif", fps=5)
+    save_gif(frames, "slo-agent.gif", fps=5)
 
 
-# ── GIF 9 — Announcements ─────────────────────────────────────────────────────
+# ── GIF 9 — Announcements ───────────────────────────────────────────────────
 
 def gif_announcements(page):
     print("Capturing announcements.gif ...")
@@ -222,6 +223,7 @@ def gif_announcements(page):
     for _ in range(4):
         frames.append(shot(page))
         page.wait_for_timeout(150)
+    # Cycle type filters
     for label in ["Incident", "Maintenance", "Security", "All"]:
         try:
             page.get_by_role("button", name=label).click()
@@ -231,10 +233,19 @@ def gif_announcements(page):
                 page.wait_for_timeout(120)
         except Exception:
             pass
+    # Toggle show closed
+    try:
+        page.locator(".MuiSwitch-input").first.click()
+        page.wait_for_timeout(400)
+        for _ in range(3):
+            frames.append(shot(page))
+            page.wait_for_timeout(120)
+    except Exception:
+        pass
     save_gif(frames, "announcements.gif", fps=4)
 
 
-# ── GIF 10 — Links ───────────────────────────────────────────────────────────
+# ── GIF 10 — Links ──────────────────────────────────────────────────────────
 
 def gif_links(page):
     print("Capturing links.gif ...")
@@ -244,11 +255,62 @@ def gif_links(page):
     for _ in range(3):
         frames.append(shot(page))
         page.wait_for_timeout(150)
-    scroll_page(page, frames, 0, 1600, 90, 80)
+    scroll_page(page, frames, 0, 1600, 100, 80)
     save_gif(frames, "links.gif", fps=5)
 
 
-# ── main ──────────────────────────────────────────────────────────────────────
+# ── GIF 11 — Dark / Light mode toggle ───────────────────────────────────────
+
+def gif_dark_light(page):
+    print("Capturing dark-light-mode.gif ...")
+    frames = []
+    page.goto(BASE_URL, wait_until="networkidle")
+    page.wait_for_timeout(600)
+    # Capture dark mode
+    for _ in range(4):
+        frames.append(shot(page))
+        page.wait_for_timeout(200)
+    # Click light/dark toggle (the sun/moon icon button)
+    try:
+        toggle = page.locator('[data-testid="LightModeIcon"], [data-testid="DarkModeIcon"]').first
+        toggle.click()
+        page.wait_for_timeout(600)
+    except Exception:
+        pass
+    # Capture light mode
+    for _ in range(4):
+        frames.append(shot(page))
+        page.wait_for_timeout(200)
+    # Scroll in light mode
+    scroll_page(page, frames, 0, 800, 120, 80)
+    # Switch back to dark
+    try:
+        toggle = page.locator('[data-testid="LightModeIcon"], [data-testid="DarkModeIcon"]').first
+        toggle.click()
+        page.wait_for_timeout(600)
+    except Exception:
+        pass
+    for _ in range(3):
+        frames.append(shot(page))
+        page.wait_for_timeout(200)
+    save_gif(frames, "dark-light-mode.gif", fps=5)
+
+
+# ── GIF 12 — Incident Zero ──────────────────────────────────────────────────
+
+def gif_incident_zero(page):
+    print("Capturing incident-zero.gif ...")
+    frames = []
+    page.goto(f"{BASE_URL}/incident-zero", wait_until="networkidle")
+    page.wait_for_timeout(600)
+    for _ in range(4):
+        frames.append(shot(page))
+        page.wait_for_timeout(150)
+    scroll_page(page, frames, 0, 1200, 80, 80)
+    save_gif(frames, "incident-zero.gif", fps=5)
+
+
+# ── main ─────────────────────────────────────────────────────────────────────
 
 def main():
     with sync_playwright() as p:
@@ -256,15 +318,17 @@ def main():
         page    = browser.new_context(viewport={"width": W, "height": H}).new_page()
 
         gif_dashboard(page)
-        gif_dependencies(page)
-        gif_blast_radius(page)
-        gif_incident_trends(page)
+        gif_favorites(page)
+        gif_view_central(page)
+        gif_product_catalog(page)
         gif_applications(page)
+        gif_blast_radius(page)
         gif_customer_journey(page)
-        gif_incident_item(page)
-        gif_slo_corrector(page)
+        gif_slo_agent(page)
         gif_announcements(page)
         gif_links(page)
+        gif_dark_light(page)
+        gif_incident_zero(page)
 
         browser.close()
 

@@ -1,13 +1,25 @@
-import { useState } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import {
-  Container, Typography, Box, Card, CardContent,
-  Chip, Divider, ToggleButtonGroup, ToggleButton, Avatar,
+  Container, Typography, Box, Card, CardContent, Chip, Divider,
+  ToggleButtonGroup, ToggleButton, Avatar, TextField, InputAdornment,
+  Button, IconButton, Tooltip, Dialog, DialogTitle, DialogContent,
+  DialogActions, MenuItem, Select, FormControl, InputLabel, Stack,
+  Switch, FormControlLabel, Snackbar, Alert,
 } from '@mui/material'
 import CampaignIcon       from '@mui/icons-material/Campaign'
 import BuildIcon          from '@mui/icons-material/Build'
 import SecurityIcon       from '@mui/icons-material/Security'
 import InfoIcon           from '@mui/icons-material/Info'
 import WarningAmberIcon   from '@mui/icons-material/WarningAmber'
+import SearchIcon         from '@mui/icons-material/Search'
+import AddIcon            from '@mui/icons-material/Add'
+import EditIcon           from '@mui/icons-material/Edit'
+import DeleteIcon         from '@mui/icons-material/Delete'
+import CheckCircleIcon    from '@mui/icons-material/CheckCircle'
+import RefreshIcon        from '@mui/icons-material/Refresh'
+import PushPinIcon        from '@mui/icons-material/PushPin'
+
+const API = 'http://localhost:8080'
 
 const TYPE_META = {
   maintenance: { color: '#60a5fa', Icon: BuildIcon,        label: 'Maintenance'  },
@@ -17,107 +29,331 @@ const TYPE_META = {
   info:        { color: '#34d399', Icon: InfoIcon,         label: 'Info'         },
 }
 
-const ANNOUNCEMENTS = [
-  {
-    id: 1, type: 'incident', pinned: true,
-    title: 'Active: Payment Gateway & Email Service Degradation',
-    body: 'Two critical services are currently experiencing degraded performance. Payment Gateway API (SEAL-88451) has a database connection pool issue. Email Notification Service (SEAL-86001) has SMTP connectivity loss. Both teams are actively working on resolution. ETA: 2h.',
-    author: 'Platform NOC',
-    date: '2026-02-25 09:45 UTC',
-    tags: ['P1', 'Active'],
-  },
-  {
-    id: 2, type: 'maintenance', pinned: true,
-    title: 'Scheduled Maintenance: POSTGRES-DB-PRIMARY — 2026-02-26 02:00–04:00 UTC',
-    body: 'Planned maintenance window for the primary PostgreSQL cluster. This includes connection pool reconfiguration (50→150 connections) and application of security patch PSQ-2024-119. Services PAYMENT GATEWAY API and IPBOL applications will have read-only access during this window. Write operations will be queued.',
-    author: 'Database Team',
-    date: '2026-02-25 08:00 UTC',
-    tags: ['Planned', 'DB'],
-  },
-  {
-    id: 3, type: 'security',
-    title: 'Action Required: Rotate SMTP Credentials by 2026-03-01',
-    body: 'Following the Email Notification Service incident, the Security team has identified that secondary SMTP credentials were last rotated 18 months ago, exceeding our 90-day rotation policy. All teams using external SMTP providers must rotate credentials by 2026-03-01. Runbook: https://wiki/smtp-rotation.',
-    author: 'Security Team',
-    date: '2026-02-25 10:30 UTC',
-    tags: ['Action Required'],
-  },
-  {
-    id: 4, type: 'general',
-    title: 'Post-Incident Review: MERIDIAN SERVICE-QUERY V1 Latency — 2026-02-24',
-    body: 'PIR scheduled for 2026-02-26 14:00 UTC. Root cause: missing compound index on doc_domain.account_ref column introduced in migration 2024-218. Fix deployed. Contributing factor: no automated index coverage check in CI pipeline. Action items to be discussed in PIR.',
-    author: 'Trading Engineering',
-    date: '2026-02-25 07:00 UTC',
-    tags: ['PIR', 'Resolved'],
-  },
-  {
-    id: 5, type: 'info',
-    title: 'New Feature: Blast Radius View in Knowledge Graph',
-    body: 'The Knowledge Graph explorer now supports Blast Radius mode. Select any service and toggle to "Blast Radius" to instantly visualise all upstream services that depend on it. Useful for assessing incident impact scope before initiating changes.',
-    author: 'Platform Tools Team',
-    date: '2026-02-24 16:00 UTC',
-    tags: ['New Feature'],
-  },
-  {
-    id: 6, type: 'maintenance',
-    title: 'Completed: API-GATEWAY TLS Certificate Renewal',
-    body: 'TLS certificates for API-GATEWAY (SEAL-70001) were renewed without service interruption on 2026-02-24. New certificate expiry: 2027-02-24. No action required from application teams.',
-    author: 'Platform NOC',
-    date: '2026-02-24 11:00 UTC',
-    tags: ['Completed'],
-  },
-  {
-    id: 7, type: 'info',
-    title: 'Reminder: SLO Review Meeting — 2026-02-27 10:00 UTC',
-    body: 'Quarterly SLO review for all platform services. Please review your team\'s current SLO performance in the SLO Corrector dashboard before the meeting. Agenda: Q1 2026 SLO retrospective, error budget policy updates, and new target proposals for H1 2026.',
-    author: 'Platform Engineering',
-    date: '2026-02-23 09:00 UTC',
-    tags: ['Meeting'],
-  },
-]
+const EMPTY_FORM = {
+  type: 'general',
+  title: '',
+  body: '',
+  author: '',
+  tags: '',
+  pinned: false,
+}
 
 export default function Announcements() {
-  const [filter, setFilter] = useState('all')
+  const [data, setData]             = useState([])
+  const [filter, setFilter]         = useState('all')
+  const [search, setSearch]         = useState('')
+  const [showClosed, setShowClosed] = useState(false)
+  const [loading, setLoading]       = useState(false)
+  const [dialogOpen, setDialogOpen] = useState(false)
+  const [editingId, setEditingId]   = useState(null)
+  const [form, setForm]             = useState(EMPTY_FORM)
+  const [snack, setSnack]           = useState({ open: false, msg: '', severity: 'success' })
 
-  const visible = filter === 'all' ? ANNOUNCEMENTS : ANNOUNCEMENTS.filter(a => a.type === filter)
-  const pinned   = visible.filter(a => a.pinned)
-  const rest     = visible.filter(a => !a.pinned)
+  const fetchData = useCallback(async () => {
+    setLoading(true)
+    try {
+      const res = await fetch(`${API}/api/announcements`)
+      const json = await res.json()
+      setData(json)
+    } catch { /* ignore */ }
+    setLoading(false)
+  }, [])
+
+  useEffect(() => { fetchData() }, [fetchData])
+
+  // Auto-refresh every 30s
+  useEffect(() => {
+    const interval = setInterval(fetchData, 30000)
+    return () => clearInterval(interval)
+  }, [fetchData])
+
+  const notify = (msg, severity = 'success') => setSnack({ open: true, msg, severity })
+
+  // ── Filters ──
+  const visible = data
+    .filter(a => showClosed ? true : a.status === 'open')
+    .filter(a => filter === 'all' || a.type === filter)
+    .filter(a => {
+      if (!search) return true
+      const q = search.toLowerCase()
+      return a.title.toLowerCase().includes(q)
+        || a.body.toLowerCase().includes(q)
+        || a.author.toLowerCase().includes(q)
+    })
+
+  const pinned = visible.filter(a => a.pinned)
+  const rest   = visible.filter(a => !a.pinned)
+
+  // ── CRUD handlers ──
+  const openCreate = () => {
+    setEditingId(null)
+    setForm(EMPTY_FORM)
+    setDialogOpen(true)
+  }
+
+  const openEdit = (a) => {
+    setEditingId(a.id)
+    setForm({
+      type: a.type,
+      title: a.title,
+      body: a.body,
+      author: a.author,
+      tags: a.tags.join(', '),
+      pinned: a.pinned,
+    })
+    setDialogOpen(true)
+  }
+
+  const handleSave = async () => {
+    const tags = form.tags.split(',').map(t => t.trim()).filter(Boolean)
+    const payload = { ...form, tags }
+
+    try {
+      if (editingId) {
+        await fetch(`${API}/api/announcements/${editingId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        })
+        notify('Announcement updated')
+      } else {
+        await fetch(`${API}/api/announcements`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        })
+        notify('Announcement created')
+      }
+      setDialogOpen(false)
+      fetchData()
+    } catch {
+      notify('Failed to save', 'error')
+    }
+  }
+
+  const handleToggleStatus = async (id) => {
+    try {
+      await fetch(`${API}/api/announcements/${id}/status`, { method: 'PATCH' })
+      fetchData()
+    } catch {
+      notify('Failed to toggle status', 'error')
+    }
+  }
+
+  const handleDelete = async (id) => {
+    try {
+      await fetch(`${API}/api/announcements/${id}`, { method: 'DELETE' })
+      notify('Announcement deleted')
+      fetchData()
+    } catch {
+      notify('Failed to delete', 'error')
+    }
+  }
+
+  const openCount  = data.filter(a => a.status === 'open').length
+  const closedCount = data.filter(a => a.status === 'closed').length
 
   return (
     <Container maxWidth="lg" sx={{ py: 3 }}>
-      <Box sx={{ mb: 3 }}>
-        <Typography variant="h5" fontWeight={700} gutterBottom>Announcements</Typography>
-        <Typography variant="body2" color="text.secondary">Platform updates, scheduled maintenance, and incident communications</Typography>
+      {/* Header */}
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2.5 }}>
+        <Box>
+          <Typography variant="h5" fontWeight={700} gutterBottom>Announcements</Typography>
+          <Typography variant="body2" color="text.secondary">
+            Platform updates, scheduled maintenance, and incident communications
+          </Typography>
+        </Box>
+        <Stack direction="row" spacing={1}>
+          <Tooltip title="Refresh">
+            <IconButton onClick={fetchData} size="small" sx={{ color: 'text.secondary' }}>
+              <RefreshIcon sx={{ fontSize: 20 }} />
+            </IconButton>
+          </Tooltip>
+          <Button
+            variant="contained"
+            size="small"
+            startIcon={<AddIcon />}
+            onClick={openCreate}
+            sx={{ textTransform: 'none', fontSize: '0.82rem' }}
+          >
+            New
+          </Button>
+        </Stack>
       </Box>
 
-      <ToggleButtonGroup value={filter} exclusive onChange={(_, v) => v && setFilter(v)} size="small" sx={{ mb: 3 }}>
-        <ToggleButton value="all" sx={{ textTransform: 'none', fontSize: '0.78rem', px: 1.5 }}>All</ToggleButton>
-        {Object.entries(TYPE_META).map(([key, { label }]) => (
-          <ToggleButton key={key} value={key} sx={{ textTransform: 'none', fontSize: '0.78rem', px: 1.5 }}>{label}</ToggleButton>
-        ))}
-      </ToggleButtonGroup>
+      {/* Search + Filters */}
+      <Box sx={{ display: 'flex', gap: 2, mb: 2.5, flexWrap: 'wrap', alignItems: 'center' }}>
+        <TextField
+          placeholder="Search announcements..."
+          size="small"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          InputProps={{
+            startAdornment: (
+              <InputAdornment position="start">
+                <SearchIcon sx={{ fontSize: 18, color: 'text.secondary' }} />
+              </InputAdornment>
+            ),
+          }}
+          sx={{ minWidth: 260, '& .MuiInputBase-input': { fontSize: '0.82rem' } }}
+        />
 
+        <ToggleButtonGroup value={filter} exclusive onChange={(_, v) => v && setFilter(v)} size="small">
+          <ToggleButton value="all" sx={{ textTransform: 'none', fontSize: '0.78rem', px: 1.5 }}>All</ToggleButton>
+          {Object.entries(TYPE_META).map(([key, { label }]) => (
+            <ToggleButton key={key} value={key} sx={{ textTransform: 'none', fontSize: '0.78rem', px: 1.5 }}>{label}</ToggleButton>
+          ))}
+        </ToggleButtonGroup>
+
+        <FormControlLabel
+          control={<Switch size="small" checked={showClosed} onChange={(e) => setShowClosed(e.target.checked)} />}
+          label={
+            <Typography variant="caption" sx={{ fontSize: '0.78rem' }}>
+              Show closed ({closedCount})
+            </Typography>
+          }
+          sx={{ ml: 'auto' }}
+        />
+      </Box>
+
+      {/* Count */}
+      <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 2, fontSize: '0.72rem' }}>
+        Showing {visible.length} of {data.length} announcements · {openCount} open · {closedCount} closed
+        {loading && ' · Refreshing...'}
+      </Typography>
+
+      {/* Pinned section */}
       {pinned.length > 0 && (
         <Box sx={{ mb: 3 }}>
-          <Typography variant="caption" sx={{ textTransform: 'uppercase', letterSpacing: 0.8, fontSize: '0.68rem', color: 'text.secondary', display: 'block', mb: 1.5 }}>Pinned</Typography>
-          {pinned.map(a => <AnnouncementCard key={a.id} a={a} />)}
+          <Typography variant="caption" sx={{ textTransform: 'uppercase', letterSpacing: 0.8, fontSize: '0.68rem', color: 'text.secondary', display: 'block', mb: 1.5 }}>
+            Pinned
+          </Typography>
+          {pinned.map(a => (
+            <AnnouncementCard key={a.id} a={a} onEdit={openEdit} onToggle={handleToggleStatus} onDelete={handleDelete} />
+          ))}
         </Box>
       )}
 
+      {/* Rest */}
       {rest.length > 0 && (
         <Box>
-          {pinned.length > 0 && <Typography variant="caption" sx={{ textTransform: 'uppercase', letterSpacing: 0.8, fontSize: '0.68rem', color: 'text.secondary', display: 'block', mb: 1.5 }}>Recent</Typography>}
-          {rest.map(a => <AnnouncementCard key={a.id} a={a} />)}
+          {pinned.length > 0 && (
+            <Typography variant="caption" sx={{ textTransform: 'uppercase', letterSpacing: 0.8, fontSize: '0.68rem', color: 'text.secondary', display: 'block', mb: 1.5 }}>
+              Recent
+            </Typography>
+          )}
+          {rest.map(a => (
+            <AnnouncementCard key={a.id} a={a} onEdit={openEdit} onToggle={handleToggleStatus} onDelete={handleDelete} />
+          ))}
         </Box>
       )}
+
+      {visible.length === 0 && (
+        <Box sx={{ textAlign: 'center', mt: 8, color: 'text.secondary' }}>
+          <CampaignIcon sx={{ fontSize: 48, mb: 1, opacity: 0.4 }} />
+          <Typography variant="body2">No announcements match your filters.</Typography>
+        </Box>
+      )}
+
+      {/* Create / Edit Dialog */}
+      <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)} maxWidth="sm" fullWidth>
+        <DialogTitle sx={{ fontSize: '1rem', fontWeight: 700 }}>
+          {editingId ? 'Edit Announcement' : 'New Announcement'}
+        </DialogTitle>
+        <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: '16px !important' }}>
+          <FormControl size="small" fullWidth>
+            <InputLabel sx={{ fontSize: '0.82rem' }}>Type</InputLabel>
+            <Select
+              value={form.type}
+              label="Type"
+              onChange={(e) => setForm(f => ({ ...f, type: e.target.value }))}
+              sx={{ fontSize: '0.82rem' }}
+            >
+              {Object.entries(TYPE_META).map(([key, { label }]) => (
+                <MenuItem key={key} value={key} sx={{ fontSize: '0.82rem' }}>{label}</MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+          <TextField
+            label="Title"
+            size="small"
+            fullWidth
+            value={form.title}
+            onChange={(e) => setForm(f => ({ ...f, title: e.target.value }))}
+            InputProps={{ sx: { fontSize: '0.82rem' } }}
+            InputLabelProps={{ sx: { fontSize: '0.82rem' } }}
+          />
+          <TextField
+            label="Body"
+            size="small"
+            fullWidth
+            multiline
+            rows={4}
+            value={form.body}
+            onChange={(e) => setForm(f => ({ ...f, body: e.target.value }))}
+            InputProps={{ sx: { fontSize: '0.82rem' } }}
+            InputLabelProps={{ sx: { fontSize: '0.82rem' } }}
+          />
+          <TextField
+            label="Author"
+            size="small"
+            fullWidth
+            value={form.author}
+            onChange={(e) => setForm(f => ({ ...f, author: e.target.value }))}
+            InputProps={{ sx: { fontSize: '0.82rem' } }}
+            InputLabelProps={{ sx: { fontSize: '0.82rem' } }}
+          />
+          <TextField
+            label="Tags (comma-separated)"
+            size="small"
+            fullWidth
+            value={form.tags}
+            onChange={(e) => setForm(f => ({ ...f, tags: e.target.value }))}
+            InputProps={{ sx: { fontSize: '0.82rem' } }}
+            InputLabelProps={{ sx: { fontSize: '0.82rem' } }}
+          />
+          <FormControlLabel
+            control={<Switch size="small" checked={form.pinned} onChange={(e) => setForm(f => ({ ...f, pinned: e.target.checked }))} />}
+            label={<Typography variant="body2" sx={{ fontSize: '0.82rem' }}>Pin to top</Typography>}
+          />
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2 }}>
+          <Button onClick={() => setDialogOpen(false)} size="small" sx={{ textTransform: 'none', fontSize: '0.82rem' }}>Cancel</Button>
+          <Button
+            onClick={handleSave}
+            variant="contained"
+            size="small"
+            disabled={!form.title.trim() || !form.body.trim()}
+            sx={{ textTransform: 'none', fontSize: '0.82rem' }}
+          >
+            {editingId ? 'Save Changes' : 'Create'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Snackbar */}
+      <Snackbar
+        open={snack.open}
+        autoHideDuration={3000}
+        onClose={() => setSnack(s => ({ ...s, open: false }))}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert severity={snack.severity} variant="filled" sx={{ fontSize: '0.82rem' }}>
+          {snack.msg}
+        </Alert>
+      </Snackbar>
     </Container>
   )
 }
 
-function AnnouncementCard({ a }) {
-  const { color, Icon, label } = TYPE_META[a.type]
+
+function AnnouncementCard({ a, onEdit, onToggle, onDelete }) {
+  const meta = TYPE_META[a.type] || TYPE_META.general
+  const { color, Icon } = meta
+  const isClosed = a.status === 'closed'
+
   return (
-    <Card sx={{ mb: 1.5, borderLeft: `3px solid ${color}` }}>
+    <Card sx={{ mb: 1.5, borderLeft: `3px solid ${color}`, opacity: isClosed ? 0.6 : 1 }}>
       <CardContent>
         <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'flex-start' }}>
           <Avatar sx={{ bgcolor: `${color}22`, width: 34, height: 34, flexShrink: 0, mt: 0.25 }}>
@@ -125,16 +361,44 @@ function AnnouncementCard({ a }) {
           </Avatar>
           <Box sx={{ flex: 1, minWidth: 0 }}>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 0.5, gap: 1 }}>
-              <Typography variant="body2" fontWeight={700} sx={{ lineHeight: 1.3 }}>{a.title}</Typography>
-              <Box sx={{ display: 'flex', gap: 0.5, flexShrink: 0 }}>
-                {a.tags.map(t => <Chip key={t} label={t} size="small" sx={{ height: 18, fontSize: '0.6rem' }} variant="outlined" />)}
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, minWidth: 0 }}>
+                <Typography variant="body2" fontWeight={700} sx={{ lineHeight: 1.3 }}>
+                  {a.title}
+                </Typography>
+                {a.pinned && <PushPinIcon sx={{ fontSize: 13, color: 'text.secondary', flexShrink: 0 }} />}
+                {isClosed && (
+                  <Chip label="CLOSED" size="small"
+                    sx={{ height: 16, fontSize: '0.58rem', bgcolor: 'rgba(148,163,184,0.2)', color: '#94a3b8', fontWeight: 700 }} />
+                )}
+              </Box>
+              <Box sx={{ display: 'flex', gap: 0.5, flexShrink: 0, alignItems: 'center' }}>
+                {a.tags.map(t => <Chip key={t} label={t} size="small" sx={{ height: 18, fontSize: '0.62rem' }} variant="outlined" />)}
               </Box>
             </Box>
             <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.6, mb: 1 }}>{a.body}</Typography>
-            <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center' }}>
-              <Typography variant="caption" color="text.secondary">{a.author}</Typography>
-              <Typography variant="caption" color="text.secondary">·</Typography>
-              <Typography variant="caption" color="text.secondary">{a.date}</Typography>
+            <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center', justifyContent: 'space-between' }}>
+              <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center' }}>
+                <Typography variant="caption" color="text.secondary">{a.author}</Typography>
+                <Typography variant="caption" color="text.secondary">·</Typography>
+                <Typography variant="caption" color="text.secondary">{a.date}</Typography>
+              </Box>
+              <Stack direction="row" spacing={0}>
+                <Tooltip title={isClosed ? 'Reopen' : 'Close'}>
+                  <IconButton size="small" onClick={() => onToggle(a.id)} sx={{ color: 'text.secondary' }}>
+                    <CheckCircleIcon sx={{ fontSize: 16, color: isClosed ? '#4caf50' : 'text.disabled' }} />
+                  </IconButton>
+                </Tooltip>
+                <Tooltip title="Edit">
+                  <IconButton size="small" onClick={() => onEdit(a)} sx={{ color: 'text.secondary' }}>
+                    <EditIcon sx={{ fontSize: 15 }} />
+                  </IconButton>
+                </Tooltip>
+                <Tooltip title="Delete">
+                  <IconButton size="small" onClick={() => onDelete(a.id)} sx={{ color: 'text.secondary', '&:hover': { color: 'error.main' } }}>
+                    <DeleteIcon sx={{ fontSize: 15 }} />
+                  </IconButton>
+                </Tooltip>
+              </Stack>
             </Box>
           </Box>
         </Box>

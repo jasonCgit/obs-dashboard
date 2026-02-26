@@ -10,7 +10,10 @@ export default function AIHealthPanel({ data }) {
         mb: 2,
         // Gradient border trick
         border: '2px solid transparent',
-        backgroundImage: 'linear-gradient(#111827, #111827), linear-gradient(135deg, #7c3aed, #1565C0)',
+        backgroundImage: (t) => {
+          const bg = t.palette.background.paper
+          return `linear-gradient(${bg}, ${bg}), linear-gradient(135deg, #7c3aed, #1565C0)`
+        },
         backgroundOrigin: 'border-box',
         backgroundClip: 'padding-box, border-box',
       }}

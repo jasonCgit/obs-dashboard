@@ -99,7 +99,7 @@ export default function CustomerJourney() {
                 </CardContent>
               </Card>
               {i < steps.length - 1 && (
-                <ArrowForwardIcon sx={{ fontSize: 16, color: 'rgba(255,255,255,0.2)', mx: 0.5, flexShrink: 0 }} />
+                <ArrowForwardIcon sx={{ fontSize: 16, color: 'text.disabled', mx: 0.5, flexShrink: 0 }} />
               )}
             </Box>
           )
@@ -117,7 +117,7 @@ export default function CustomerJourney() {
             <LinearProgress
               variant="determinate"
               value={Math.max(0, 100 - parseFloat(step.errorRate))}
-              sx={{ height: 6, borderRadius: 3, bgcolor: 'rgba(255,255,255,0.07)', '& .MuiLinearProgress-bar': { bgcolor: STATUS_COLOR[step.status], borderRadius: 3 } }}
+              sx={{ height: 6, borderRadius: 3, bgcolor: (t) => t.palette.mode === 'dark' ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.08)', '& .MuiLinearProgress-bar': { bgcolor: STATUS_COLOR[step.status], borderRadius: 3 } }}
             />
           </Grid>
         ))}

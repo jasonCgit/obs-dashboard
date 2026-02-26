@@ -12,6 +12,8 @@ import {
 } from '@xyflow/react'
 import '@xyflow/react/dist/style.css'
 import { Box, Typography } from '@mui/material'
+import { useTheme } from '@mui/material/styles'
+import dagre from '@dagrejs/dagre'
 
 // ── Status color map ──────────────────────────────────────────────────────────
 const STATUS = {
@@ -24,24 +26,26 @@ const defaultStatus = { border: '#64748b', text: '#64748b', bg: 'rgba(100,116,13
 // ── Custom node: root (selected service) ─────────────────────────────────────
 const RootNode = memo(({ data, selected }) => {
   const s = STATUS[data.status] || defaultStatus
+  const theme = useTheme()
+  const isDark = theme.palette.mode === 'dark'
   return (
     <Box sx={{
-      bgcolor: '#1e293b',
+      bgcolor: isDark ? '#1e293b' : '#e2e8f0',
       border: `2.5px solid ${s.border}`,
       borderRadius: 2,
       px: 2, py: 1.5,
-      minWidth: 170,
-      maxWidth: 230,
-      boxShadow: selected ? `0 0 14px ${s.border}60` : 'none',
+      minWidth: 180,
+      maxWidth: 240,
+      boxShadow: selected ? `0 0 14px ${s.border}60` : `0 2px 8px rgba(0,0,0,0.15)`,
       cursor: 'pointer',
     }}>
-      <Handle type="target" position={Position.Left}  style={{ background: s.border }} />
-      <Handle type="source" position={Position.Right} style={{ background: s.border }} />
-      <Typography sx={{ fontSize: '0.6rem', color: s.text, fontWeight: 700,
+      <Handle type="target" position={Position.Left}  style={{ background: s.border, width: 6, height: 6 }} />
+      <Handle type="source" position={Position.Right} style={{ background: s.border, width: 6, height: 6 }} />
+      <Typography sx={{ fontSize: '0.62rem', color: s.text, fontWeight: 700,
         textTransform: 'uppercase', letterSpacing: 0.8, mb: 0.25 }}>
         ROOT · {data.status}
       </Typography>
-      <Typography sx={{ fontSize: '0.78rem', fontWeight: 700, color: 'white',
+      <Typography sx={{ fontSize: '0.8rem', fontWeight: 700, color: isDark ? 'white' : '#0f172a',
         wordBreak: 'break-word', lineHeight: 1.3 }}>
         {data.label}
       </Typography>
@@ -52,21 +56,24 @@ const RootNode = memo(({ data, selected }) => {
 // ── Custom node: service (dependency or impacted node) ───────────────────────
 const ServiceNode = memo(({ data, selected }) => {
   const s = STATUS[data.status] || defaultStatus
+  const theme = useTheme()
+  const isDark = theme.palette.mode === 'dark'
   return (
     <Box sx={{
       bgcolor: s.bg,
       border: `1.5px solid ${s.border}`,
       borderRadius: 1.5,
       px: 1.5, py: 1,
-      minWidth: 155,
+      minWidth: 160,
       maxWidth: 240,
-      opacity: selected ? 1 : 0.9,
+      opacity: selected ? 1 : 0.92,
       cursor: 'pointer',
       transition: 'box-shadow 0.15s',
+      boxShadow: '0 1px 4px rgba(0,0,0,0.1)',
       '&:hover': { boxShadow: `0 0 8px ${s.border}50` },
     }}>
-      <Handle type="target" position={Position.Left}  style={{ background: s.border }} />
-      <Handle type="source" position={Position.Right} style={{ background: s.border }} />
+      <Handle type="target" position={Position.Left}  style={{ background: s.border, width: 5, height: 5 }} />
+      <Handle type="source" position={Position.Right} style={{ background: s.border, width: 5, height: 5 }} />
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, mb: 0.25 }}>
         <Box sx={{ width: 7, height: 7, borderRadius: '50%', bgcolor: s.border, flexShrink: 0 }} />
         <Typography sx={{ fontSize: '0.62rem', color: s.text, fontWeight: 600,
@@ -74,7 +81,8 @@ const ServiceNode = memo(({ data, selected }) => {
           {data.status}
         </Typography>
       </Box>
-      <Typography sx={{ fontSize: '0.76rem', color: 'white', wordBreak: 'break-word', lineHeight: 1.3 }}>
+      <Typography sx={{ fontSize: '0.76rem', color: isDark ? 'white' : '#0f172a',
+        wordBreak: 'break-word', lineHeight: 1.3 }}>
         {data.label}
       </Typography>
     </Box>
@@ -84,45 +92,85 @@ const ServiceNode = memo(({ data, selected }) => {
 // MUST be at module scope — never inside a React component
 const nodeTypes = { root: RootNode, service: ServiceNode }
 
-// ── Fan layout algorithm ──────────────────────────────────────────────────────
+// ── Dagre-based hierarchical layout ─────────────────────────────────────────
 function buildGraphElements(apiData, mode) {
   if (!apiData) return { nodes: [], edges: [] }
 
   const { root, dependencies, impacted, edges: apiEdges } = apiData
   const serviceList = mode === 'dependencies' ? (dependencies || []) : (impacted || [])
-  const count = serviceList.length
 
-  const totalHeight = Math.max(count * 70, 200)
-  const startY      = 400 - totalHeight / 2
-  const nodeStep    = count > 1 ? totalHeight / (count - 1) : 0
+  // Build node map for quick lookup
+  const allNodeMap = {}
+  allNodeMap[root.id] = root
+  serviceList.forEach(s => { allNodeMap[s.id] = s })
 
-  const rootX    = mode === 'dependencies' ? 80  : 620
-  const serviceX = mode === 'dependencies' ? 620 : 80
+  // Filter edges to only include nodes in our set
+  const validEdges = (apiEdges || []).filter(
+    e => e.source in allNodeMap && e.target in allNodeMap
+  )
 
+  // Create dagre graph
+  const g = new dagre.graphlib.Graph()
+  g.setDefaultEdgeLabel(() => ({}))
+  g.setGraph({
+    rankdir: 'LR',
+    nodesep: 55,
+    ranksep: 220,
+    marginx: 60,
+    marginy: 40,
+    ranker: 'network-simplex',
+  })
+
+  // Add root node (slightly larger)
+  g.setNode(root.id, { width: 210, height: 62 })
+
+  // Add service nodes
+  serviceList.forEach(svc => {
+    g.setNode(svc.id, { width: 190, height: 50 })
+  })
+
+  // Add edges
+  validEdges.forEach(e => {
+    g.setEdge(e.source, e.target)
+  })
+
+  // Run dagre layout
+  dagre.layout(g)
+
+  // Build ReactFlow nodes from dagre positions
   const rfNodes = [
     {
-      id:   root.id,
+      id: root.id,
       type: 'root',
-      position: { x: rootX, y: 400 - 32 },
+      position: {
+        x: g.node(root.id).x - 105,
+        y: g.node(root.id).y - 31,
+      },
       data: { ...root },
     },
-    ...serviceList.map((svc, i) => ({
-      id:   svc.id,
-      type: 'service',
-      position: {
-        x: serviceX,
-        y: count === 1 ? 400 - 25 : startY + i * nodeStep,
-      },
-      data: { ...svc },
-    })),
+    ...serviceList.map(svc => {
+      const pos = g.node(svc.id)
+      return {
+        id: svc.id,
+        type: 'service',
+        position: {
+          x: pos.x - 95,
+          y: pos.y - 25,
+        },
+        data: { ...svc },
+      }
+    }),
   ]
 
-  const rfEdges = (apiEdges || []).map((e) => ({
+  // Build edges with theme-aware styling
+  const rfEdges = validEdges.map((e) => ({
     id:     `e-${e.source}-${e.target}`,
     source: e.source,
     target: e.target,
     type:   'smoothstep',
-    style:  { stroke: '#334155', strokeWidth: 1.5 },
+    pathOptions: { borderRadius: 16 },
+    style:  { stroke: '#64748b', strokeWidth: 1.4 },
+    animated: false,
   }))
 
   return { nodes: rfNodes, edges: rfEdges }
@@ -132,6 +180,8 @@ function buildGraphElements(apiData, mode) {
 export default function DependencyFlow({ apiData, mode, onNodeSelect }) {
   const [nodes, setNodes, onNodesChange] = useNodesState([])
   const [edges, setEdges, onEdgesChange] = useEdgesState([])
+  const theme = useTheme()
+  const isDark = theme.palette.mode === 'dark'
 
   useEffect(() => {
     const { nodes: rfNodes, edges: rfEdges } = buildGraphElements(apiData, mode)
@@ -143,8 +193,15 @@ export default function DependencyFlow({ apiData, mode, onNodeSelect }) {
     onNodeSelect?.(node.data)
   }, [onNodeSelect])
 
+  const bgColor     = isDark ? '#0a0e1a' : '#f1f5f9'
+  const dotColor    = isDark ? '#1e293b' : '#cbd5e1'
+  const ctrlBg      = isDark ? '#111827' : '#ffffff'
+  const ctrlBorder  = isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.15)'
+  const miniMapBg   = isDark ? '#111827' : '#ffffff'
+  const miniMapMask = isDark ? 'rgba(0,0,0,0.5)' : 'rgba(0,0,0,0.15)'
+
   return (
-    <Box sx={{ width: '100%', height: '100%' }}>
+    <Box sx={{ width: '100%', height: '100%', bgcolor: bgColor }}>
       <ReactFlow
         nodes={nodes}
         edges={edges}
@@ -153,16 +210,16 @@ export default function DependencyFlow({ apiData, mode, onNodeSelect }) {
         onNodeClick={onNodeClick}
         nodeTypes={nodeTypes}
         fitView
-        fitViewOptions={{ padding: 0.25 }}
-        minZoom={0.2}
+        fitViewOptions={{ padding: 0.2 }}
+        minZoom={0.15}
         maxZoom={2.5}
         proOptions={{ hideAttribution: true }}
       >
-        <Background variant={BackgroundVariant.Dots} color="#1e293b" gap={22} size={1.2} />
+        <Background variant={BackgroundVariant.Dots} color={dotColor} gap={22} size={1.2} />
         <Controls
           style={{
-            background: '#111827',
-            border: '1px solid rgba(255,255,255,0.1)',
+            background: ctrlBg,
+            border: `1px solid ${ctrlBorder}`,
             borderRadius: 6,
           }}
         />
@@ -172,11 +229,11 @@ export default function DependencyFlow({ apiData, mode, onNodeSelect }) {
             return s === 'critical' ? '#f44336' : s === 'warning' ? '#ff9800' : '#4caf50'
           }}
           style={{
-            background: '#111827',
-            border: '1px solid rgba(255,255,255,0.1)',
+            background: miniMapBg,
+            border: `1px solid ${ctrlBorder}`,
             borderRadius: 6,
           }}
-          maskColor="rgba(0,0,0,0.5)"
+          maskColor={miniMapMask}
         />
       </ReactFlow>
     </Box>

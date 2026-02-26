@@ -127,18 +127,18 @@ export default function Links() {
                   </Box>
                   {cat.links.map((link, i) => (
                     <Box key={link.label}>
-                      {i > 0 && <Box sx={{ height: 1, bgcolor: 'rgba(255,255,255,0.05)', my: 0.75 }} />}
+                      {i > 0 && <Box sx={{ height: 1, bgcolor: 'divider', my: 0.75 }} />}
                       <CardActionArea
                         sx={{ borderRadius: 1, px: 0.75, py: 0.5, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1 }}
                       >
                         <Box sx={{ minWidth: 0 }}>
                           <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
                             <Typography variant="body2" fontWeight={600} sx={{ fontSize: '0.82rem' }}>{link.label}</Typography>
-                            {link.tag && <Chip label={link.tag} size="small" sx={{ height: 14, fontSize: '0.56rem', bgcolor: `${cat.color}22`, color: cat.color }} />}
+                            {link.tag && <Chip label={link.tag} size="small" sx={{ height: 16, fontSize: '0.6rem', bgcolor: `${cat.color}22`, color: cat.color }} />}
                           </Box>
                           <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.7rem', display: 'block' }}>{link.desc}</Typography>
                         </Box>
-                        <OpenInNewIcon sx={{ fontSize: 13, color: 'rgba(255,255,255,0.2)', flexShrink: 0 }} />
+                        <OpenInNewIcon sx={{ fontSize: 13, color: 'text.disabled', flexShrink: 0 }} />
                       </CardActionArea>
                     </Box>
                   ))}

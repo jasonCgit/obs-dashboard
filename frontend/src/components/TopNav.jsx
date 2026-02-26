@@ -1,22 +1,34 @@
-import { useState } from 'react'
+import { useState, useRef, useCallback } from 'react'
 import {
   AppBar, Toolbar, Box, Typography, Button, InputBase,
   Chip, Stack, IconButton, Menu, MenuItem, Tooltip,
+  Avatar, Divider, ListItemIcon, ListItemText,
 } from '@mui/material'
-import SearchIcon from '@mui/icons-material/Search'
-import AddIcon    from '@mui/icons-material/Add'
-import CloseIcon  from '@mui/icons-material/Close'
+import { useTheme } from '@mui/material/styles'
+import SearchIcon    from '@mui/icons-material/Search'
+import AddIcon       from '@mui/icons-material/Add'
+import CloseIcon     from '@mui/icons-material/Close'
+import LightModeIcon from '@mui/icons-material/LightMode'
+import DarkModeIcon  from '@mui/icons-material/DarkMode'
+import PersonIcon    from '@mui/icons-material/Person'
+import SettingsIcon  from '@mui/icons-material/Settings'
+import LogoutIcon    from '@mui/icons-material/Logout'
+import ManageAccountsIcon from '@mui/icons-material/ManageAccounts'
 import { useNavigate, useLocation } from 'react-router-dom'
+import { useAppTheme } from '../ThemeContext'
+import { BrochureButton } from './BrochureModal'
 
 const ALL_TABS = [
-  { label: 'Home',             path: '/' },
-  { label: 'Applications',     path: '/applications' },
-  { label: 'Views',            path: '/views' },
-  { label: 'Customer Journey', path: '/customer-journey' },
-  { label: 'Incident Item',    path: '/incident-item' },
-  { label: 'SLO Corrector',    path: '/slo-corrector', beta: true },
-  { label: 'Announcements',    path: '/announcements' },
-  { label: 'Links',            path: '/links' },
+  { label: 'Home',              path: '/' },
+  { label: 'Favorites',         path: '/favorites' },
+  { label: 'View Central',      path: '/view-central' },
+  { label: 'Product Catalog',   path: '/product-catalog' },
+  { label: 'Applications',      path: '/applications' },
+  { label: 'Blast Radius',      path: '/graph' },
+  { label: 'Customer Journeys', path: '/customer-journey' },
+  { label: 'SLO Agent',         path: '/slo-agent' },
+  { label: 'Announcements',     path: '/announcements' },
+  { label: 'Links',             path: '/links' },
 ]
 
 const STORAGE_KEY = 'obs-open-tabs'
@@ -38,6 +50,15 @@ export default function TopNav() {
   const { pathname }       = useLocation()
   const [openTabs, setOpenTabs] = useState(loadTabs)
   const [anchorEl, setAnchorEl] = useState(null)
+  const [profileAnchor, setProfileAnchor] = useState(null)
+  const { themeMode, toggleTheme } = useAppTheme()
+  const theme = useTheme()
+  const isDark = theme.palette.mode === 'dark'
+
+  // Drag-and-drop state
+  const [dragIdx, setDragIdx]     = useState(null)
+  const [dragOverIdx, setDragOverIdx] = useState(null)
+  const dragCounter = useRef(0)
 
   const availableToAdd = ALL_TABS.filter(t => !openTabs.includes(t.label))
 
@@ -46,6 +67,8 @@ export default function TopNav() {
     setOpenTabs(next)
     saveTabs(next)
     setAnchorEl(null)
+    const tab = ALL_TABS.find(t => t.label === label)
+    if (tab?.path) navigate(tab.path)
   }
 
   const removeTab = (label, e) => {
@@ -53,73 +76,143 @@ export default function TopNav() {
     const next = openTabs.filter(l => l !== label)
     setOpenTabs(next)
     saveTabs(next)
-    // if we removed the active tab, go home
     const tab = ALL_TABS.find(t => t.label === label)
     if (tab?.path && pathname === tab.path) navigate('/')
   }
 
-  const visibleTabs = ALL_TABS.filter(t => openTabs.includes(t.label))
+  // Preserve user's tab order from openTabs (not ALL_TABS order)
+  const visibleTabs = openTabs
+    .map(label => ALL_TABS.find(t => t.label === label))
+    .filter(Boolean)
+
+  // ── Drag-and-drop handlers ──
+  const handleDragStart = useCallback((e, idx) => {
+    if (idx === 0) { e.preventDefault(); return } // Home not draggable
+    setDragIdx(idx)
+    e.dataTransfer.effectAllowed = 'move'
+    e.dataTransfer.setData('text/plain', String(idx))
+  }, [])
+
+  const handleDragEnter = useCallback((e, idx) => {
+    e.preventDefault()
+    dragCounter.current++
+    if (idx !== 0) setDragOverIdx(idx)
+  }, [])
+
+  const handleDragLeave = useCallback(() => {
+    dragCounter.current--
+    if (dragCounter.current <= 0) {
+      setDragOverIdx(null)
+      dragCounter.current = 0
+    }
+  }, [])
+
+  const handleDragOver = useCallback((e, idx) => {
+    e.preventDefault()
+    e.dataTransfer.dropEffect = 'move'
+    if (idx !== 0) setDragOverIdx(idx)
+  }, [])
+
+  const handleDrop = useCallback((e, dropIdx) => {
+    e.preventDefault()
+    dragCounter.current = 0
+    if (dragIdx == null || dropIdx === 0 || dragIdx === dropIdx) {
+      setDragIdx(null)
+      setDragOverIdx(null)
+      return
+    }
+    const next = [...openTabs]
+    const [moved] = next.splice(dragIdx, 1)
+    next.splice(dropIdx, 0, moved)
+    setOpenTabs(next)
+    saveTabs(next)
+    setDragIdx(null)
+    setDragOverIdx(null)
+  }, [dragIdx, openTabs])
+
+  const handleDragEnd = useCallback(() => {
+    setDragIdx(null)
+    setDragOverIdx(null)
+    dragCounter.current = 0
+  }, [])
+
+  const navBg      = isDark ? '#0d1b2a' : theme.palette.primary.dark
+  const menuBg     = isDark ? '#131f2e' : theme.palette.background.paper
+  const menuBorder = isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.12)'
+  const searchBg   = isDark ? 'rgba(255,255,255,0.07)' : 'rgba(255,255,255,0.2)'
 
   return (
     <AppBar
       position="sticky"
-      sx={{ bgcolor: '#0d1b2a', boxShadow: 'none', borderBottom: '1px solid rgba(255,255,255,0.1)' }}
+      sx={{ bgcolor: navBg, boxShadow: 'none', borderBottom: `1px solid ${isDark ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.2)'}` }}
     >
       <Toolbar sx={{ gap: 1.5, minHeight: '56px !important', px: '24px !important' }}>
 
-        {/* Logo */}
+        {/* Logo + Brand — both clickable to Home */}
         <Box
           onClick={() => navigate('/')}
-          sx={{ bgcolor: '#1a3a5c', borderRadius: 1, px: 1.5, py: 0.75, cursor: 'pointer', flexShrink: 0 }}
+          sx={{ display: 'flex', alignItems: 'center', gap: 1.5, cursor: 'pointer', flexShrink: 0, mr: 2 }}
         >
-          <Typography variant="body1" fontWeight={800} color="white" lineHeight={1}>U</Typography>
-        </Box>
-
-        {/* Brand */}
-        <Box sx={{ mr: 2, flexShrink: 0 }}>
+          <Box
+            sx={{
+              background: 'linear-gradient(135deg, #1565C0, #1e88e5)',
+              borderRadius: 1.5,
+              width: 34, height: 34,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              boxShadow: '0 2px 8px rgba(21,101,192,0.35)',
+            }}
+          >
+            <Typography sx={{ fontWeight: 900, color: 'white', fontSize: '1.1rem', lineHeight: 1, fontFamily: '"Inter", sans-serif' }}>
+              U
+            </Typography>
+          </Box>
           <Typography variant="body2" fontWeight={700} color="white" lineHeight={1.2}>
             Unified Observability Portal
           </Typography>
-          <Typography variant="caption" color="text.secondary" lineHeight={1.2}>
-            Powered by #Digital
-          </Typography>
         </Box>
 
-        {/* Nav tabs */}
+        {/* Nav tabs — draggable */}
         <Stack direction="row" spacing={0} sx={{ flexGrow: 1, alignItems: 'center' }}>
-          {visibleTabs.map((tab) => {
+          {visibleTabs.map((tab, idx) => {
             const active = tab.path && pathname === tab.path
             const isHome = tab.label === 'Home'
+            const isDragging = dragIdx === idx
+            const isDragOver = dragOverIdx === idx && dragIdx !== idx
             return (
               <Box
                 key={tab.label}
-                sx={{ display: 'flex', alignItems: 'center', position: 'relative' }}
+                draggable={!isHome}
+                onDragStart={(e) => handleDragStart(e, idx)}
+                onDragEnter={(e) => handleDragEnter(e, idx)}
+                onDragLeave={handleDragLeave}
+                onDragOver={(e) => handleDragOver(e, idx)}
+                onDrop={(e) => handleDrop(e, idx)}
+                onDragEnd={handleDragEnd}
+                sx={{
+                  display: 'flex', alignItems: 'center', position: 'relative',
+                  opacity: isDragging ? 0.4 : 1,
+                  borderLeft: isDragOver ? '2px solid rgba(96,165,250,0.8)' : '2px solid transparent',
+                  transition: 'border-color 0.15s, opacity 0.15s',
+                  cursor: isHome ? 'default' : 'grab',
+                  '&:active': { cursor: isHome ? 'default' : 'grabbing' },
+                }}
               >
                 <Button
                   size="small"
                   onClick={() => tab.path && navigate(tab.path)}
                   sx={{
-                    color: active ? 'white' : 'text.secondary',
+                    color: active ? 'white' : 'rgba(255,255,255,0.65)',
                     textTransform: 'none',
                     fontSize: '0.8rem',
                     px: isHome ? 1 : 0.75,
                     pr: isHome ? 1 : 2.5,
                     minWidth: 'auto',
                     fontWeight: active ? 600 : 400,
-                    '&:hover': { color: 'white', bgcolor: 'rgba(255,255,255,0.05)' },
+                    '&:hover': { color: 'white', bgcolor: 'rgba(255,255,255,0.1)' },
+                    pointerEvents: 'auto',
                   }}
                 >
                   {tab.label}
-                  {tab.beta && (
-                    <Chip
-                      label="Beta"
-                      size="small"
-                      sx={{ ml: 0.5, height: 16, fontSize: '0.6rem', bgcolor: '#7c3aed', color: 'white' }}
-                    />
-                  )}
-                  {tab.dropdown && (
-                    <Box component="span" sx={{ ml: 0.25, fontSize: '0.65rem' }}>▾</Box>
-                  )}
                 </Button>
 
                 {/* Close button — hidden for Home */}
@@ -132,7 +225,7 @@ export default function TopNav() {
                         position: 'absolute',
                         right: 2,
                         p: 0.1,
-                        color: 'rgba(255,255,255,0.3)',
+                        color: 'rgba(255,255,255,0.4)',
                         '&:hover': { color: 'white', bgcolor: 'transparent' },
                       }}
                     >
@@ -152,8 +245,8 @@ export default function TopNav() {
                 onClick={(e) => setAnchorEl(e.currentTarget)}
                 sx={{
                   ml: 0.5,
-                  color: 'rgba(255,255,255,0.35)',
-                  '&:hover': { color: 'white', bgcolor: 'rgba(255,255,255,0.07)' },
+                  color: 'rgba(255,255,255,0.4)',
+                  '&:hover': { color: 'white', bgcolor: 'rgba(255,255,255,0.1)' },
                 }}
               >
                 <AddIcon sx={{ fontSize: 18 }} />
@@ -167,8 +260,8 @@ export default function TopNav() {
             onClose={() => setAnchorEl(null)}
             PaperProps={{
               sx: {
-                bgcolor: '#131f2e',
-                border: '1px solid rgba(255,255,255,0.1)',
+                bgcolor: menuBg,
+                border: `1px solid ${menuBorder}`,
                 minWidth: 180,
                 mt: 0.5,
               },
@@ -181,18 +274,11 @@ export default function TopNav() {
                 sx={{
                   fontSize: '0.82rem',
                   color: 'text.secondary',
-                  '&:hover': { color: 'white', bgcolor: 'rgba(255,255,255,0.06)' },
+                  '&:hover': { color: 'text.primary', bgcolor: isDark ? 'rgba(255,255,255,0.06)' : 'action.hover' },
                   gap: 1,
                 }}
               >
                 {tab.label}
-                {tab.beta && (
-                  <Chip
-                    label="Beta"
-                    size="small"
-                    sx={{ height: 15, fontSize: '0.58rem', bgcolor: '#7c3aed', color: 'white' }}
-                  />
-                )}
               </MenuItem>
             ))}
           </Menu>
@@ -202,11 +288,11 @@ export default function TopNav() {
         <Box
           sx={{
             display: 'flex', alignItems: 'center',
-            bgcolor: 'rgba(255,255,255,0.07)', borderRadius: 1,
-            px: 1.5, py: 0.4, mr: 1,
+            bgcolor: searchBg, borderRadius: 1,
+            px: 1.5, py: 0.4,
           }}
         >
-          <SearchIcon sx={{ fontSize: 15, color: 'text.secondary', mr: 0.5 }} />
+          <SearchIcon sx={{ fontSize: 15, color: 'rgba(255,255,255,0.6)', mr: 0.5 }} />
           <InputBase
             placeholder="Search..."
             sx={{ color: 'white', fontSize: '0.8rem', width: 130 }}
@@ -219,14 +305,105 @@ export default function TopNav() {
           size="small"
           sx={{
             textTransform: 'none',
-            fontSize: '0.8rem',
-            color: 'text.secondary',
-            borderColor: 'rgba(255,255,255,0.2)',
-            '&:hover': { borderColor: 'rgba(255,255,255,0.5)', color: 'white' },
+            fontSize: '0.78rem',
+            color: 'rgba(255,255,255,0.7)',
+            borderColor: 'rgba(255,255,255,0.3)',
+            '&:hover': { borderColor: 'white', color: 'white' },
           }}
         >
           Support
         </Button>
+
+        {/* Brochure */}
+        <BrochureButton />
+
+        {/* Light / Dark toggle */}
+        <Tooltip title={themeMode === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}>
+          <IconButton
+            onClick={toggleTheme}
+            size="small"
+            sx={{
+              color: 'rgba(255,255,255,0.7)',
+              '&:hover': { color: 'white', bgcolor: 'rgba(255,255,255,0.1)' },
+            }}
+          >
+            {themeMode === 'dark'
+              ? <LightModeIcon sx={{ fontSize: 18 }} />
+              : <DarkModeIcon  sx={{ fontSize: 18 }} />
+            }
+          </IconButton>
+        </Tooltip>
+
+        {/* User avatar */}
+        <Tooltip title="Profile & Settings">
+          <IconButton
+            onClick={(e) => setProfileAnchor(e.currentTarget)}
+            size="small"
+            sx={{ p: 0, ml: 0.5 }}
+          >
+            <Avatar
+              sx={{
+                width: 30, height: 30,
+                bgcolor: isDark ? '#334155' : '#475569',
+                fontSize: '0.72rem',
+                fontWeight: 700,
+                border: '2px solid rgba(255,255,255,0.2)',
+                '&:hover': { borderColor: 'rgba(255,255,255,0.5)' },
+              }}
+            >
+              JD
+            </Avatar>
+          </IconButton>
+        </Tooltip>
+
+        {/* Profile dropdown */}
+        <Menu
+          anchorEl={profileAnchor}
+          open={Boolean(profileAnchor)}
+          onClose={() => setProfileAnchor(null)}
+          PaperProps={{
+            sx: {
+              bgcolor: menuBg,
+              border: `1px solid ${menuBorder}`,
+              minWidth: 220,
+              mt: 0.5,
+            },
+          }}
+          transformOrigin={{ horizontal: 'right', vertical: 'top' }}
+          anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
+        >
+          {/* User info */}
+          <Box sx={{ px: 2, py: 1.5 }}>
+            <Typography variant="body2" fontWeight={700}>Jason Davis</Typography>
+            <Typography variant="caption" color="text.secondary">jason.davis@company.com</Typography>
+          </Box>
+          <Divider />
+          <MenuItem onClick={() => setProfileAnchor(null)} sx={{ fontSize: '0.82rem', gap: 1.5, py: 1 }}>
+            <ListItemIcon sx={{ minWidth: 'auto' }}>
+              <PersonIcon sx={{ fontSize: 18, color: 'text.secondary' }} />
+            </ListItemIcon>
+            <ListItemText primaryTypographyProps={{ fontSize: '0.82rem' }}>My Profile</ListItemText>
+          </MenuItem>
+          <MenuItem onClick={() => setProfileAnchor(null)} sx={{ fontSize: '0.82rem', gap: 1.5, py: 1 }}>
+            <ListItemIcon sx={{ minWidth: 'auto' }}>
+              <ManageAccountsIcon sx={{ fontSize: 18, color: 'text.secondary' }} />
+            </ListItemIcon>
+            <ListItemText primaryTypographyProps={{ fontSize: '0.82rem' }}>Account Settings</ListItemText>
+          </MenuItem>
+          <MenuItem onClick={() => setProfileAnchor(null)} sx={{ fontSize: '0.82rem', gap: 1.5, py: 1 }}>
+            <ListItemIcon sx={{ minWidth: 'auto' }}>
+              <SettingsIcon sx={{ fontSize: 18, color: 'text.secondary' }} />
+            </ListItemIcon>
+            <ListItemText primaryTypographyProps={{ fontSize: '0.82rem' }}>Preferences</ListItemText>
+          </MenuItem>
+          <Divider />
+          <MenuItem onClick={() => setProfileAnchor(null)} sx={{ fontSize: '0.82rem', gap: 1.5, py: 1, color: 'error.main' }}>
+            <ListItemIcon sx={{ minWidth: 'auto' }}>
+              <LogoutIcon sx={{ fontSize: 18, color: 'error.main' }} />
+            </ListItemIcon>
+            <ListItemText primaryTypographyProps={{ fontSize: '0.82rem', color: 'error.main' }}>Sign Out</ListItemText>
+          </MenuItem>
+        </Menu>
 
       </Toolbar>
     </AppBar>
