@@ -219,29 +219,37 @@ def gif_announcements(page):
     print("Capturing announcements.gif ...")
     frames = []
     page.goto(f"{BASE_URL}/announcements", wait_until="networkidle")
-    page.wait_for_timeout(600)
+    # Wait for announcement cards to render (API fetch + React render)
+    try:
+        page.locator(".MuiCard-root").first.wait_for(timeout=5000)
+    except Exception:
+        pass
+    page.wait_for_timeout(500)
     for _ in range(4):
         frames.append(shot(page))
-        page.wait_for_timeout(150)
-    # Cycle type filters
+        page.wait_for_timeout(200)
+    # Cycle type filters via ToggleButton
     for label in ["Incident", "Maintenance", "Security", "All"]:
         try:
-            page.get_by_role("button", name=label).click()
-            page.wait_for_timeout(400)
+            btn = page.locator(f'button[value="{label.lower()}"], button:has-text("{label}")').first
+            btn.click()
+            page.wait_for_timeout(500)
             for _ in range(3):
                 frames.append(shot(page))
-                page.wait_for_timeout(120)
+                page.wait_for_timeout(150)
         except Exception:
             pass
     # Toggle show closed
     try:
-        page.locator(".MuiSwitch-input").first.click()
-        page.wait_for_timeout(400)
+        page.locator(".MuiSwitch-switchBase").first.click()
+        page.wait_for_timeout(500)
         for _ in range(3):
             frames.append(shot(page))
-            page.wait_for_timeout(120)
+            page.wait_for_timeout(150)
     except Exception:
         pass
+    # Scroll to see all
+    scroll_page(page, frames, 0, 600, 120, 80)
     save_gif(frames, "announcements.gif", fps=4)
 
 
