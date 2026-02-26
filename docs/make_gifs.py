@@ -147,6 +147,7 @@ def gif_blast_radius(page):
     for _ in range(4):
         frames.append(shot(page))
         page.wait_for_timeout(200)
+
     # Switch between scenarios via the dropdown
     try:
         select = page.locator(".MuiSelect-select").first
@@ -156,7 +157,7 @@ def gif_blast_radius(page):
         for opt in options[:3]:
             opt.click()
             page.wait_for_timeout(1200)
-            for _ in range(4):
+            for _ in range(3):
                 frames.append(shot(page))
                 page.wait_for_timeout(200)
             # Reopen dropdown for next option
@@ -165,9 +166,55 @@ def gif_blast_radius(page):
                 select.click()
                 page.wait_for_timeout(400)
     except Exception:
-        for _ in range(8):
+        for _ in range(6):
             frames.append(shot(page))
             page.wait_for_timeout(200)
+
+    # Click on nodes to show edge highlighting
+    try:
+        # Click on the root node (first .react-flow__node)
+        root_node = page.locator(".react-flow__node").first
+        root_node.click()
+        page.wait_for_timeout(600)
+        for _ in range(4):
+            frames.append(shot(page))
+            page.wait_for_timeout(200)
+
+        # Click on a dependency node (second node)
+        dep_nodes = page.locator(".react-flow__node").all()
+        if len(dep_nodes) > 1:
+            dep_nodes[1].click()
+            page.wait_for_timeout(600)
+            for _ in range(4):
+                frames.append(shot(page))
+                page.wait_for_timeout(200)
+
+        # Click on another dependency node
+        if len(dep_nodes) > 3:
+            dep_nodes[3].click()
+            page.wait_for_timeout(600)
+            for _ in range(4):
+                frames.append(shot(page))
+                page.wait_for_timeout(200)
+
+        # Click on an edge to highlight it
+        edge_paths = page.locator(".react-flow__edge").all()
+        if len(edge_paths) > 0:
+            edge_paths[0].click()
+            page.wait_for_timeout(600)
+            for _ in range(4):
+                frames.append(shot(page))
+                page.wait_for_timeout(200)
+
+        # Click background to clear
+        page.locator(".react-flow__pane").click()
+        page.wait_for_timeout(400)
+        for _ in range(3):
+            frames.append(shot(page))
+            page.wait_for_timeout(200)
+    except Exception:
+        pass
+
     save_gif(frames, "blast-radius.gif", fps=4)
 
 

@@ -392,12 +392,11 @@ export default function GraphExplorer() {
               Select a dependency graph…
             </MenuItem>
             {SCENARIOS.map(s => (
-              <MenuItem key={s.id} value={s.id}
-                sx={{ fontSize: '0.88rem', display: 'flex', justifyContent: 'space-between', gap: 1.5 }}>
-                <span>{s.label}</span>
+              <MenuItem key={s.id} value={s.id} sx={{ fontSize: '0.88rem' }}>
+                {s.label}
                 <Typography component="span"
-                  sx={{ fontSize: '0.75rem', color: 'text.secondary', fontFamily: 'monospace' }}>
-                  {s.seal}
+                  sx={{ fontSize: '0.75rem', color: 'text.secondary', fontFamily: 'monospace', ml: 1.5 }}>
+                  — SEAL {s.seal}
                 </Typography>
               </MenuItem>
             ))}

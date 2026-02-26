@@ -1,4 +1,4 @@
-import { memo, useEffect, useCallback } from 'react'
+import { memo, useState, useEffect, useCallback } from 'react'
 import {
   ReactFlow,
   useNodesState,
@@ -9,6 +9,7 @@ import {
   MiniMap,
   Handle,
   Position,
+  getSmoothStepPath,
 } from '@xyflow/react'
 import '@xyflow/react/dist/style.css'
 import { Box, Typography } from '@mui/material'
@@ -92,6 +93,73 @@ const ServiceNode = memo(({ data, selected }) => {
 // MUST be at module scope — never inside a React component
 const nodeTypes = { root: RootNode, service: ServiceNode }
 
+// ── Custom interactive edge ─────────────────────────────────────────────
+const InteractiveEdge = memo(({
+  id, sourceX, sourceY, targetX, targetY,
+  sourcePosition, targetPosition,
+  style = {}, data, selected,
+}) => {
+  const [edgePath] = getSmoothStepPath({
+    sourceX, sourceY, targetX, targetY,
+    sourcePosition, targetPosition,
+    borderRadius: 16,
+  })
+
+  const isHighlighted = data?.highlighted
+  const edgeColor = data?.color || '#64748b'
+  const activeColor = isHighlighted ? edgeColor : '#64748b'
+  const strokeWidth = isHighlighted ? 2.5 : 1.4
+  const opacity = data?.dimmed ? 0.2 : 1
+
+  return (
+    <g style={{ cursor: 'pointer', opacity }}>
+      {/* Invisible wider path for easier click targeting */}
+      <path
+        d={edgePath}
+        fill="none"
+        stroke="transparent"
+        strokeWidth={14}
+      />
+      {/* Glow effect when highlighted */}
+      {isHighlighted && (
+        <path
+          d={edgePath}
+          fill="none"
+          stroke={activeColor}
+          strokeWidth={6}
+          strokeOpacity={0.2}
+          style={{ filter: `drop-shadow(0 0 4px ${activeColor})` }}
+        />
+      )}
+      {/* Main edge path */}
+      <path
+        d={edgePath}
+        fill="none"
+        stroke={activeColor}
+        strokeWidth={strokeWidth}
+        className={isHighlighted ? 'react-flow__edge-path animated' : 'react-flow__edge-path'}
+        style={{
+          strokeDasharray: isHighlighted ? '6 3' : 'none',
+          animation: isHighlighted ? 'dashdraw 0.5s linear infinite' : 'none',
+        }}
+      />
+      {/* Arrow at target end */}
+      {isHighlighted && (
+        <circle
+          cx={targetX}
+          cy={targetY}
+          r={4}
+          fill={activeColor}
+          stroke={activeColor}
+          strokeWidth={1}
+        />
+      )}
+    </g>
+  )
+})
+
+const edgeTypes = { interactive: InteractiveEdge }
+
 // ── Dagre-based hierarchical layout ─────────────────────────────────────────
 function buildGraphElements(apiData, mode) {
   if (!apiData) return { nodes: [], edges: [] }
@@ -162,16 +230,24 @@ function buildGraphElements(apiData, mode) {
     }),
   ]
 
-  // Build edges with theme-aware styling
-  const rfEdges = validEdges.map((e) => ({
-    id:     `e-${e.source}-${e.target}`,
-    source: e.source,
-    target: e.target,
-    type:   'smoothstep',
-    pathOptions: { borderRadius: 16 },
-    style:  { stroke: '#64748b', strokeWidth: 1.4 },
-    animated: false,
-  }))
+  // Build edges with status-based coloring
+  const rfEdges = validEdges.map((e) => {
+    const sourceNode = allNodeMap[e.source]
+    const targetNode = allNodeMap[e.target]
+    // Edge color = worst status of source or target
+    const worstStatus =
+      sourceNode?.status === 'critical' || targetNode?.status === 'critical' ? 'critical'
+      : sourceNode?.status === 'warning' || targetNode?.status === 'warning' ? 'warning'
+      : 'healthy'
+    const edgeColor = (STATUS[worstStatus] || defaultStatus).border
+    return {
+      id:     `e-${e.source}-${e.target}`,
+      source: e.source,
+      target: e.target,
+      type:   'interactive',
+      data:   { color: edgeColor, highlighted: false, dimmed: false },
+    }
+  })
 
   return { nodes: rfNodes, edges: rfEdges }
 }
@@ -180,6 +256,7 @@ function buildGraphElements(apiData, mode) {
 export default function DependencyFlow({ apiData, mode, onNodeSelect }) {
   const [nodes, setNodes, onNodesChange] = useNodesState([])
   const [edges, setEdges, onEdgesChange] = useEdgesState([])
+  const [selectedEdgeId, setSelectedEdgeId] = useState(null)
   const theme = useTheme()
   const isDark = theme.palette.mode === 'dark'
 
@@ -187,11 +264,51 @@ export default function DependencyFlow({ apiData, mode, onNodeSelect }) {
     const { nodes: rfNodes, edges: rfEdges } = buildGraphElements(apiData, mode)
     setNodes(rfNodes)
     setEdges(rfEdges)
+    setSelectedEdgeId(null)
   }, [apiData, mode, setNodes, setEdges])
+
+  // Highlight connected edges when a node is clicked
+  const highlightConnectedEdges = useCallback((nodeId) => {
+    setSelectedEdgeId(null)
+    setEdges(prev => prev.map(e => ({
+      ...e,
+      data: {
+        ...e.data,
+        highlighted: e.source === nodeId || e.target === nodeId,
+        dimmed: nodeId ? (e.source !== nodeId && e.target !== nodeId) : false,
+      },
+    })))
+  }, [setEdges])
 
   const onNodeClick = useCallback((_evt, node) => {
     onNodeSelect?.(node.data)
-  }, [onNodeSelect])
+    highlightConnectedEdges(node.id)
+  }, [onNodeSelect, highlightConnectedEdges])
+
+  // Highlight a single edge when clicked
+  const onEdgeClick = useCallback((_evt, edge) => {
+    setSelectedEdgeId(edge.id)
+    setEdges(prev => prev.map(e => ({
+      ...e,
+      data: {
+        ...e.data,
+        highlighted: e.id === edge.id,
+        dimmed: e.id !== edge.id,
+      },
+    })))
+    // Also select the target node to show details
+    const targetNode = nodes.find(n => n.id === edge.target)
+    if (targetNode) onNodeSelect?.(targetNode.data)
+  }, [setEdges, nodes, onNodeSelect])
+
+  // Click on background to clear selection
+  const onPaneClick = useCallback(() => {
+    setSelectedEdgeId(null)
+    setEdges(prev => prev.map(e => ({
+      ...e,
+      data: { ...e.data, highlighted: false, dimmed: false },
+    })))
+  }, [setEdges])
 
   const bgColor     = isDark ? '#0a0e1a' : '#f1f5f9'
   const dotColor    = isDark ? '#1e293b' : '#cbd5e1'
@@ -201,14 +318,20 @@ export default function DependencyFlow({ apiData, mode, onNodeSelect }) {
   const miniMapMask = isDark ? 'rgba(0,0,0,0.5)' : 'rgba(0,0,0,0.15)'
 
   return (
-    <Box sx={{ width: '100%', height: '100%', bgcolor: bgColor }}>
+    <Box sx={{
+      width: '100%', height: '100%', bgcolor: bgColor,
+      '@keyframes dashdraw': { to: { strokeDashoffset: -9 } },
+    }}>
       <ReactFlow
         nodes={nodes}
         edges={edges}
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
         onNodeClick={onNodeClick}
+        onEdgeClick={onEdgeClick}
+        onPaneClick={onPaneClick}
         nodeTypes={nodeTypes}
+        edgeTypes={edgeTypes}
         fitView
         fitViewOptions={{ padding: 0.2 }}
         minZoom={0.15}
