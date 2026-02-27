@@ -92,6 +92,20 @@ A real-time observability platform purpose-built for AWM engineering — combini
 
 ---
 
+### Admin — Portal Instances
+> Create, edit, and manage branded portal instances with custom logos (image upload or gradient+letter), titles, subtitles, default scope filters, and one-click tenant switching from the profile menu.
+
+<img src="docs/gifs/admin.gif" alt="Admin Portal Instances" width="100%">
+
+---
+
+### Search & Filter
+> Global search and grouped multi-select filters (Taxonomy, People, Risk & Compliance) with a persistent scope bar showing active filters and filtered app counts. Scope bar can be hidden/revealed on hover.
+
+<img src="docs/gifs/search-filter.gif" alt="Search and Filter" width="100%">
+
+---
+
 ## Architecture
 
 | Layer    | Stack                        | Port  |
@@ -117,16 +131,31 @@ The frontend proxies all `/api/*` requests to the backend via Vite's dev server 
 | **SLO Agent** | AI Agent | Breach prediction, error budget tracking, auto-remediation actions |
 | **Announcements** | CRUD Management | Create, edit, close/reopen, delete, search, type filters, pinning, auto-refresh |
 | **Links** | Quick Access | 8 categories — monitoring, CI/CD, security, documentation, team tools |
+| **Admin** | Portal Instances | Create, edit, activate branded tenant instances with custom logos, titles, default scope filters |
 
 Additional features:
 - **Incident Zero** — Proactive pre-incident management with burn rate alerts and error budgets
+- **Search & Filter** — Global search with grouped multi-select filters and persistent scope bar
+- **Multi-Tenant Branding** — Custom portal instances with logo upload, title/subtitle, powered-by text, and default scope filters
 - **Draggable Tabs & Dark / Light Mode** — Browser-style tab reordering with drag-and-drop + full theme toggle (see demo above)
+- **Brochure Modal** — Click any feature card in the brochure to preview a full-size animated GIF demo
 
 ---
 
 ## Navigation
 
 The top nav starts with only the **Home** tab visible. Click the **+** button to add any tab. Tabs can be **dragged and reordered** like browser tabs. Each added tab has an **×** to close it. Tab order and selection persist across browser sessions via localStorage.
+
+---
+
+## Multi-Tenant Portal Instances
+
+Teams can create their own branded portal instance via **Admin** (accessible from the profile menu):
+
+- **Custom Branding** — Logo (image upload or gradient+letter), portal title, subtitle, description, and powered-by text
+- **Default Scope** — Pre-configured filters (SEAL, LOB, team, CTO, risk level, etc.) that auto-apply when the instance is activated
+- **One-Click Switching** — Switch between portal instances from the profile dropdown; clicking the logo resets to the instance's default scope
+- **localStorage Persistence** — All tenant configs persist locally, ready for backend migration
 
 ---
 
@@ -184,21 +213,25 @@ obs-dashboard/
 │   └── requirements.txt
 ├── frontend/
 │   ├── src/
-│   │   ├── components/  # TopNav, ViewCard, CriticalApps, DependencyFlow,
+│   │   ├── components/  # TopNav, ScopeBar, ViewCard, CriticalApps, DependencyFlow,
 │   │   │                #   IncidentTrends, BrochureModal, ActiveIncidentsPanel,
-│   │   │                #   FrequentIncidents, RecentActivities, AIHealthPanel
+│   │   │                #   FrequentIncidents, RecentActivities, AIHealthPanel,
+│   │   │                #   SearchFilterPopover
 │   │   ├── pages/       # Dashboard, GraphExplorer, Applications, Favorites,
 │   │   │                #   ProductCatalog, CustomerJourney, SloAgent,
-│   │   │                #   IncidentZero, Announcements, Links
+│   │   │                #   IncidentZero, Announcements, Links, Admin
 │   │   ├── view-central/ # ViewCentralListing, ViewCentralDashboard,
 │   │   │                #   viewCentralStorage, WidgetWrapper, WidgetAddDrawer,
 │   │   │                #   ViewCentralForm, widgetRegistry, NotificationDrawer
-│   │   ├── ThemeContext.jsx  # Dark/light mode context + provider
+│   │   ├── tenant/      # TenantContext, tenantStorage — multi-tenant support
+│   │   ├── data/        # appData.js — application registry and filter fields
+│   │   ├── FilterContext.jsx  # Global search & filter context
+│   │   ├── ThemeContext.jsx   # Dark/light mode context + provider
 │   │   └── App.jsx      # Router and nav
-│   └── vite.config.js   # Dev server — proxy points to :8080
+│   └── vite.config.js   # Dev server — proxy to :8080, serves GIFs from docs/
 └── docs/
     ├── make_gifs.py     # Playwright script to regenerate all GIFs
-    └── gifs/            # Demo GIFs
+    └── gifs/            # 14 demo GIFs (720p, animated)
 ```
 
 ---
@@ -238,4 +271,4 @@ playwright install chromium
 python docs/make_gifs.py
 ```
 
-GIFs are generated at full 1440p resolution for best quality.
+GIFs are generated at full 1440p resolution for best quality. The brochure modal serves GIFs via Vite's dev server from `docs/gifs/`.

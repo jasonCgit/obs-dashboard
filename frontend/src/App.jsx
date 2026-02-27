@@ -3,6 +3,7 @@ import { Routes, Route, Navigate } from 'react-router-dom'
 import Box from '@mui/material/Box'
 import Typography from '@mui/material/Typography'
 import TopNav          from './components/TopNav'
+import ScopeBar        from './components/ScopeBar'
 import Dashboard       from './pages/Dashboard'
 import GraphExplorer   from './pages/GraphExplorer'
 import Applications    from './pages/Applications'
@@ -15,6 +16,7 @@ import SloAgent        from './pages/SloAgent'
 import IncidentZero    from './pages/IncidentZero'
 import Announcements   from './pages/Announcements'
 import Links           from './pages/Links'
+import Admin           from './pages/Admin'
 
 class ErrorBoundary extends Component {
   constructor(props) {
@@ -44,6 +46,7 @@ export default function App() {
     <ErrorBoundary>
       <Box sx={{ minHeight: '100vh', bgcolor: 'background.default' }}>
         <TopNav />
+        <ScopeBar />
         <Routes>
           <Route path="/"                element={<Dashboard />} />
           <Route path="/graph"           element={<GraphExplorer />} />
@@ -57,6 +60,7 @@ export default function App() {
           <Route path="/incident-zero"   element={<IncidentZero />} />
           <Route path="/announcements"   element={<Announcements />} />
           <Route path="/links"           element={<Links />} />
+          <Route path="/admin"           element={<Admin />} />
           <Route path="/views"           element={<Navigate to="/view-central" replace />} />
           <Route path="*"                element={<Navigate to="/" replace />} />
         </Routes>

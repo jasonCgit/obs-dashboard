@@ -443,6 +443,153 @@ def gif_incident_zero(page):
     save_gif(frames, "incident-zero.gif", fps=5)
 
 
+# ── GIF 13 — Admin / Portal Instances ────────────────────────────────────────
+
+def gif_admin(page):
+    print("Capturing admin.gif ...")
+    frames = []
+
+    # Seed a sample tenant so the admin page isn't empty
+    page.goto(BASE_URL, wait_until="networkidle")
+    page.evaluate("""() => {
+        const KEY = 'obs-tenants';
+        const existing = JSON.parse(localStorage.getItem(KEY) || '[]');
+        if (existing.length === 0) {
+            const sample = {
+                id: 'tenant-demo-1',
+                name: 'Mission Control',
+                title: 'Mission Control',
+                subtitle: 'Asset Management',
+                logoLetter: 'M',
+                logoGradient: ['#7c3aed', '#a78bfa'],
+                logoImage: null,
+                description: 'purpose-built for Asset Management',
+                poweredBy: 'Powered by AWM SRE',
+                version: '1.0',
+                defaultFilters: {},
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString(),
+            };
+            localStorage.setItem(KEY, JSON.stringify([sample]));
+        }
+    }""")
+
+    page.goto(f"{BASE_URL}/admin", wait_until="networkidle")
+    page.wait_for_timeout(800)
+
+    # Show the admin page with card grid
+    for _ in range(4):
+        frames.append(shot(page))
+        page.wait_for_timeout(200)
+
+    # Click "Create Instance" button
+    try:
+        page.get_by_role("button", name="Create Instance").click()
+        page.wait_for_timeout(600)
+        for _ in range(4):
+            frames.append(shot(page))
+            page.wait_for_timeout(200)
+
+        # Fill in some fields
+        name_field = page.locator('input[name="name"], label:has-text("Instance Name") + div input, #name').first
+        if name_field.is_visible(timeout=500):
+            name_field.fill("SRE Operations")
+            page.wait_for_timeout(300)
+
+        title_field = page.locator('input[name="title"], label:has-text("Portal Title") + div input, #title').first
+        if title_field.is_visible(timeout=500):
+            title_field.fill("SRE Operations Portal")
+            page.wait_for_timeout(300)
+
+        for _ in range(4):
+            frames.append(shot(page))
+            page.wait_for_timeout(200)
+
+        # Scroll dialog to show more fields
+        dialog = page.locator(".MuiDialog-paper").first
+        if dialog.is_visible(timeout=500):
+            dialog.evaluate("el => el.scrollTop = 300")
+            page.wait_for_timeout(400)
+            for _ in range(3):
+                frames.append(shot(page))
+                page.wait_for_timeout(200)
+
+            dialog.evaluate("el => el.scrollTop = 600")
+            page.wait_for_timeout(400)
+            for _ in range(3):
+                frames.append(shot(page))
+                page.wait_for_timeout(200)
+
+        # Close dialog
+        page.keyboard.press("Escape")
+        page.wait_for_timeout(400)
+    except Exception:
+        pass
+
+    # Show the existing instance card
+    for _ in range(3):
+        frames.append(shot(page))
+        page.wait_for_timeout(200)
+
+    # Scroll to see full cards
+    scroll_page(page, frames, 0, 600, 100, 80)
+
+    save_gif(frames, "admin.gif", fps=4)
+
+
+# ── GIF 14 — Search & Filter ────────────────────────────────────────────────
+
+def gif_search_filter(page):
+    print("Capturing search-filter.gif ...")
+    frames = []
+    page.goto(BASE_URL, wait_until="networkidle")
+    page.wait_for_timeout(600)
+
+    # Show initial state
+    for _ in range(3):
+        frames.append(shot(page))
+        page.wait_for_timeout(200)
+
+    # Click the search bar / filter button to open the popover
+    try:
+        search_btn = page.locator('[data-testid="SearchIcon"]').first
+        if search_btn.is_visible(timeout=500):
+            search_btn.click()
+        else:
+            page.locator('[data-testid="FilterListIcon"]').first.click()
+        page.wait_for_timeout(600)
+        for _ in range(4):
+            frames.append(shot(page))
+            page.wait_for_timeout(200)
+
+        # Scroll the filter popover if visible
+        popover = page.locator(".MuiPopover-paper").first
+        if popover.is_visible(timeout=500):
+            popover.evaluate("el => el.scrollTop = 200")
+            page.wait_for_timeout(400)
+            for _ in range(3):
+                frames.append(shot(page))
+                page.wait_for_timeout(200)
+
+            popover.evaluate("el => el.scrollTop = 400")
+            page.wait_for_timeout(400)
+            for _ in range(3):
+                frames.append(shot(page))
+                page.wait_for_timeout(200)
+
+        # Close popover
+        page.keyboard.press("Escape")
+        page.wait_for_timeout(400)
+    except Exception:
+        pass
+
+    for _ in range(3):
+        frames.append(shot(page))
+        page.wait_for_timeout(200)
+
+    save_gif(frames, "search-filter.gif", fps=4)
+
+
 # ── main ─────────────────────────────────────────────────────────────────────
 
 def main():
@@ -462,6 +609,8 @@ def main():
         gif_links(page)
         gif_tabs_and_theme(page)
         gif_incident_zero(page)
+        gif_admin(page)
+        gif_search_filter(page)
 
         browser.close()
 

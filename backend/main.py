@@ -26,10 +26,10 @@ HEALTH_SUMMARY = {
 
 AI_ANALYSIS = {
     "critical_alert": (
+        "Currently tracking 2 critical applications affecting approximately 6,220 users. "
         "Payment Gateway API and Email Notification Service experiencing critical "
         "database connectivity and SMTP server failures. Both services showing recurring "
-        "patterns indicating systemic infrastructure issues. Currently tracking 2 critical "
-        "applications affecting approximately 6,220 users."
+        "patterns indicating systemic infrastructure issues."
     ),
     "trend_analysis": (
         "Issue frequency has increased 34% over the past 7 days. Payment Gateway has "

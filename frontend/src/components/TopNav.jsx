@@ -27,6 +27,7 @@ import RouteIcon from '@mui/icons-material/Route'
 import StarIcon from '@mui/icons-material/Star'
 import LinkIcon from '@mui/icons-material/Link'
 import ShieldIcon from '@mui/icons-material/Shield'
+import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings'
 import InventoryIcon from '@mui/icons-material/Inventory'
 import SpeedIcon from '@mui/icons-material/Speed'
 import ViewQuiltIcon from '@mui/icons-material/ViewQuilt'
@@ -38,6 +39,8 @@ import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown'
 import { BrochureButton } from './BrochureModal'
 import SearchFilterPopover from './SearchFilterPopover'
 import { useRefresh } from '../RefreshContext'
+import { useTenant } from '../tenant/TenantContext'
+import { loadAllTenants, DEFAULT_TENANT } from '../tenant/tenantStorage'
 
 const ALL_TABS = [
   { label: 'Home',              path: '/',                Icon: HomeIcon,        desc: 'Dashboard overview' },
@@ -75,8 +78,10 @@ export default function TopNav() {
   const [tabSearch, setTabSearch] = useState('')
   const [profileAnchor, setProfileAnchor] = useState(null)
   const { themeMode, toggleTheme } = useAppTheme()
-  const { filteredApps, totalApps, activeFilterCount, searchText } = useFilters()
+  const { filteredApps, totalApps, activeFilterCount, searchText, resetToDefaults } = useFilters()
   const { refreshMs, setRefreshMs, displayTime, REFRESH_OPTIONS, triggerRefresh } = useRefresh()
+  const { tenant, switchTenant } = useTenant()
+  const [tenants, setTenants] = useState([])
   const [searchAnchor, setSearchAnchor] = useState(null)
   const [refreshAnchor, setRefreshAnchor] = useState(null)
   const [notifAnchor, setNotifAnchor] = useState(null)
@@ -90,6 +95,11 @@ export default function TopNav() {
   const [detailItem, setDetailItem] = useState(null)
   const theme = useTheme()
   const isDark = theme.palette.mode === 'dark'
+
+  // Refresh tenant list when profile menu opens
+  useEffect(() => {
+    if (profileAnchor) setTenants(loadAllTenants().sort((a, b) => (a.name || '').localeCompare(b.name || '')))
+  }, [profileAnchor])
 
   // Persist read items
   const persistRead = (keys) => { setReadItems(keys); localStorage.setItem('obs-read-activities', JSON.stringify(keys)) }
@@ -225,26 +235,38 @@ export default function TopNav() {
 
         {/* Logo + Brand — both clickable to Home */}
         <Box
-          onClick={() => navigate('/')}
+          onClick={() => { resetToDefaults(); navigate('/') }}
           sx={{ display: 'flex', alignItems: 'center', gap: 1.5, cursor: 'pointer', flexShrink: 0, mr: 2 }}
         >
-          <Box
-            sx={{
-              background: 'linear-gradient(135deg, #1565C0, #1e88e5)',
-              borderRadius: 1.5,
-              width: 34, height: 34,
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              boxShadow: '0 2px 8px rgba(21,101,192,0.35)',
-            }}
-          >
-            <Typography sx={{ fontWeight: 900, color: 'white', fontSize: '1.1rem', lineHeight: 1, fontFamily: '"Inter", sans-serif' }}>
-              U
+          {tenant.logoImage ? (
+            <Box component="img" src={tenant.logoImage}
+              sx={{ width: 34, height: 34, borderRadius: 1.5, objectFit: 'cover', flexShrink: 0 }}
+            />
+          ) : (
+            <Box
+              sx={{
+                background: `linear-gradient(135deg, ${tenant.logoGradient[0]}, ${tenant.logoGradient[1]})`,
+                borderRadius: 1.5,
+                width: 34, height: 34,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                boxShadow: `0 2px 8px ${tenant.logoGradient[0]}58`,
+              }}
+            >
+              <Typography sx={{ fontWeight: 900, color: 'white', fontSize: '1.1rem', lineHeight: 1, fontFamily: '"Inter", sans-serif' }}>
+                {tenant.logoLetter}
+              </Typography>
+            </Box>
+          )}
+          <Box sx={{ display: { xs: 'none', md: 'block' }, textAlign: 'center' }}>
+            <Typography variant="body2" fontWeight={700} color="white" lineHeight={1.1}>
+              {tenant.title}
             </Typography>
+            {tenant.subtitle && (
+              <Typography noWrap sx={{ fontSize: '0.73rem', color: 'rgba(255,255,255,0.5)', lineHeight: 1.1, mt: 0.15 }}>
+                {tenant.subtitle}
+              </Typography>
+            )}
           </Box>
-          <Typography variant="body2" fontWeight={700} color="white" lineHeight={1.2}
-            sx={{ display: { xs: 'none', md: 'block' } }}>
-            Unified Observability Portal
-          </Typography>
         </Box>
 
         {/* Nav tabs — draggable */}
@@ -872,6 +894,59 @@ export default function TopNav() {
             </ListItemIcon>
             <ListItemText primaryTypographyProps={{ fontSize: '0.82rem' }}>Preferences</ListItemText>
           </MenuItem>
+          <MenuItem onClick={() => { setProfileAnchor(null); navigate('/admin') }} sx={{ fontSize: '0.82rem', gap: 1.5, py: 1 }}>
+            <ListItemIcon sx={{ minWidth: 'auto' }}>
+              <AdminPanelSettingsIcon sx={{ fontSize: 18, color: 'text.secondary' }} />
+            </ListItemIcon>
+            <ListItemText primaryTypographyProps={{ fontSize: '0.82rem' }}>Admin</ListItemText>
+          </MenuItem>
+          {/* Tenant switcher */}
+          <Divider />
+          <Box sx={{ px: 2, py: 0.75 }}>
+            <Typography variant="caption" sx={{ fontWeight: 700, fontSize: '0.68rem', textTransform: 'uppercase', letterSpacing: 0.8, color: 'text.secondary' }}>
+              Portal Instance
+            </Typography>
+          </Box>
+          <MenuItem
+            selected={!tenant.id}
+            onClick={() => { switchTenant(null); setProfileAnchor(null) }}
+            sx={{ fontSize: '0.82rem', gap: 1.5, py: 0.75 }}
+          >
+            <Box sx={{
+              background: `linear-gradient(135deg, ${DEFAULT_TENANT.logoGradient[0]}, ${DEFAULT_TENANT.logoGradient[1]})`,
+              borderRadius: 0.75, width: 18, height: 18, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+            }}>
+              <Typography sx={{ fontWeight: 900, color: 'white', fontSize: 9, lineHeight: 1 }}>{DEFAULT_TENANT.logoLetter}</Typography>
+            </Box>
+            <ListItemText primaryTypographyProps={{ fontSize: '0.82rem', fontWeight: !tenant.id ? 700 : 400 }}>
+              Default
+            </ListItemText>
+          </MenuItem>
+          {tenants.map(t => (
+            <MenuItem
+              key={t.id}
+              selected={tenant.id === t.id}
+              onClick={() => { switchTenant(t); setProfileAnchor(null) }}
+              sx={{ fontSize: '0.82rem', gap: 1.5, py: 0.75 }}
+            >
+              {t.logoImage ? (
+                <Box component="img" src={t.logoImage}
+                  sx={{ width: 18, height: 18, borderRadius: 0.75, objectFit: 'cover', flexShrink: 0 }}
+                />
+              ) : (
+                <Box sx={{
+                  background: `linear-gradient(135deg, ${(t.logoGradient || ['#1565C0','#1e88e5'])[0]}, ${(t.logoGradient || ['#1565C0','#1e88e5'])[1]})`,
+                  borderRadius: 0.75, width: 18, height: 18, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+                }}>
+                  <Typography sx={{ fontWeight: 900, color: 'white', fontSize: 9, lineHeight: 1 }}>{t.logoLetter || 'U'}</Typography>
+                </Box>
+              )}
+              <ListItemText primaryTypographyProps={{ fontSize: '0.82rem', fontWeight: tenant.id === t.id ? 700 : 400 }}>
+                {t.name}
+              </ListItemText>
+            </MenuItem>
+          ))}
+
           <Divider />
           <MenuItem onClick={() => setProfileAnchor(null)} sx={{ fontSize: '0.82rem', gap: 1.5, py: 1, color: 'error.main' }}>
             <ListItemIcon sx={{ minWidth: 'auto' }}>

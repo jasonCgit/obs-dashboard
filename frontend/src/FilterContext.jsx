@@ -1,13 +1,21 @@
-import { createContext, useContext, useState, useMemo, useCallback } from 'react'
+import { createContext, useContext, useState, useMemo, useCallback, useEffect } from 'react'
 import { APPS, parseSealDisplay } from './data/appData'
+import { useTenant } from './tenant/TenantContext'
 
 const FilterContext = createContext()
 
 export const useFilters = () => useContext(FilterContext)
 
 export function FilterProvider({ children }) {
+  const { tenant } = useTenant()
   const [searchText, setSearchText] = useState('')
-  const [activeFilters, setActiveFilters] = useState({})
+  const [activeFilters, setActiveFilters] = useState(() => tenant.defaultFilters || {})
+
+  // Reset filters when tenant changes
+  useEffect(() => {
+    setActiveFilters(tenant.defaultFilters || {})
+    setSearchText('')
+  }, [tenant.id])
 
   const setFilterValues = useCallback((key, values) => {
     setActiveFilters(prev => {
@@ -33,6 +41,11 @@ export function FilterProvider({ children }) {
     setActiveFilters({})
     setSearchText('')
   }, [])
+
+  const resetToDefaults = useCallback(() => {
+    setActiveFilters(tenant.defaultFilters || {})
+    setSearchText('')
+  }, [tenant])
 
   const filteredApps = useMemo(() => {
     return APPS.filter(app => {
@@ -65,6 +78,7 @@ export function FilterProvider({ children }) {
     setFilterValues,
     clearFilter,
     clearAllFilters,
+    resetToDefaults,
     filteredApps,
     activeFilterCount,
     totalApps: APPS.length,
