@@ -24,7 +24,7 @@ import InfoOutlinedIcon   from '@mui/icons-material/InfoOutlined'
 const ReactQuill = lazy(() => import('react-quill'))
 import 'react-quill/dist/quill.snow.css'
 
-const API = 'http://localhost:8080'
+const API = ''
 
 /* ─── Channel meta (order matters for toggle rendering) ─── */
 const CHANNEL_META = {

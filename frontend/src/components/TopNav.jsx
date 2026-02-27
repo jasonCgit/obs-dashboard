@@ -26,6 +26,7 @@ import AccountTreeIcon from '@mui/icons-material/AccountTree'
 import RouteIcon from '@mui/icons-material/Route'
 import StarIcon from '@mui/icons-material/Star'
 import LinkIcon from '@mui/icons-material/Link'
+import ShieldIcon from '@mui/icons-material/Shield'
 import InventoryIcon from '@mui/icons-material/Inventory'
 import SpeedIcon from '@mui/icons-material/Speed'
 import ViewQuiltIcon from '@mui/icons-material/ViewQuilt'
@@ -42,9 +43,10 @@ const ALL_TABS = [
   { label: 'Home',              path: '/',                Icon: HomeIcon,        desc: 'Dashboard overview' },
   { label: 'Announcements',     path: '/announcements',   Icon: CampaignIcon,    desc: 'Manage communications' },
   { label: 'Applications',      path: '/applications',    Icon: AppsIcon,        desc: 'Manage app inventory & health' },
-  { label: 'Blast Radius',      path: '/graph',           Icon: AccountTreeIcon, desc: 'Knowledge graph' },
+  { label: 'Blast Radius',      path: '/graph',           Icon: AccountTreeIcon, desc: 'Dependency graphs' },
   { label: 'Customer Journeys', path: '/customer-journey', Icon: RouteIcon,      desc: 'End-to-end user experience' },
   { label: 'Favorites',         path: '/favorites',       Icon: StarIcon,        desc: 'Pinned View Centrals' },
+  { label: 'Incident Zero',    path: '/incident-zero',   Icon: ShieldIcon,      desc: 'Proactive pre-incident management' },
   { label: 'Links',             path: '/links',           Icon: LinkIcon,        desc: 'Quick links & resources' },
   { label: 'Product Catalog',   path: '/product-catalog', Icon: InventoryIcon,   desc: 'Mapping of applications' },
   { label: 'SLO Agent',         path: '/slo-agent',       Icon: SpeedIcon,       desc: 'Auto management of SLOs' },
@@ -104,7 +106,7 @@ export default function TopNav() {
   const fetchNotifications = useCallback(async () => {
     try {
       const [notifRes, actRes] = await Promise.all([
-        fetch('http://localhost:8080/api/announcements/notifications'),
+        fetch('/api/announcements/notifications'),
         fetch('/api/recent-activities'),
       ])
       const notifJson = await notifRes.json()
