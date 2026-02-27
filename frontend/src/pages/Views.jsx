@@ -265,7 +265,7 @@ function FavoritesTab({ navigate }) {
   const favs = ALL_VIEWS.filter(v => v.favorite)
   return (
     <Box>
-      <Box sx={{ mb: 2.5 }}>
+      <Box sx={{ mb: 2 }}>
         <Typography variant="h6" fontWeight={700} gutterBottom>Favorites</Typography>
         <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.85rem' }}>
           Your pinned views — click the star on any card to pin or unpin.
@@ -277,7 +277,7 @@ function FavoritesTab({ navigate }) {
           <Typography color="text.secondary">No favorites yet — star a view from View Central.</Typography>
         </Box>
       ) : (
-        <Grid container spacing={2.5}>
+        <Grid container spacing={2}>
           {favs.map(v => (
             <Grid item xs={12} sm={6} md={4} key={v.id}>
               <ViewCard view={v} navigate={navigate} />
@@ -292,7 +292,7 @@ function FavoritesTab({ navigate }) {
 function ViewCentralTab({ navigate }) {
   return (
     <Box>
-      <Box sx={{ mb: 2.5 }}>
+      <Box sx={{ mb: 2 }}>
         <Typography variant="h6" fontWeight={700} gutterBottom>View Central</Typography>
         <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.85rem' }}>
           All available dashboards, dependency graphs, and interactive visualisations.
@@ -313,7 +313,7 @@ function ProductCatalogTab() {
   const healthColor = { critical: '#f44336', warning: '#ff9800', healthy: '#4caf50' }
   return (
     <Box>
-      <Box sx={{ mb: 2.5 }}>
+      <Box sx={{ mb: 2 }}>
         <Typography variant="h6" fontWeight={700} gutterBottom>Product Catalog</Typography>
         <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.85rem' }}>
           Observability views organised by business product and domain.
@@ -373,12 +373,12 @@ export default function Views() {
   const [tab, setTab] = useState(0)
 
   return (
-    <Container maxWidth="xl" sx={{ py: 3 }}>
+    <Container maxWidth="xl" sx={{ py: { xs: 1.5, sm: 2 }, px: { xs: 2, sm: 3 } }}>
       <Tabs
         value={tab}
         onChange={(_, v) => setTab(v)}
         sx={{
-          mb: 3,
+          mb: 2,
           borderBottom: '1px solid',
           borderColor: 'divider',
           '& .MuiTab-root': { textTransform: 'none', fontSize: '0.9rem', fontWeight: 500 },

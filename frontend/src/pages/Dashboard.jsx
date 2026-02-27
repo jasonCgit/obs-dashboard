@@ -1,12 +1,13 @@
-import { useState, useEffect } from 'react'
-import { Container, Grid, Box, CircularProgress, Alert } from '@mui/material'
+import { useState, useEffect, useCallback } from 'react'
+import { Container, Grid, Box, Stack, CircularProgress, Alert } from '@mui/material'
 import SummaryCards          from '../components/SummaryCards'
 import AIHealthPanel         from '../components/AIHealthPanel'
 import CriticalApps          from '../components/CriticalApps'
 import RegionalStatus        from '../components/RegionalStatus'
 import ActiveIncidentsPanel  from '../components/ActiveIncidentsPanel'
 import IncidentTrends        from '../components/IncidentTrends'
-import RecentActivities      from '../components/RecentActivities'
+import WorldClock            from '../components/WorldClock'
+import { useRefresh } from '../RefreshContext'
 
 export default function Dashboard() {
   const [summary,          setSummary]          = useState(null)
@@ -15,30 +16,40 @@ export default function Dashboard() {
   const [critApps,         setCritApps]         = useState(null)
   const [trends,           setTrends]           = useState(null)
   const [activeIncidents,  setActiveIncidents]  = useState(null)
-  const [recentActivities, setRecentActivities] = useState(null)
   const [loading,          setLoading]          = useState(true)
   const [error,            setError]            = useState(null)
+  const { refreshTick, reportUpdated } = useRefresh()
 
-  useEffect(() => {
-    const endpoints = [
-      ['/api/health-summary',     setSummary],
-      ['/api/ai-analysis',        setAiData],
-      ['/api/regional-status',    setRegional],
-      ['/api/critical-apps',      setCritApps],
-      ['/api/incident-trends',    setTrends],
-      ['/api/active-incidents',   setActiveIncidents],
-      ['/api/recent-activities',  setRecentActivities],
-    ]
-    Promise.all(
+  const endpoints = [
+    ['/api/health-summary',     setSummary],
+    ['/api/ai-analysis',        setAiData],
+    ['/api/regional-status',    setRegional],
+    ['/api/critical-apps',      setCritApps],
+    ['/api/incident-trends',    setTrends],
+    ['/api/active-incidents',   setActiveIncidents],
+  ]
+
+  const fetchData = useCallback(() => {
+    return Promise.all(
       endpoints.map(([url, setter]) =>
         fetch(url)
           .then(r => { if (!r.ok) throw new Error(`${url} — ${r.status}`); return r.json() })
           .then(setter)
       )
     )
+      .then(() => reportUpdated())
       .catch(e => setError(e.message))
-      .finally(() => setLoading(false))
-  }, [])
+  }, [reportUpdated])
+
+  // Initial fetch
+  useEffect(() => {
+    fetchData().finally(() => setLoading(false))
+  }, [fetchData])
+
+  // Re-fetch on global refresh tick
+  useEffect(() => {
+    if (refreshTick > 0) fetchData()
+  }, [refreshTick])
 
   if (loading) {
     return (
@@ -57,20 +68,24 @@ export default function Dashboard() {
   }
 
   return (
-    <Container maxWidth="xl" sx={{ py: 3 }}>
+    <Container maxWidth="xl" sx={{ py: { xs: 1.5, sm: 2 }, px: { xs: 2, sm: 3 } }}>
+      <WorldClock />
       <SummaryCards data={summary} />
-      <Grid container spacing={3}>
-        {/* Left column — 70% */}
+      <Grid container spacing={2}>
+        {/* Left column */}
         <Grid item xs={12} lg={8}>
-          <AIHealthPanel data={aiData}   />
-          <CriticalApps  data={critApps} />
+          <Stack spacing={1}>
+            <AIHealthPanel data={aiData} />
+            <CriticalApps  data={critApps} />
+          </Stack>
         </Grid>
-        {/* Right column — 30% */}
+        {/* Right column */}
         <Grid item xs={12} lg={4}>
-          <RegionalStatus       data={regional}         />
-          <ActiveIncidentsPanel data={activeIncidents}  />
-          <IncidentTrends       data={trends}           />
-          <RecentActivities     data={recentActivities} />
+          <Stack spacing={1}>
+            <RegionalStatus       data={regional} />
+            <ActiveIncidentsPanel data={activeIncidents} />
+            <IncidentTrends       data={trends} />
+          </Stack>
         </Grid>
       </Grid>
     </Container>

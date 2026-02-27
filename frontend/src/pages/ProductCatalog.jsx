@@ -70,14 +70,14 @@ const healthColor = { critical: '#f44336', warning: '#ff9800', healthy: '#4caf50
 
 export default function ProductCatalog() {
   return (
-    <Container maxWidth="xl" sx={{ py: 3 }}>
-      <Box sx={{ mb: 2.5 }}>
+    <Container maxWidth="xl" sx={{ py: { xs: 1.5, sm: 2 }, px: { xs: 2, sm: 3 } }}>
+      <Box sx={{ mb: 2 }}>
         <Typography variant="h6" fontWeight={700} gutterBottom>Product Catalog</Typography>
         <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.85rem' }}>
           Observability views organised by business product and domain.
         </Typography>
       </Box>
-      <Grid container spacing={2.5}>
+      <Grid container spacing={2}>
         {PRODUCT_CATALOG.map(p => (
           <Grid item xs={12} sm={6} key={p.product}>
             <Card>

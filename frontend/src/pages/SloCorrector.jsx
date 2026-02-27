@@ -41,7 +41,7 @@ export default function SloCorrector() {
   const healthy    = SLOS.filter(s => s.current >= s.target && s.budget_remaining >= 30)
 
   return (
-    <Container maxWidth="xl" sx={{ py: 3 }}>
+    <Container maxWidth="xl" sx={{ py: { xs: 1.5, sm: 2 }, px: { xs: 2, sm: 3 } }}>
       <Box sx={{ mb: 1 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 0.5 }}>
           <Typography variant="h5" fontWeight={700}>SLO Corrector</Typography>
@@ -51,13 +51,13 @@ export default function SloCorrector() {
       </Box>
 
       {/* Summary row */}
-      <Grid container spacing={2} sx={{ my: 2 }}>
+      <Grid container spacing={2} sx={{ my: 1.5 }}>
         {[
           { label: 'SLO Breached',   count: breached.length,  color: '#f44336' },
           { label: 'Error Budget Low', count: atRisk.length,  color: '#ff9800' },
           { label: 'On Track',       count: healthy.length,   color: '#4caf50' },
         ].map(s => (
-          <Grid item xs={4} key={s.label}>
+          <Grid item xs={12} sm={4} key={s.label}>
             <Card>
               <CardContent sx={{ py: '12px !important' }}>
                 <Typography variant="h4" fontWeight={700} sx={{ color: s.color }}>{s.count}</Typography>
@@ -70,7 +70,7 @@ export default function SloCorrector() {
 
       {/* Correction actions */}
       {SLOS.filter(s => s.correction).length > 0 && (
-        <Card sx={{ mb: 3, border: '1px solid rgba(248,113,113,0.3)' }}>
+        <Card sx={{ mb: 2, border: '1px solid rgba(248,113,113,0.3)' }}>
           <CardHeader title={<Typography variant="body2" fontWeight={700} sx={{ textTransform: 'uppercase', letterSpacing: 0.8, fontSize: '0.72rem', color: '#f87171' }}>Recommended Corrections</Typography>} sx={{ pb: 0 }} />
           <CardContent sx={{ pt: 1 }}>
             {SLOS.filter(s => s.correction).map((s, i) => (
@@ -88,7 +88,8 @@ export default function SloCorrector() {
 
       {/* SLO table */}
       <Card>
-        <Table size="small">
+        <Box sx={{ overflowX: 'auto' }}>
+        <Table size="small" sx={{ minWidth: 700 }}>
           <TableHead>
             <TableRow sx={{ '& th': { color: 'text.secondary', fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: 0.8, borderColor: 'rgba(255,255,255,0.08)' } }}>
               <TableCell>Service</TableCell>
@@ -130,6 +131,7 @@ export default function SloCorrector() {
             })}
           </TableBody>
         </Table>
+        </Box>
       </Card>
     </Container>
   )

@@ -106,13 +106,13 @@ const CATEGORIES = [
 
 export default function Links() {
   return (
-    <Container maxWidth="xl" sx={{ py: 3 }}>
-      <Box sx={{ mb: 3 }}>
+    <Container maxWidth="xl" sx={{ py: { xs: 1.5, sm: 2 }, px: { xs: 2, sm: 3 } }}>
+      <Box sx={{ mb: 2 }}>
         <Typography variant="h5" fontWeight={700} gutterBottom>Links</Typography>
         <Typography variant="body2" color="text.secondary">Quick access to platform tools, documentation, and team resources</Typography>
       </Box>
 
-      <Grid container spacing={2.5}>
+      <Grid container spacing={2}>
         {CATEGORIES.map(cat => {
           const CatIcon = cat.Icon
           return (

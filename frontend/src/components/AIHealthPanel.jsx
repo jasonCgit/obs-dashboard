@@ -1,14 +1,17 @@
-import { Card, CardContent, CardHeader, Typography, Box, Chip, List, ListItem, ListItemIcon, ListItemText } from '@mui/material'
+import { Card, CardContent, Typography, Box, Chip } from '@mui/material'
 import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome'
-import FiberManualRecordIcon from '@mui/icons-material/FiberManualRecord'
+
+/* Responsive font helpers — consistent across all dashboard panels */
+const fTitle   = { fontSize: 'clamp(0.85rem, 1.2vw, 1rem)' }
+const fBody    = { fontSize: 'clamp(0.75rem, 1vw, 0.85rem)' }
+const fCaption = { fontSize: 'clamp(0.68rem, 0.9vw, 0.78rem)' }
+const fSmall   = { fontSize: 'clamp(0.6rem, 0.8vw, 0.7rem)' }
 
 export default function AIHealthPanel({ data }) {
   if (!data) return null
   return (
     <Card
       sx={{
-        mb: 2,
-        // Gradient border trick
         border: '2px solid transparent',
         backgroundImage: (t) => {
           const bg = t.palette.background.paper
@@ -18,42 +21,54 @@ export default function AIHealthPanel({ data }) {
         backgroundClip: 'padding-box, border-box',
       }}
     >
-      <CardHeader
-        avatar={<AutoAwesomeIcon sx={{ color: '#a78bfa', fontSize: 20 }} />}
-        title={
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <Typography variant="h6">AI System Health Analysis</Typography>
-            <Chip
-              label="Live analysis"
-              size="small"
-              sx={{ bgcolor: 'rgba(124,58,237,0.25)', color: '#a78bfa', fontSize: '0.7rem', height: 20 }}
-            />
+      <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
+        {/* Header */}
+        <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1.5, mb: 2 }}>
+          <AutoAwesomeIcon sx={{ color: '#a78bfa', fontSize: 20, mt: 0.2 }} />
+          <Box sx={{ flex: 1 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Typography fontWeight={700} sx={fTitle}>AURA — Summary</Typography>
+              <Chip
+                label="Live"
+                size="small"
+                sx={{
+                  bgcolor: 'rgba(124,58,237,0.25)', color: '#a78bfa', ...fSmall, height: 20,
+                  '& .MuiChip-label': {
+                    animation: 'livePulse 2s ease-in-out infinite',
+                  },
+                  '@keyframes livePulse': {
+                    '0%, 100%': { opacity: 1 },
+                    '50%': { opacity: 0.3 },
+                  },
+                }}
+              />
+            </Box>
+            <Typography color="text.secondary" sx={{ ...fCaption, mt: 0.2 }}>
+              Agentic, Unified Personas, Reliability, Automation
+            </Typography>
           </Box>
-        }
-      />
-      <CardContent sx={{ pt: 0 }}>
+        </Box>
+
         {/* Critical Alert */}
-        <Box sx={{ mb: 2.5 }}>
+        <Box sx={{ mb: 2 }}>
           <Typography
-            variant="caption"
-            sx={{ color: '#f44336', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.8 }}
+            sx={{ color: '#f44336', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.8, ...fCaption }}
           >
             Critical Alert:
           </Typography>
-          <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5, lineHeight: 1.7 }}>
+          <Typography sx={{ mt: 0.5, lineHeight: 1.6, ...fBody, color: 'text.primary' }}>
             {data.critical_alert}
           </Typography>
         </Box>
 
         {/* Trend Analysis */}
-        <Box sx={{ mb: 2.5 }}>
+        <Box sx={{ mb: 2 }}>
           <Typography
-            variant="caption"
-            sx={{ color: '#a78bfa', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.8 }}
+            sx={{ color: '#a78bfa', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.8, ...fCaption }}
           >
             Trend Analysis:
           </Typography>
-          <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5, lineHeight: 1.7 }}>
+          <Typography sx={{ mt: 0.5, lineHeight: 1.6, ...fBody, color: 'text.primary' }}>
             {data.trend_analysis}
           </Typography>
         </Box>
@@ -61,24 +76,18 @@ export default function AIHealthPanel({ data }) {
         {/* AI Recommendations */}
         <Box>
           <Typography
-            variant="caption"
-            sx={{ color: '#94a3b8', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.8 }}
+            sx={{ color: '#94a3b8', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.8, ...fCaption }}
           >
             AI Recommendations:
           </Typography>
-          <List dense sx={{ mt: 0.5 }}>
+          <Box component="ul" sx={{ mt: 0.5, mb: 0, pl: 2, listStyle: 'none' }}>
             {data.recommendations.map((rec, i) => (
-              <ListItem key={i} sx={{ px: 0, py: 0.25, alignItems: 'flex-start' }}>
-                <ListItemIcon sx={{ minWidth: 20, mt: 0.5 }}>
-                  <FiberManualRecordIcon sx={{ fontSize: 8, color: '#7c3aed' }} />
-                </ListItemIcon>
-                <ListItemText
-                  primary={rec}
-                  primaryTypographyProps={{ variant: 'body2', color: 'text.secondary', lineHeight: 1.6 }}
-                />
-              </ListItem>
+              <Box component="li" key={i} sx={{ display: 'flex', gap: 1, py: 0.3 }}>
+                <Box sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: '#7c3aed', flexShrink: 0, mt: '7px' }} />
+                <Typography sx={{ lineHeight: 1.6, ...fBody, color: 'text.primary' }}>{rec}</Typography>
+              </Box>
             ))}
-          </List>
+          </Box>
         </Box>
       </CardContent>
     </Card>

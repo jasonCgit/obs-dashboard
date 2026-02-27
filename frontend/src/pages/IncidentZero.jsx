@@ -49,9 +49,9 @@ const sevColor = { critical: '#f44336', warning: '#ff9800', resolved: '#4caf50',
 
 export default function IncidentZero() {
   return (
-    <Container maxWidth="xl" sx={{ py: 3 }}>
+    <Container maxWidth="xl" sx={{ py: { xs: 1.5, sm: 2 }, px: { xs: 2, sm: 3 } }}>
       {/* Hero banner */}
-      <Card sx={{ mb: 3,
+      <Card sx={{ mb: 2,
         background: 'linear-gradient(135deg, rgba(251,146,60,0.12), rgba(244,67,54,0.06))',
         border: '1px solid rgba(251,146,60,0.25)' }}>
         <CardContent sx={{ display: 'flex', alignItems: 'center', gap: 2, py: '16px !important' }}>
@@ -79,11 +79,11 @@ export default function IncidentZero() {
         </CardContent>
       </Card>
 
-      <Grid container spacing={3}>
+      <Grid container spacing={2}>
         {/* Left — Error budget grid + burn rate alerts */}
         <Grid item xs={12} lg={8}>
           {/* Error budget status */}
-          <Card sx={{ mb: 3 }}>
+          <Card sx={{ mb: 2 }}>
             <CardHeader
               title={
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
@@ -94,9 +94,9 @@ export default function IncidentZero() {
               subheader="Services ranked by remaining error budget — lower is higher risk"
               sx={{ pb: 0 }}
             />
-            <CardContent sx={{ pt: 1 }}>
+            <CardContent sx={{ pt: 1, overflowX: 'auto' }}>
               {/* Header */}
-              <Box sx={{ display: 'grid', gridTemplateColumns: '2.5fr 0.7fr 1.5fr 0.7fr 0.7fr 0.7fr',
+              <Box sx={{ display: 'grid', gridTemplateColumns: '2.5fr 0.7fr 1.5fr 0.7fr 0.7fr 0.7fr', minWidth: 700,
                 gap: 1, px: 1, py: 0.75, mb: 0.5 }}>
                 {['Service', 'SLA', 'Error Budget', 'Burn Rate', 'Breach ETA', 'Zone'].map(h => (
                   <Typography key={h} variant="caption" color="text.secondary"
@@ -107,7 +107,7 @@ export default function IncidentZero() {
               </Box>
               <Divider sx={{ mb: 0.5 }} />
 
-              <Stack spacing={0}>
+              <Stack spacing={0} sx={{ minWidth: 700 }}>
                 {ERROR_BUDGET_SERVICES.map(s => (
                   <Box key={s.label} sx={{
                     display: 'grid', gridTemplateColumns: '2.5fr 0.7fr 1.5fr 0.7fr 0.7fr 0.7fr',
@@ -244,7 +244,7 @@ export default function IncidentZero() {
           </Card>
 
           {/* Prevention scorecard */}
-          <Card sx={{ mt: 2 }}>
+          <Card sx={{ mt: 1 }}>
             <CardContent>
               <Typography variant="caption" color="text.secondary"
                 sx={{ textTransform: 'uppercase', letterSpacing: 0.8, fontSize: '0.65rem', display: 'block', mb: 1.5 }}>

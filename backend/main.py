@@ -44,10 +44,9 @@ AI_ANALYSIS = {
 }
 
 REGIONAL_STATUS = [
-    {"region": "US-East",      "status": "critical", "issues": 1},
-    {"region": "US-West",      "status": "healthy",  "issues": 0},
-    {"region": "EU-Central",   "status": "healthy",  "issues": 0},
-    {"region": "Asia-Pacific", "status": "critical", "issues": 1},
+    {"region": "NA",   "status": "healthy",  "sod_impacts": 0, "app_issues": 0},
+    {"region": "EMEA", "status": "healthy",  "sod_impacts": 0, "app_issues": 0},
+    {"region": "APAC", "status": "critical", "sod_impacts": 2, "app_issues": 3},
 ]
 
 CRITICAL_APPS = [
@@ -79,28 +78,110 @@ CRITICAL_APPS = [
             {"description": "Assignment failure rate increased to 12%", "time_ago": "4h ago", "severity": "warning"},
         ],
     },
+    {
+        "id": "payment-gateway-api",
+        "name": "PAYMENT GATEWAY API",
+        "seal": "SEAL - 90176",
+        "status": "critical",
+        "current_issues": 3,
+        "recurring_30d": 8,
+        "last_incident": "10m ago",
+        "recent_issues": [
+            {"description": "Connection pool exhaustion - Max connections reached on primary DB cluster", "time_ago": "10m ago", "severity": "critical"},
+            {"description": "SMTP relay timeout affecting transaction confirmation emails", "time_ago": "1h ago", "severity": "warning"},
+            {"description": "Latency spike on /api/payments/process (p99 > 8s)", "time_ago": "3h ago", "severity": "warning"},
+        ],
+    },
 ]
 
+# 90-day incident trend — deterministic, split into P1 / P2
+# P1: ~15 total, max 2, mostly 0s with rare 1-2 spikes
+# P2: ~450 total, max ~15, values typically 2-10 per day
+def _build_incident_trends():
+    """Daily incident data aggregated into weekly buckets (90 days / ~13 weeks).
+    P1: ~15 total, max 2/day.  P2: ~480 total, max 15/day."""
+    from datetime import date, timedelta
+
+    today = date.today()
+    # Build daily data first (same as original)
+    p1_days_map = {3:1, 12:1, 17:1, 24:2, 31:1, 38:1, 45:1, 52:2, 58:1, 65:1, 72:1, 80:1, 87:1}
+    p2_daily = [
+        10, 5, 8, 3, 7, 6, 14, 2, 5, 10,   7, 3, 6, 5, 8, 1, 6, 4, 9, 3,
+         5, 3, 8, 1, 4, 6, 3, 8, 4, 5,   7, 2, 4, 3, 8, 6, 5, 2, 4, 7,
+         3, 9, 5, 3, 12, 4, 6, 2, 11, 3,  4, 5, 3, 7, 6, 2, 4, 8, 3, 5,
+         7, 2, 15, 8, 4, 3, 5, 7, 2, 11,  4, 5, 3, 6, 10, 7, 2, 10, 5, 3,
+         4, 2, 6, 3, 5, 4, 9, 3, 2, 1,
+    ]
+    daily = []
+    for i in range(90):
+        d = today - timedelta(days=89 - i)
+        daily.append({
+            "date": d,
+            "p1": p1_days_map.get(i + 1, 0),
+            "p2": p2_daily[i],
+        })
+
+    # Aggregate into weeks (Mon-Sun)
+    weeks = {}
+    for day in daily:
+        # ISO week start (Monday)
+        wk_start = day["date"] - timedelta(days=day["date"].weekday())
+        key = wk_start.strftime("%Y-%m-%d")
+        if key not in weeks:
+            weeks[key] = {"week": key, "label": wk_start.strftime("%b %d"), "p1": 0, "p2": 0}
+        weeks[key]["p1"] += day["p1"]
+        weeks[key]["p2"] += day["p2"]
+
+    return sorted(weeks.values(), key=lambda w: w["week"])
+
+INCIDENT_TRENDS = _build_incident_trends()
+
+INCIDENT_TREND_SUMMARY = {
+    "mttr_hours": 2.4,
+    "mtta_minutes": 8,
+    "resolution_rate": 94.2,
+    "escalation_rate": 12,
+}
+
+# Derive last-week P1/P2 from incident trends (with trend vs previous week)
+_last_week = INCIDENT_TRENDS[-1] if INCIDENT_TRENDS else {"p1": 0, "p2": 0}
+_prev_week = INCIDENT_TRENDS[-2] if len(INCIDENT_TRENDS) >= 2 else {"p1": 0, "p2": 0}
+_p1_wk = _last_week["p1"]
+_p2_wk = _last_week["p2"]
+_p1_prev = _prev_week["p1"]
+_p2_prev = _prev_week["p2"]
+_p1_trend = round((_p1_wk - _p1_prev) / _p1_prev * 100) if _p1_prev else 0
+_p2_trend = round((_p2_wk - _p2_prev) / _p2_prev * 100) if _p2_prev else 0
+
 ACTIVE_INCIDENTS = {
+    "week_label": "Last 7 Days",
     "p1": {
-        "total": 0,
-        "breakdown": [],
+        "total": _p1_wk,
+        "trend": _p1_trend,
+        "breakdown": [
+            {"label": "Unresolved", "count": max(0, _p1_wk),  "color": "#f44336"},
+            {"label": "Resolved",   "count": 0,               "color": "#4ade80"},
+        ],
     },
     "p2": {
-        "total": 1,
+        "total": _p2_wk,
+        "trend": _p2_trend,
         "breakdown": [
-            {"label": "Reassigned", "count": 1, "color": "#60a5fa"},
+            {"label": "Unresolved", "count": max(1, _p2_wk // 3),                          "color": "#ffab00"},
+            {"label": "Resolved",   "count": max(0, _p2_wk - max(1, _p2_wk // 3)),         "color": "#4ade80"},
         ],
     },
     "convey": {
         "total": 4,
+        "trend": -20,
         "breakdown": [
             {"label": "Unresolved", "count": 2, "color": "#60a5fa"},
-            {"label": "Resolved",   "count": 2, "color": "#fbbf24"},
+            {"label": "Resolved",   "count": 2, "color": "#4ade80"},
         ],
     },
     "spectrum": {
         "total": 4,
+        "trend": 0,
         "breakdown": [
             {"label": "Info", "count": 3, "color": "#60a5fa"},
             {"label": "High", "count": 1, "color": "#f44336"},
@@ -111,31 +192,43 @@ ACTIVE_INCIDENTS = {
 RECENT_ACTIVITIES = [
     {
         "category": "P1 INCIDENTS",
-        "items": [],
+        "color": "#f44336",
+        "items": [
+            {"status": "CRITICAL", "description": "Payment Gateway API — Connection pool exhaustion on primary DB cluster", "time_ago": "10m ago"},
+        ],
     },
     {
         "category": "P2 INCIDENTS",
+        "color": "#ff9800",
         "items": [
-            {"status": "REASSIGNED", "status_type": "info",
-             "description": "Cannot load the review page", "time_ago": "25m ago"},
+            {"status": "REASSIGNED", "description": "Cannot load the review page — reassigned to Platform Team", "time_ago": "25m ago"},
+            {"status": "UNRESOLVED", "description": "Fees & Billing invoice delivery down for maintenance window 8–10 PM ET", "time_ago": "3h ago"},
         ],
     },
     {
         "category": "CONVEY NOTIFICATIONS",
+        "color": "#60a5fa",
         "items": [
-            {"status": "UNRESOLVED", "status_type": "warning",
-             "description": "Starting February 26th, all Flipper tasks targeting Production Load Balancers will be blocked and need to be re-targeted to new Flipper feature toggles.", "time_ago": "22h ago"},
-            {"status": "RESOLVED",   "status_type": "success",
-             "description": "Rest of the NAMR alerts are ready to review as well.", "time_ago": "23h ago"},
-            {"status": "UNRESOLVED", "status_type": "warning",
-             "description": "Fees and Billing — Invoice delivery functionality will be down for 15 minutes between 8–10 PM ET for maintenance.", "time_ago": "1d ago"},
+            {"status": "UNRESOLVED", "description": "Starting Feb 26, all Flipper tasks targeting Production Load Balancers will be blocked and need to be re-targeted.", "time_ago": "22h ago"},
+            {"status": "RESOLVED", "description": "Rest of the NAMR alerts are ready to review.", "time_ago": "23h ago"},
+            {"status": "UNRESOLVED", "description": "Fees and Billing — Invoice delivery will be down 15 min between 8–10 PM ET for maintenance.", "time_ago": "1d ago"},
         ],
     },
     {
         "category": "SPECTRUM ALERTS",
+        "color": "#a78bfa",
         "items": [
-            {"status": "INFO", "status_type": "info",
-             "description": "Please note for EMEA MAS, SPMMA has migrated 501388 and 72301 to Axis. Remaining accounts will be migrated in subsequent phases.", "time_ago": "20h ago"},
+            {"status": "INFO", "description": "EMEA MAS: SPMMA has migrated accounts 501388 and 72301 to Axis. Remaining accounts in subsequent phases.", "time_ago": "20h ago"},
+            {"status": "WARNING", "description": "Elevated login failure rate on User Authentication service (SEAL-92156)", "time_ago": "4h ago"},
+        ],
+    },
+    {
+        "category": "DEPLOYMENTS",
+        "color": "#4ade80",
+        "items": [
+            {"status": "SUCCESS", "description": "Connect OS v3.14.2 deployed to production (SEAL-88180)", "time_ago": "22m ago"},
+            {"status": "SUCCESS", "description": "Advisor Connect hotfix v2.8.1 — DB connection pool fix rolled out", "time_ago": "1h ago"},
+            {"status": "SUCCESS", "description": "Trade Execution Engine v5.2.0 deployed — order queue optimization", "time_ago": "8h ago"},
         ],
     },
 ]
@@ -174,31 +267,6 @@ FREQUENT_INCIDENTS = [
         "last_seen": "6h ago",
     },
 ]
-
-# 90-day incident trend — deterministic, split into P1 / P2
-def _build_incident_trends():
-    p1_base = [0,0,1,0,0,0,1,0,0,1, 0,0,0,0,0,0,0,0,1,0,
-               0,0,1,0,0,0,0,0,1,0, 0,0,0,0,0,1,0,0,0,0,
-               1,0,0,0,0,0,1,0,1,0, 0,0,0,1,0,0,0,0,1,0,
-               0,0,0,1,0,0,0,0,1,0, 0,0,0,0,1,0,0,0,0,1,
-               0,0,1,0,0,0,1,0,0,0]
-    p2_base = [1,0,1,1,0,0,2,1,0,1, 1,0,0,1,0,0,0,1,1,0,
-               0,1,1,1,0,0,1,0,1,0, 1,0,1,0,0,1,1,0,0,1,
-               1,0,0,1,0,0,1,1,2,0, 0,1,0,1,1,0,0,1,1,0,
-               1,0,0,1,1,0,1,0,1,1, 0,0,1,0,1,1,0,0,1,2,
-               0,1,1,0,1,0,1,1,0,0]
-    p1_spikes = {15:3, 16:4, 30:2, 31:3, 45:4, 46:2, 60:3, 75:4, 76:3, 88:4, 89:3}
-    p2_spikes = {15:6, 16:8, 30:5, 31:7, 45:7, 46:5, 60:6, 75:7, 76:5, 88:8, 89:7}
-    return [
-        {
-            "day": i + 1,
-            "p1": p1_spikes.get(i + 1, p1_base[i]),
-            "p2": p2_spikes.get(i + 1, p2_base[i]),
-        }
-        for i in range(90)
-    ]
-
-INCIDENT_TRENDS = _build_incident_trends()
 
 # ── Knowledge Graph ───────────────────────────────────────────────────────────
 
@@ -426,7 +494,7 @@ def get_critical_apps():
 
 @app.get("/api/incident-trends")
 def get_incident_trends():
-    return INCIDENT_TRENDS
+    return {"data": INCIDENT_TRENDS, "summary": INCIDENT_TREND_SUMMARY}
 
 @app.get("/api/frequent-incidents")
 def get_frequent_incidents():
@@ -482,92 +550,260 @@ def get_blast_radius(service_id: str):
 # ── Announcements CRUD ────────────────────────────────────────────────────────
 
 class AnnouncementCreate(BaseModel):
-    type: str  # maintenance, incident, security, general, info
     title: str
-    body: str
-    author: str
-    tags: list[str] = []
+    status: str = "ongoing"  # ongoing, resolved, closed
+    severity: str = "none"  # none, standard, major
+    impacted_apps: list[str] = []
+    start_time: str = ""
+    end_time: str = ""
+    description: str = ""
+    latest_updates: str = ""
+    incident_number: str = ""
+    impact_type: str = ""
+    impact_description: str = ""
+    header_message: str = ""
+    email_recipients: list[str] = []
+    category: str = ""
+    region: str = ""
+    next_steps: str = ""
+    help_info: str = ""
+    email_body: str = ""
+    channels: dict = {"teams": False, "email": False, "connect": False, "banner": False}
     pinned: bool = False
+    # Teams channel config
+    teams_channels: list[str] = []
+    # Email channel config
+    email_source: str = ""
+    email_hide_status: bool = False
+    # Connect channel config
+    connect_dont_send_notification: bool = False
+    connect_banner_position: str = "in_ui"
+    connect_target_entities: list[str] = []
+    connect_target_regions: list[str] = []
+    connect_weave_interfaces: list[int] = []
 
 class AnnouncementUpdate(BaseModel):
-    type: Optional[str] = None
     title: Optional[str] = None
-    body: Optional[str] = None
-    author: Optional[str] = None
-    tags: Optional[list[str]] = None
+    status: Optional[str] = None
+    severity: Optional[str] = None
+    impacted_apps: Optional[list[str]] = None
+    start_time: Optional[str] = None
+    end_time: Optional[str] = None
+    description: Optional[str] = None
+    latest_updates: Optional[str] = None
+    incident_number: Optional[str] = None
+    impact_type: Optional[str] = None
+    impact_description: Optional[str] = None
+    header_message: Optional[str] = None
+    email_recipients: Optional[list[str]] = None
+    category: Optional[str] = None
+    region: Optional[str] = None
+    next_steps: Optional[str] = None
+    help_info: Optional[str] = None
+    email_body: Optional[str] = None
+    channels: Optional[dict] = None
     pinned: Optional[bool] = None
+    teams_channels: Optional[list[str]] = None
+    email_source: Optional[str] = None
+    email_hide_status: Optional[bool] = None
+    connect_dont_send_notification: Optional[bool] = None
+    connect_banner_position: Optional[str] = None
+    connect_target_entities: Optional[list[str]] = None
+    connect_target_regions: Optional[list[str]] = None
+    connect_weave_interfaces: Optional[list[int]] = None
 
-_next_announcement_id = 8
+_next_announcement_id = 1
+
+WEAVE_INTERFACES = [
+    {"id": 0, "ui_title": "Docusign eSign", "ui_name": "ConnectHomeEmbedDocusignWindow", "weave_function": "GWMConnectHomeView", "seal_id": "103845"},
+    {"id": 1, "ui_title": "Conversations", "ui_name": "ConversationsMainWindow", "weave_function": "GWMConnectCallMemoRead", "seal_id": "90176"},
+    {"id": 2, "ui_title": "EML/PLC Dashboard", "ui_name": "CreditConnect-GCM-EMLPLCDashboard", "weave_function": "GWMConnectCollateralMonitoringView", "seal_id": "90083"},
+    {"id": 3, "ui_title": "EML Rule Maintenance", "ui_name": "CreditConnect-EML-Rule-Maintenance", "weave_function": "GWMConnectCollateralMonitoringView", "seal_id": "90083"},
+    {"id": 4, "ui_title": "OnboardingConnectKycComp...", "ui_name": "OnboardingConnectKycComparisonManager", "weave_function": "OnboardingConnectLaunch", "seal_id": "84874"},
+]
 
 ANNOUNCEMENTS = [
     {
-        "id": 1, "type": "incident", "pinned": True, "status": "open",
-        "title": "Active: Payment Gateway & Email Service Degradation",
-        "body": "Two critical services are currently experiencing degraded performance. Payment Gateway API (SEAL-88451) has a database connection pool issue. Email Notification Service (SEAL-86001) has SMTP connectivity loss. Both teams are actively working on resolution. ETA: 2h.",
-        "author": "Platform NOC",
-        "date": "2026-02-25 09:45 UTC",
-        "tags": ["P1", "Active"],
+        "id": 5, "title": "Advisor Connect — Degraded Performance in EMEA",
+        "status": "ongoing", "severity": "major",
+        "impacted_apps": ["Advisor Connect (90176)"],
+        "start_time": "2026-02-26 06:30 UTC", "end_time": "",
+        "description": "Advisor Connect is experiencing elevated latency and intermittent timeouts for EMEA users. The platform team is actively investigating the root cause.",
+        "latest_updates": "06:45 UTC — Identified database connection pool exhaustion in FRA region. Scaling operations in progress.",
+        "incident_number": "INC-2026-0412",
+        "impact_type": "Performance", "impact_description": "Users may experience slow page loads and occasional 504 errors.",
+        "header_message": "Degraded performance impacting EMEA clients",
+        "email_recipients": ["emea-ops@jpmchase.com", "connect-oncall@jpmchase.com"],
+        "category": "Infrastructure", "region": "EMEA",
+        "next_steps": "Database team scaling connection pools; ETA 30 min.",
+        "help_info": "Contact the Connect Operations Center at ext. 4-7890",
+        "email_body": "<p>Advisor Connect is currently experiencing degraded performance in the EMEA region.</p>",
+        "channels": {"teams": True, "email": True, "connect": True, "banner": True},
+        "pinned": True,
+        "teams_channels": ["#connect-incidents", "#emea-operations"],
+        "email_source": "Technology",
+        "email_hide_status": False,
+        "connect_dont_send_notification": False,
+        "connect_banner_position": "in_ui",
+        "connect_target_entities": ["FRA-PB", "LON-PB"],
+        "connect_target_regions": ["EMEA"],
+        "connect_weave_interfaces": [1],
+        "ann_status": "open", "author": "J. Martinez",
+        "date": "2026-02-26 06:30 UTC",
     },
     {
-        "id": 2, "type": "maintenance", "pinned": True, "status": "open",
-        "title": "Scheduled Maintenance: POSTGRES-DB-PRIMARY — 2026-02-26 02:00–04:00 UTC",
-        "body": "Planned maintenance window for the primary PostgreSQL cluster. This includes connection pool reconfiguration (50→150 connections) and application of security patch PSQ-2024-119. Services PAYMENT GATEWAY API and IPBOL applications will have read-only access during this window. Write operations will be queued.",
-        "author": "Database Team",
-        "date": "2026-02-25 08:00 UTC",
-        "tags": ["Planned", "DB"],
+        "id": 4, "title": "Spectrum Portfolio Mgmt — Scheduled Maintenance Window",
+        "status": "ongoing", "severity": "standard",
+        "impacted_apps": ["Spectrum Portfolio Mgmt (90215)"],
+        "start_time": "2026-02-27 02:00 UTC", "end_time": "2026-02-27 06:00 UTC",
+        "description": "Scheduled maintenance for Spectrum Portfolio Management. The system will be unavailable during the maintenance window for database migration.",
+        "latest_updates": "",
+        "incident_number": "CHG-2026-1188",
+        "impact_type": "Availability", "impact_description": "Full outage during maintenance window. Read-only mode 30 min before.",
+        "header_message": "Planned downtime — Spectrum Portfolio Mgmt",
+        "email_recipients": ["spectrum-users@jpmchase.com"],
+        "category": "Maintenance", "region": "Global",
+        "next_steps": "No action required. System will auto-recover after maintenance.",
+        "help_info": "Reach out to Spectrum Support on ServiceNow",
+        "email_body": "",
+        "channels": {"teams": True, "email": True, "connect": False, "banner": True},
+        "pinned": False,
+        "teams_channels": ["#spectrum-announcements"],
+        "email_source": "Operations",
+        "email_hide_status": False,
+        "connect_dont_send_notification": False,
+        "connect_banner_position": "in_ui",
+        "connect_target_entities": [],
+        "connect_target_regions": [],
+        "connect_weave_interfaces": [],
+        "ann_status": "open", "author": "S. Patel",
+        "date": "2026-02-25 14:00 UTC",
     },
     {
-        "id": 3, "type": "security", "pinned": False, "status": "open",
-        "title": "Action Required: Rotate SMTP Credentials by 2026-03-01",
-        "body": "Following the Email Notification Service incident, the Security team has identified that secondary SMTP credentials were last rotated 18 months ago, exceeding our 90-day rotation policy. All teams using external SMTP providers must rotate credentials by 2026-03-01. Runbook: https://wiki/smtp-rotation.",
-        "author": "Security Team",
-        "date": "2026-02-25 10:30 UTC",
-        "tags": ["Action Required"],
+        "id": 3, "title": "Connect OS — New KYC Comparison Tool Rollout",
+        "status": "resolved", "severity": "none",
+        "impacted_apps": ["Connect OS (88180)"],
+        "start_time": "2026-02-24 09:00 UTC", "end_time": "2026-02-24 09:00 UTC",
+        "description": "New KYC Comparison Manager interface is now available in Connect OS for all regions. This release includes enhanced document matching and automated compliance checks.",
+        "latest_updates": "Rollout complete to all regions.",
+        "incident_number": "",
+        "impact_type": "Enhancement", "impact_description": "No negative impact. New feature availability.",
+        "header_message": "",
+        "email_recipients": [],
+        "category": "Release", "region": "Global",
+        "next_steps": "Training materials available on the internal wiki.",
+        "help_info": "",
+        "email_body": "",
+        "channels": {"teams": False, "email": False, "connect": True, "banner": False},
+        "pinned": False,
+        "teams_channels": [],
+        "email_source": "",
+        "email_hide_status": False,
+        "connect_dont_send_notification": True,
+        "connect_banner_position": "in_ui",
+        "connect_target_entities": ["USA-PB", "USA-JPMS", "LON-PB"],
+        "connect_target_regions": ["NA", "EMEA"],
+        "connect_weave_interfaces": [4],
+        "ann_status": "open", "author": "R. Chen",
+        "date": "2026-02-24 09:00 UTC",
     },
     {
-        "id": 4, "type": "general", "pinned": False, "status": "open",
-        "title": "Post-Incident Review: MERIDIAN SERVICE-QUERY V1 Latency — 2026-02-24",
-        "body": "PIR scheduled for 2026-02-26 14:00 UTC. Root cause: missing compound index on doc_domain.account_ref column introduced in migration 2024-218. Fix deployed. Contributing factor: no automated index coverage check in CI pipeline. Action items to be discussed in PIR.",
-        "author": "Trading Engineering",
-        "date": "2026-02-25 07:00 UTC",
-        "tags": ["PIR", "Resolved"],
+        "id": 2, "title": "EML Rule Maintenance — Collateral Monitoring Update",
+        "status": "resolved", "severity": "standard",
+        "impacted_apps": ["Advisor Connect (90176)"],
+        "start_time": "2026-02-23 18:00 UTC", "end_time": "2026-02-23 20:15 UTC",
+        "description": "Emergency update applied to EML rule engine to correct margin call calculation logic for APAC collateral pools.",
+        "latest_updates": "20:15 UTC — Patch deployed and verified. All margin calculations confirmed accurate.",
+        "incident_number": "INC-2026-0398",
+        "impact_type": "Data Integrity", "impact_description": "Incorrect margin call values for APAC collateral during affected period.",
+        "header_message": "EML rule engine patched",
+        "email_recipients": ["credit-ops@jpmchase.com", "apac-risk@jpmchase.com"],
+        "category": "Incident", "region": "APAC",
+        "next_steps": "Post-incident review scheduled for Feb 28.",
+        "help_info": "Contact Credit Risk Operations for reconciliation queries",
+        "email_body": "<p>An emergency patch was applied to the EML rule engine.</p>",
+        "channels": {"teams": True, "email": True, "connect": False, "banner": False},
+        "pinned": False,
+        "teams_channels": ["#credit-incidents", "#apac-operations"],
+        "email_source": "Risk Management",
+        "email_hide_status": False,
+        "connect_dont_send_notification": False,
+        "connect_banner_position": "in_ui",
+        "connect_target_entities": [],
+        "connect_target_regions": [],
+        "connect_weave_interfaces": [],
+        "ann_status": "open", "author": "A. Nakamura",
+        "date": "2026-02-23 18:00 UTC",
     },
     {
-        "id": 5, "type": "info", "pinned": False, "status": "open",
-        "title": "New Feature: Blast Radius View in Knowledge Graph",
-        "body": "The Knowledge Graph explorer now supports Blast Radius mode. Select any service and toggle to \"Blast Radius\" to instantly visualise all upstream services that depend on it. Useful for assessing incident impact scope before initiating changes.",
-        "author": "Platform Tools Team",
-        "date": "2026-02-24 16:00 UTC",
-        "tags": ["New Feature"],
-    },
-    {
-        "id": 6, "type": "maintenance", "pinned": False, "status": "closed",
-        "title": "Completed: API-GATEWAY TLS Certificate Renewal",
-        "body": "TLS certificates for API-GATEWAY (SEAL-70001) were renewed without service interruption on 2026-02-24. New certificate expiry: 2027-02-24. No action required from application teams.",
-        "author": "Platform NOC",
-        "date": "2026-02-24 11:00 UTC",
-        "tags": ["Completed"],
-    },
-    {
-        "id": 7, "type": "info", "pinned": False, "status": "closed",
-        "title": "Reminder: SLO Review Meeting — 2026-02-27 10:00 UTC",
-        "body": "Quarterly SLO review for all platform services. Please review your team's current SLO performance in the SLO Corrector dashboard before the meeting. Agenda: Q1 2026 SLO retrospective, error budget policy updates, and new target proposals for H1 2026.",
-        "author": "Platform Engineering",
-        "date": "2026-02-23 09:00 UTC",
-        "tags": ["Meeting"],
+        "id": 1, "title": "DocuSign eSign — Certificate Renewal Complete",
+        "status": "closed", "severity": "none",
+        "impacted_apps": [],
+        "start_time": "2026-02-20 12:00 UTC", "end_time": "2026-02-20 12:30 UTC",
+        "description": "SSL/TLS certificate renewal for DocuSign eSign integration endpoints completed successfully. No user impact was observed.",
+        "latest_updates": "Certificates renewed. Monitoring confirmed no errors.",
+        "incident_number": "CHG-2026-1145",
+        "impact_type": "Security", "impact_description": "None — proactive renewal.",
+        "header_message": "",
+        "email_recipients": [],
+        "category": "Maintenance", "region": "Global",
+        "next_steps": "Next renewal scheduled for Aug 2026.",
+        "help_info": "",
+        "email_body": "",
+        "channels": {"teams": False, "email": False, "connect": False, "banner": True},
+        "pinned": False,
+        "teams_channels": [],
+        "email_source": "",
+        "email_hide_status": False,
+        "connect_dont_send_notification": False,
+        "connect_banner_position": "in_ui",
+        "connect_target_entities": [],
+        "connect_target_regions": [],
+        "connect_weave_interfaces": [],
+        "ann_status": "closed", "author": "M. Williams",
+        "date": "2026-02-20 12:00 UTC",
     },
 ]
+_next_announcement_id = 6
 
 
 @app.get("/api/announcements")
-def get_announcements(status: Optional[str] = None, search: Optional[str] = None):
+def get_announcements(status: Optional[str] = None, channel: Optional[str] = None, search: Optional[str] = None):
     results = ANNOUNCEMENTS
     if status:
-        results = [a for a in results if a["status"] == status]
+        results = [a for a in results if a["ann_status"] == status]
+    if channel:
+        results = [a for a in results if a.get("channels", {}).get(channel, False)]
     if search:
         q = search.lower()
-        results = [a for a in results if q in a["title"].lower() or q in a["body"].lower() or q in a["author"].lower()]
+        results = [a for a in results if q in a["title"].lower() or q in a.get("description", "").lower() or q in a.get("author", "").lower()]
     return results
+
+
+@app.get("/api/announcements/connect/weave-interfaces")
+def get_weave_interfaces():
+    return WEAVE_INTERFACES
+
+
+@app.get("/api/announcements/connect/validate")
+def validate_connect_selection(entities: str = "", regions: str = ""):
+    entity_list = [e.strip() for e in entities.split(",") if e.strip()]
+    region_list = [r.strip() for r in regions.split(",") if r.strip()]
+    base_per_entity = {
+        "CDG-PB": 420, "FRA-PB": 890, "JIB-PB": 310, "LON-PB": 1250,
+        "MIL-PB": 380, "USA-PB": 3200, "USA-JPMS": 1800, "USA-CWM": 950, "BAH-ITS": 220,
+    }
+    total = sum(base_per_entity.get(e, 500) for e in entity_list) if entity_list else 0
+    region_str = ", ".join(region_list) if region_list else "all"
+    return {"message": f"Announcement will be sent to {total:,} {region_str} Connect users"}
+
+
+@app.get("/api/announcements/notifications")
+def get_notification_announcements():
+    return [
+        a for a in ANNOUNCEMENTS
+        if a.get("channels", {}).get("banner", False) and a.get("ann_status") == "open"
+    ]
 
 
 @app.post("/api/announcements")
@@ -575,13 +811,36 @@ def create_announcement(payload: AnnouncementCreate):
     global _next_announcement_id
     new = {
         "id": _next_announcement_id,
-        "type": payload.type,
         "title": payload.title,
-        "body": payload.body,
-        "author": payload.author,
-        "tags": payload.tags,
+        "status": payload.status,
+        "severity": payload.severity,
+        "impacted_apps": payload.impacted_apps,
+        "start_time": payload.start_time,
+        "end_time": payload.end_time,
+        "description": payload.description,
+        "latest_updates": payload.latest_updates,
+        "incident_number": payload.incident_number,
+        "impact_type": payload.impact_type,
+        "impact_description": payload.impact_description,
+        "header_message": payload.header_message,
+        "email_recipients": payload.email_recipients,
+        "category": payload.category,
+        "region": payload.region,
+        "next_steps": payload.next_steps,
+        "help_info": payload.help_info,
+        "email_body": payload.email_body,
+        "channels": payload.channels,
         "pinned": payload.pinned,
-        "status": "open",
+        "teams_channels": payload.teams_channels,
+        "email_source": payload.email_source,
+        "email_hide_status": payload.email_hide_status,
+        "connect_dont_send_notification": payload.connect_dont_send_notification,
+        "connect_banner_position": payload.connect_banner_position,
+        "connect_target_entities": payload.connect_target_entities,
+        "connect_target_regions": payload.connect_target_regions,
+        "connect_weave_interfaces": payload.connect_weave_interfaces,
+        "ann_status": "open",
+        "author": "Current User",
         "date": datetime.utcnow().strftime("%Y-%m-%d %H:%M UTC"),
     }
     _next_announcement_id += 1
@@ -594,18 +853,18 @@ def update_announcement(announcement_id: int, payload: AnnouncementUpdate):
     ann = next((a for a in ANNOUNCEMENTS if a["id"] == announcement_id), None)
     if not ann:
         raise HTTPException(status_code=404, detail="Announcement not found")
-    if payload.type is not None:
-        ann["type"] = payload.type
-    if payload.title is not None:
-        ann["title"] = payload.title
-    if payload.body is not None:
-        ann["body"] = payload.body
-    if payload.author is not None:
-        ann["author"] = payload.author
-    if payload.tags is not None:
-        ann["tags"] = payload.tags
-    if payload.pinned is not None:
-        ann["pinned"] = payload.pinned
+    for field in [
+        "title", "status", "severity", "impacted_apps", "start_time", "end_time",
+        "description", "latest_updates", "incident_number", "impact_type",
+        "impact_description", "header_message", "email_recipients", "category",
+        "region", "next_steps", "help_info", "email_body", "channels", "pinned",
+        "teams_channels", "email_source", "email_hide_status",
+        "connect_dont_send_notification", "connect_banner_position",
+        "connect_target_entities", "connect_target_regions", "connect_weave_interfaces",
+    ]:
+        val = getattr(payload, field, None)
+        if val is not None:
+            ann[field] = val
     return ann
 
 
@@ -614,7 +873,7 @@ def toggle_announcement_status(announcement_id: int):
     ann = next((a for a in ANNOUNCEMENTS if a["id"] == announcement_id), None)
     if not ann:
         raise HTTPException(status_code=404, detail="Announcement not found")
-    ann["status"] = "closed" if ann["status"] == "open" else "open"
+    ann["ann_status"] = "closed" if ann["ann_status"] == "open" else "open"
     return ann
 
 

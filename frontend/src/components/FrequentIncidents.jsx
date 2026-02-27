@@ -1,6 +1,11 @@
 import {
-  Card, CardContent, CardHeader, Typography, Box, Chip, Divider, Stack,
+  Card, CardContent, Typography, Box, Chip, Divider, Stack,
 } from '@mui/material'
+
+const fTitle   = { fontSize: 'clamp(0.85rem, 1.2vw, 1rem)' }
+const fBody    = { fontSize: 'clamp(0.75rem, 1vw, 0.85rem)' }
+const fCaption = { fontSize: 'clamp(0.68rem, 0.9vw, 0.78rem)' }
+const fSmall   = { fontSize: 'clamp(0.6rem, 0.8vw, 0.7rem)' }
 
 function statusStyle(status) {
   switch (status) {
@@ -16,46 +21,42 @@ export default function FrequentIncidents({ data }) {
 
   return (
     <Card sx={{ mt: 2 }}>
-      <CardHeader
-        title={<Typography variant="h6">↗ Frequent incidents (30d)</Typography>}
-        sx={{ pb: 0 }}
-      />
-      <CardContent sx={{ pt: 1 }}>
-        <Stack spacing={1.5} divider={<Divider />}>
+      <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
+        <Typography fontWeight={700} sx={{ ...fTitle, mb: 1 }}>↗ Frequent Incidents (30d)</Typography>
+        <Stack spacing={1} divider={<Divider />}>
           {data.map((item, i) => {
             const { bg, color } = statusStyle(item.status)
             return (
               <Box key={i}>
                 {/* App name + status badge */}
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 0.5 }}>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 0.25 }}>
                   <Box>
-                    <Typography variant="body2" fontWeight={600} sx={{ lineHeight: 1.3 }}>
+                    <Typography fontWeight={600} sx={{ lineHeight: 1.3, ...fBody }}>
                       {item.app}
                     </Typography>
-                    <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.68rem' }}>
+                    <Typography color="text.secondary" sx={fSmall}>
                       SEAL {item.seal}
                     </Typography>
                   </Box>
                   <Chip
                     label={item.status.toUpperCase()}
                     size="small"
-                    sx={{ bgcolor: bg, color, fontWeight: 700, fontSize: '0.6rem', height: 18 }}
+                    sx={{ bgcolor: bg, color, fontWeight: 700, ...fSmall, height: 18 }}
                   />
                 </Box>
 
                 {/* Description */}
-                <Typography variant="caption" color="text.secondary"
-                  sx={{ fontSize: '0.72rem', display: 'block', mb: 0.5 }}>
+                <Typography color="text.secondary"
+                  sx={{ ...fCaption, display: 'block', mb: 0.25, lineHeight: 1.4 }}>
                   {item.description}
                 </Typography>
 
                 {/* Occurrences + last seen */}
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <Typography variant="caption" fontWeight={700}
-                    sx={{ fontSize: '0.72rem', color: 'text.primary' }}>
+                  <Typography fontWeight={700} sx={{ ...fCaption, color: 'text.primary' }}>
                     {item.occurrences} occurrences
                   </Typography>
-                  <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.68rem' }}>
+                  <Typography color="text.secondary" sx={fSmall}>
                     {item.last_seen}
                   </Typography>
                 </Box>

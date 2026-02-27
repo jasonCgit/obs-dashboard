@@ -38,22 +38,22 @@ const CARDS = [
 export default function SummaryCards({ data }) {
   if (!data) return null
   return (
-    <Grid container spacing={2} sx={{ mb: 3 }}>
+    <Grid container spacing={1.5} sx={{ mb: 2 }}>
       {CARDS.map(({ key, label, Icon, color, bg }) => (
         <Grid item xs={12} sm={6} md={3} key={key}>
           <Card>
-            <CardContent sx={{ p: '20px !important' }}>
+            <CardContent sx={{ p: { xs: '12px !important', sm: '14px !important' } }}>
               <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <Box>
-                  <Typography variant="h3" fontWeight={700} sx={{ color, lineHeight: 1, mb: 0.5 }}>
+                  <Typography fontWeight={700} sx={{ color, lineHeight: 1, mb: 0.3, fontSize: 'clamp(1.4rem, 2vw, 1.8rem)' }}>
                     {data[key]}
                   </Typography>
-                  <Typography variant="body2" color="text.secondary">
+                  <Typography color="text.secondary" sx={{ fontSize: 'clamp(0.7rem, 1vw, 0.8rem)' }}>
                     {label}
                   </Typography>
                 </Box>
-                <Box sx={{ bgcolor: bg, borderRadius: '50%', p: 1.5, display: 'flex' }}>
-                  <Icon sx={{ color, fontSize: 28 }} />
+                <Box sx={{ bgcolor: bg, borderRadius: '50%', p: 1, display: 'flex' }}>
+                  <Icon sx={{ color, fontSize: 'clamp(18px, 2vw, 22px)' }} />
                 </Box>
               </Box>
             </CardContent>

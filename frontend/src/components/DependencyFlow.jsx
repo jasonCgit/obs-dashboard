@@ -161,6 +161,15 @@ const InteractiveEdge = memo(({
 const edgeTypes = { interactive: InteractiveEdge }
 
 // ── Dagre-based hierarchical layout ─────────────────────────────────────────
+
+// Padding added to each node's dimensions so dagre routes edges around them
+const NODE_PAD_X = 16
+const NODE_PAD_Y = 10
+const ROOT_W = 210
+const ROOT_H = 62
+const SVC_W  = 190
+const SVC_H  = 50
+
 function buildGraphElements(apiData, mode) {
   if (!apiData) return { nodes: [], edges: [] }
 
@@ -177,29 +186,41 @@ function buildGraphElements(apiData, mode) {
     e => e.source in allNodeMap && e.target in allNodeMap
   )
 
+  // Compute per-node edge counts to assign weights
+  const edgeCount = {}
+  validEdges.forEach(e => {
+    edgeCount[e.source] = (edgeCount[e.source] || 0) + 1
+    edgeCount[e.target] = (edgeCount[e.target] || 0) + 1
+  })
+
   // Create dagre graph
   const g = new dagre.graphlib.Graph()
   g.setDefaultEdgeLabel(() => ({}))
   g.setGraph({
     rankdir: 'LR',
-    nodesep: 55,
-    ranksep: 220,
+    nodesep: 60,       // vertical gap between nodes in same rank
+    edgesep: 20,       // minimum gap between adjacent edges
+    ranksep: 220,      // horizontal gap between ranks
     marginx: 60,
     marginy: 40,
-    ranker: 'network-simplex',
+    ranker: 'tight-tree',  // produces tighter tree layouts with fewer crossings
   })
 
-  // Add root node (slightly larger)
-  g.setNode(root.id, { width: 210, height: 62 })
+  // Add root node with padding so edges route around the full visual area
+  g.setNode(root.id, { width: ROOT_W + NODE_PAD_X, height: ROOT_H + NODE_PAD_Y })
 
-  // Add service nodes
+  // Add service nodes with padding
   serviceList.forEach(svc => {
-    g.setNode(svc.id, { width: 190, height: 50 })
+    g.setNode(svc.id, { width: SVC_W + NODE_PAD_X, height: SVC_H + NODE_PAD_Y })
   })
 
-  // Add edges
+  // Add edges with weight hints — higher-connectivity nodes get heavier edges
+  // to keep them closer to center, reducing crossings
   validEdges.forEach(e => {
-    g.setEdge(e.source, e.target)
+    const srcDeg = edgeCount[e.source] || 1
+    const tgtDeg = edgeCount[e.target] || 1
+    const weight = Math.max(1, Math.round((srcDeg + tgtDeg) / 3))
+    g.setEdge(e.source, e.target, { weight, minlen: 1 })
   })
 
   // Run dagre layout
@@ -211,8 +232,8 @@ function buildGraphElements(apiData, mode) {
       id: root.id,
       type: 'root',
       position: {
-        x: g.node(root.id).x - 105,
-        y: g.node(root.id).y - 31,
+        x: g.node(root.id).x - ROOT_W / 2,
+        y: g.node(root.id).y - ROOT_H / 2,
       },
       data: { ...root },
     },
@@ -222,8 +243,8 @@ function buildGraphElements(apiData, mode) {
         id: svc.id,
         type: 'service',
         position: {
-          x: pos.x - 95,
-          y: pos.y - 25,
+          x: pos.x - SVC_W / 2,
+          y: pos.y - SVC_H / 2,
         },
         data: { ...svc },
       }

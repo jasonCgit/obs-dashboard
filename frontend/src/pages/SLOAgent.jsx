@@ -87,9 +87,9 @@ export default function SloAgent() {
   const warnCount = SERVICES.filter(s => s.status === 'warning').length
 
   return (
-    <Container maxWidth="xl" sx={{ py: 3 }}>
+    <Container maxWidth="xl" sx={{ py: { xs: 1.5, sm: 2 }, px: { xs: 2, sm: 3 } }}>
       {/* Agent status banner */}
-      <Card sx={{ mb: 3, background: 'linear-gradient(135deg, rgba(99,102,241,0.12), rgba(139,92,246,0.08))',
+      <Card sx={{ mb: 2, background: 'linear-gradient(135deg, rgba(99,102,241,0.12), rgba(139,92,246,0.08))',
         border: '1px solid rgba(99,102,241,0.25)' }}>
         <CardContent sx={{ display: 'flex', alignItems: 'center', gap: 2, py: '16px !important' }}>
           <Avatar sx={{ bgcolor: agentRunning ? '#6366f1' : '#64748b', width: 40, height: 40 }}>
@@ -121,12 +121,12 @@ export default function SloAgent() {
         </CardContent>
       </Card>
 
-      <Grid container spacing={3}>
+      <Grid container spacing={2}>
         {/* Left — SLO table + actions */}
         <Grid item xs={12} lg={8}>
           {/* Pending agent actions */}
           {actions.length > 0 && (
-            <Card sx={{ mb: 3 }}>
+            <Card sx={{ mb: 2 }}>
               <CardHeader
                 title={
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -191,9 +191,9 @@ export default function SloAgent() {
               subheader={`${SERVICES.length} services tracked`}
               sx={{ pb: 0 }}
             />
-            <CardContent sx={{ pt: 1 }}>
+            <CardContent sx={{ pt: 1, overflowX: 'auto' }}>
               {/* Header row */}
-              <Box sx={{ display: 'grid', gridTemplateColumns: '2.5fr 0.8fr 0.8fr 1.5fr 0.5fr 0.6fr',
+              <Box sx={{ display: 'grid', gridTemplateColumns: '2.5fr 0.8fr 0.8fr 1.5fr 0.5fr 0.6fr', minWidth: 700,
                 gap: 1, px: 1, py: 0.75, mb: 0.5 }}>
                 {['Service', 'Target', 'Current', 'Error Budget', '', 'Status'].map(h => (
                   <Typography key={h} variant="caption" color="text.secondary"
@@ -204,7 +204,7 @@ export default function SloAgent() {
               </Box>
               <Divider sx={{ mb: 0.5 }} />
 
-              <Stack spacing={0}>
+              <Stack spacing={0} sx={{ minWidth: 700 }}>
                 {SERVICES.map(s => (
                   <Box key={s.id} sx={{
                     display: 'grid', gridTemplateColumns: '2.5fr 0.8fr 0.8fr 1.5fr 0.5fr 0.6fr',
@@ -282,7 +282,7 @@ export default function SloAgent() {
           </Card>
 
           {/* Agent summary card */}
-          <Card sx={{ mt: 2 }}>
+          <Card sx={{ mt: 1 }}>
             <CardContent>
               <Typography variant="caption" color="text.secondary"
                 sx={{ textTransform: 'uppercase', letterSpacing: 0.8, fontSize: '0.65rem', display: 'block', mb: 1.5 }}>

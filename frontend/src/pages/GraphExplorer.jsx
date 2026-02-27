@@ -2,8 +2,10 @@ import { useState, useEffect, useCallback } from 'react'
 import {
   Box, Typography, Chip, Divider, CircularProgress, Alert, Stack,
   Card, CardContent, CardHeader, Select, FormControl, MenuItem,
-  Tabs, Tab,
+  Tabs, Tab, IconButton,
 } from '@mui/material'
+import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined'
+import CloseIcon        from '@mui/icons-material/Close'
 import AccountTreeIcon from '@mui/icons-material/AccountTree'
 import RadarIcon       from '@mui/icons-material/Radar'
 import ErrorIcon       from '@mui/icons-material/Error'
@@ -324,6 +326,7 @@ export default function GraphExplorer() {
   const [loading,          setLoading]           = useState(false)
   const [error,            setError]             = useState(null)
   const [sidebarTab,       setSidebarTab]        = useState(0)
+  const [sidebarOpen,      setSidebarOpen]       = useState(false)
 
   // Load service list once
   useEffect(() => {
@@ -372,12 +375,12 @@ export default function GraphExplorer() {
         bgcolor: 'background.paper',
         borderBottom: '1px solid',
         borderColor: 'divider',
-        px: 3, py: 1.5,
-        display: 'flex', alignItems: 'center', gap: 2.5,
-        flexShrink: 0,
+        px: { xs: 1.5, sm: 3 }, py: 1.5,
+        display: 'flex', alignItems: 'center', gap: { xs: 1.5, sm: 2.5 },
+        flexShrink: 0, flexWrap: 'wrap',
       }}>
         {/* Scenario dropdown */}
-        <FormControl size="small" sx={{ minWidth: 300 }}>
+        <FormControl size="small" sx={{ minWidth: { xs: '100%', sm: 300 } }}>
           <Select
             value={selectedScenario}
             onChange={(e) => handleScenarioSelect(e.target.value)}
@@ -437,7 +440,7 @@ export default function GraphExplorer() {
       <ExecutiveSummaryPanel graphData={graphData} scenario={activeScenario} />
 
       {/* Graph + sidebar */}
-      <Box sx={{ flexGrow: 1, display: 'flex', overflow: 'hidden' }}>
+      <Box sx={{ flexGrow: 1, display: 'flex', overflow: 'hidden', position: 'relative' }}>
 
         {/* Graph canvas */}
         <Box sx={{ flexGrow: 1, position: 'relative' }}>
@@ -462,13 +465,32 @@ export default function GraphExplorer() {
           )}
         </Box>
 
+        {/* Mobile sidebar toggle */}
+        <IconButton
+          onClick={() => setSidebarOpen(o => !o)}
+          sx={{
+            display: { xs: 'flex', md: 'none' },
+            position: 'absolute', bottom: 16, right: 16, zIndex: 20,
+            bgcolor: 'primary.main', color: 'white',
+            '&:hover': { bgcolor: 'primary.dark' },
+            boxShadow: 3,
+          }}
+        >
+          {sidebarOpen ? <CloseIcon /> : <InfoOutlinedIcon />}
+        </IconButton>
+
         {/* Right sidebar */}
         <Box sx={{
-          width: 280, flexShrink: 0,
-          borderLeft: '1px solid',
+          width: { xs: '100%', md: 280 }, flexShrink: 0,
+          borderLeft: { md: '1px solid' },
           borderColor: 'divider',
           bgcolor: 'background.paper',
-          display: 'flex', flexDirection: 'column', overflow: 'hidden',
+          display: { xs: sidebarOpen ? 'flex' : 'none', md: 'flex' },
+          flexDirection: 'column', overflow: 'hidden',
+          position: { xs: 'absolute', md: 'static' },
+          right: 0, top: 0, bottom: 0, zIndex: 15,
+          maxWidth: { xs: 320, md: 280 },
+          boxShadow: { xs: sidebarOpen ? 8 : 0, md: 'none' },
         }}>
           {graphData ? (
             <>

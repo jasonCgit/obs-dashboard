@@ -42,21 +42,21 @@ export default function CustomerJourney() {
   const overallStatus = steps.some(s => s.status === 'critical') ? 'critical' : steps.some(s => s.status === 'warning') ? 'warning' : 'healthy'
 
   return (
-    <Container maxWidth="xl" sx={{ py: 3 }}>
-      <Box sx={{ mb: 3 }}>
+    <Container maxWidth="xl" sx={{ py: { xs: 1.5, sm: 2 }, px: { xs: 2, sm: 3 } }}>
+      <Box sx={{ mb: 2 }}>
         <Typography variant="h5" fontWeight={700} gutterBottom>Customer Journey</Typography>
         <Typography variant="body2" color="text.secondary">End-to-end service path health for key user workflows</Typography>
       </Box>
 
       {/* Journey selector */}
-      <ToggleButtonGroup value={activeJourney} exclusive onChange={(_, v) => v && setActiveJourney(v)} size="small" sx={{ mb: 3 }}>
+      <ToggleButtonGroup value={activeJourney} exclusive onChange={(_, v) => v && setActiveJourney(v)} size="small" sx={{ mb: 2 }}>
         {Object.keys(JOURNEYS).map(j => (
           <ToggleButton key={j} value={j} sx={{ textTransform: 'none', fontSize: '0.82rem', px: 2 }}>{j}</ToggleButton>
         ))}
       </ToggleButtonGroup>
 
       {/* Overall status banner */}
-      <Card sx={{ mb: 3, border: `1px solid ${STATUS_COLOR[overallStatus]}44` }}>
+      <Card sx={{ mb: 2, border: `1px solid ${STATUS_COLOR[overallStatus]}44` }}>
         <CardContent sx={{ py: '12px !important', display: 'flex', alignItems: 'center', gap: 2 }}>
           {(() => { const Icon = STATUS_ICON[overallStatus]; return <Icon sx={{ color: STATUS_COLOR[overallStatus], fontSize: 22 }} /> })()}
           <Box>
@@ -99,7 +99,7 @@ export default function CustomerJourney() {
                 </CardContent>
               </Card>
               {i < steps.length - 1 && (
-                <ArrowForwardIcon sx={{ fontSize: 16, color: 'text.disabled', mx: 0.5, flexShrink: 0 }} />
+                <ArrowForwardIcon sx={{ fontSize: 16, color: 'text.disabled', mx: 0.5, flexShrink: 0, display: { xs: 'none', sm: 'block' } }} />
               )}
             </Box>
           )

@@ -1,119 +1,103 @@
 import {
-  Card, CardContent, CardHeader, Typography, Box, Chip,
-  Divider, Stack,
+  Card, CardContent, Typography, Box, Chip, Stack,
 } from '@mui/material'
 import WarningAmberIcon from '@mui/icons-material/WarningAmber'
 import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline'
+
+/* Responsive font helpers — consistent across all dashboard panels */
+const fTitle    = { fontSize: 'clamp(0.85rem, 1.2vw, 1rem)' }
+const fBody     = { fontSize: 'clamp(0.75rem, 1vw, 0.85rem)' }
+const fCaption  = { fontSize: 'clamp(0.68rem, 0.9vw, 0.78rem)' }
+const fSmall    = { fontSize: 'clamp(0.6rem, 0.8vw, 0.7rem)' }
+const fMetric   = { fontSize: 'clamp(0.88rem, 1.1vw, 1rem)' }
 
 export default function CriticalApps({ data }) {
   if (!data || data.length === 0) return null
 
   return (
     <Card>
-      <CardHeader
-        title={
-          <Box>
-            <Typography variant="h6">
-              Critical applications ({data.length})
-            </Typography>
-            <Typography variant="caption" color="text.secondary">
-              Applications requiring immediate attention
-            </Typography>
-          </Box>
-        }
-        sx={{ pb: 1 }}
-      />
-      <CardContent sx={{ pt: 0 }}>
-        <Stack spacing={2} divider={<Divider />}>
-          {data.map((app) => (
-            <Box key={app.id}>
-              {/* Title + status badge */}
-              <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', mb: 1.5 }}>
-                <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1 }}>
-                  <Box sx={{ width: 14, height: 14, bgcolor: '#f44336', borderRadius: 0.5, mt: 0.3, flexShrink: 0 }} />
+      <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
+        {/* Header */}
+        <Box sx={{ mb: 1.5 }}>
+          <Typography fontWeight={700} sx={fTitle}>
+            Critical Applications ({data.length})
+          </Typography>
+          <Typography color="text.secondary" sx={fCaption}>
+            Applications requiring immediate attention
+          </Typography>
+        </Box>
+
+        <Stack spacing={1.5}>
+          {data.map((app) => {
+            const statusColor = app.status === 'critical' ? '#f44336' : '#ff9800'
+            return (
+              <Box key={app.id} sx={{
+                borderRadius: 2,
+                border: '1px solid',
+                borderColor: `${statusColor}30`,
+                borderLeft: `3px solid ${statusColor}`,
+                bgcolor: `${statusColor}06`,
+                p: 1.5,
+              }}>
+                {/* Title + status badge */}
+                <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', mb: 1 }}>
                   <Box>
-                    <Typography variant="body2" fontWeight={700} sx={{ lineHeight: 1.3 }}>
-                      {app.name}
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary">
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <Typography fontWeight={700} sx={{ ...fBody, lineHeight: 1.3 }}>
+                        {app.name}
+                      </Typography>
+                      <Chip
+                        label={app.status.toUpperCase()}
+                        size="small"
+                        sx={{
+                          bgcolor: `${statusColor}18`, color: statusColor,
+                          fontWeight: 700, ...fSmall, height: 18,
+                        }}
+                      />
+                    </Box>
+                    <Typography color="text.secondary" sx={{ ...fSmall, mt: 0.25 }}>
                       {app.seal}
                     </Typography>
                   </Box>
                 </Box>
-                <Chip
-                  label={app.status.toUpperCase()}
-                  size="small"
-                  sx={{
-                    bgcolor: app.status === 'critical' ? 'rgba(244,67,54,0.15)' : 'rgba(255,152,0,0.15)',
-                    color: app.status === 'critical' ? '#f44336' : '#ff9800',
-                    fontWeight: 700,
-                    fontSize: '0.65rem',
-                    height: 20,
-                  }}
-                />
-              </Box>
 
-              {/* Metrics row */}
-              <Box sx={{ display: 'flex', gap: 4, mb: 1.5 }}>
-                <Box>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.4, mb: 0.2 }}>
-                    <WarningAmberIcon sx={{ fontSize: 12, color: 'text.secondary' }} />
-                    <Typography variant="caption" color="text.secondary">Current Issues</Typography>
-                  </Box>
-                  <Typography variant="h6" fontWeight={700} color="error.main" lineHeight={1.3}>
-                    {app.current_issues}
-                  </Typography>
+                {/* Metrics row */}
+                <Box sx={{ display: 'flex', gap: 2, mb: 1, flexWrap: 'wrap' }}>
+                  {[
+                    { icon: <WarningAmberIcon sx={{ fontSize: 11, color: 'text.secondary' }} />, label: 'Issues', value: app.current_issues, color: 'error.main' },
+                    { icon: <Box component="span" sx={{ ...fSmall, color: 'text.secondary', lineHeight: 1 }}>↗</Box>, label: 'Recurring', value: app.recurring_30d, color: 'text.primary' },
+                    { icon: <Box component="span" sx={{ ...fSmall, color: 'text.secondary', lineHeight: 1 }}>⏱</Box>, label: 'Last', value: app.last_incident, color: 'warning.main' },
+                  ].map(m => (
+                    <Box key={m.label} sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                      {m.icon}
+                      <Typography color="text.secondary" sx={fSmall}>{m.label}</Typography>
+                      <Typography fontWeight={700} sx={{ ...fBody, color: m.color }}>{m.value}</Typography>
+                    </Box>
+                  ))}
                 </Box>
-                <Box>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.4, mb: 0.2 }}>
-                    <Box component="span" sx={{ fontSize: 12, color: 'text.secondary', lineHeight: 1 }}>↗</Box>
-                    <Typography variant="caption" color="text.secondary">Recurring (30d)</Typography>
-                  </Box>
-                  <Typography variant="h6" fontWeight={700} lineHeight={1.3}>
-                    {app.recurring_30d}
-                  </Typography>
-                </Box>
-                <Box>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.4, mb: 0.2 }}>
-                    <Box component="span" sx={{ fontSize: 12, color: 'text.secondary', lineHeight: 1 }}>🕐</Box>
-                    <Typography variant="caption" color="text.secondary">Last Incident</Typography>
-                  </Box>
-                  <Typography variant="h6" fontWeight={700} color="warning.main" lineHeight={1.3}>
-                    {app.last_incident}
-                  </Typography>
-                </Box>
-              </Box>
 
-              {/* Recent issues */}
-              {app.recent_issues?.length > 0 && (
-                <>
-                  <Typography variant="caption" color="text.secondary"
-                    sx={{ display: 'block', mb: 0.75, fontWeight: 500 }}>
-                    Recent Issues:
-                  </Typography>
-                  <Stack spacing={0.75}>
+                {/* Recent issues */}
+                {app.recent_issues?.length > 0 && (
+                  <Stack spacing={0.5}>
                     {app.recent_issues.map((issue, i) => (
-                      <Box key={i} sx={{ display: 'flex', alignItems: 'flex-start', gap: 0.75 }}>
+                      <Box key={i} sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
                         {issue.severity === 'critical'
-                          ? <ErrorOutlineIcon   sx={{ fontSize: 14, color: 'error.main',   mt: 0.15, flexShrink: 0 }} />
-                          : <WarningAmberIcon   sx={{ fontSize: 14, color: 'warning.main', mt: 0.15, flexShrink: 0 }} />
+                          ? <ErrorOutlineIcon   sx={{ fontSize: 13, color: 'error.main',   flexShrink: 0 }} />
+                          : <WarningAmberIcon   sx={{ fontSize: 13, color: 'warning.main', flexShrink: 0 }} />
                         }
-                        <Box>
-                          <Typography variant="caption"
-                            sx={{ fontSize: '0.73rem', display: 'block', lineHeight: 1.35, color: 'text.primary' }}>
-                            {issue.description}
-                          </Typography>
-                          <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.65rem' }}>
-                            {issue.time_ago}
-                          </Typography>
-                        </Box>
+                        <Typography sx={{ ...fBody, lineHeight: 1.35, color: 'text.primary' }}>
+                          {issue.description}
+                        </Typography>
+                        <Typography color="text.secondary" sx={{ ...fSmall, flexShrink: 0, ml: 0.5 }}>
+                          {issue.time_ago}
+                        </Typography>
                       </Box>
                     ))}
                   </Stack>
-                </>
-              )}
-            </Box>
-          ))}
+                )}
+              </Box>
+            )
+          })}
         </Stack>
       </CardContent>
     </Card>

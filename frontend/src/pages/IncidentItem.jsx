@@ -85,13 +85,13 @@ export default function IncidentItem() {
   const inc = INCIDENTS.find(i => i.id === selected)
 
   return (
-    <Container maxWidth="xl" sx={{ py: 3 }}>
-      <Box sx={{ mb: 3 }}>
+    <Container maxWidth="xl" sx={{ py: { xs: 1.5, sm: 2 }, px: { xs: 2, sm: 3 } }}>
+      <Box sx={{ mb: 2 }}>
         <Typography variant="h5" fontWeight={700} gutterBottom>Incident Items</Typography>
         <Typography variant="body2" color="text.secondary">Active and recent incidents with timeline and resolution notes</Typography>
       </Box>
 
-      <Grid container spacing={3}>
+      <Grid container spacing={2}>
         {/* Incident list */}
         <Grid item xs={12} md={4}>
           <Card>

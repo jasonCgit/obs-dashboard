@@ -3,25 +3,28 @@ import {
   Dialog, DialogContent, IconButton, Typography, Box, Grid, Chip, Divider, Stack, Button,
 } from '@mui/material'
 import CloseIcon          from '@mui/icons-material/Close'
-import DashboardIcon      from '@mui/icons-material/Dashboard'
+import HomeIcon           from '@mui/icons-material/Home'
 import StarIcon           from '@mui/icons-material/Star'
-import ViewModuleIcon     from '@mui/icons-material/ViewModule'
-import CategoryIcon       from '@mui/icons-material/Category'
-import StorageIcon        from '@mui/icons-material/Storage'
+import ViewQuiltIcon      from '@mui/icons-material/ViewQuilt'
+import InventoryIcon      from '@mui/icons-material/Inventory'
+import AppsIcon           from '@mui/icons-material/Apps'
 import AccountTreeIcon    from '@mui/icons-material/AccountTree'
 import RouteIcon          from '@mui/icons-material/Route'
-import TimelineIcon       from '@mui/icons-material/Timeline'
+import SpeedIcon          from '@mui/icons-material/Speed'
 import CampaignIcon       from '@mui/icons-material/Campaign'
 import LinkIcon           from '@mui/icons-material/Link'
 import ShieldIcon         from '@mui/icons-material/Shield'
-import LightModeIcon      from '@mui/icons-material/LightMode'
 import MenuBookIcon       from '@mui/icons-material/MenuBook'
+import SupportAgentIcon   from '@mui/icons-material/SupportAgent'
+import FeedbackIcon       from '@mui/icons-material/Feedback'
+import ContactsIcon       from '@mui/icons-material/Contacts'
+import DescriptionIcon    from '@mui/icons-material/Description'
 
 // Ordered by tab order: Home, Favorites, View Central, Product Catalog,
 // Applications, Blast Radius, Customer Journeys, SLO Agent, Announcements, Links
 const FEATURES = [
   {
-    icon: DashboardIcon,
+    icon: HomeIcon,
     color: '#60a5fa',
     title: 'Home Dashboard',
     desc: 'Single pane of glass — critical apps with recent issues, AI health analysis, regional status, P1/P2 incident donuts, 90-day trend line chart, frequent incidents, and live activity feed.',
@@ -30,24 +33,24 @@ const FEATURES = [
     icon: StarIcon,
     color: '#fbbf24',
     title: 'Favorites',
-    desc: 'Pin your most-used observability views for instant access. Star any view from View Central and see them all in one place.',
+    desc: 'Pinned View Central dashboards for quick access. Star any custom dashboard and find them all here — searchable by name or description with SEAL associations and widget counts.',
   },
   {
-    icon: ViewModuleIcon,
+    icon: ViewQuiltIcon,
     color: '#c084fc',
     title: 'View Central',
-    desc: '12 observability views across dependency graphs, analytics dashboards, AI-powered tools, and live monitoring — searchable and organized by domain.',
+    desc: 'Custom dashboards scoped to product areas. Create, configure, and monitor with drag-and-drop widget grids, SEAL filtering, per-dashboard notifications, and full search.',
   },
   {
-    icon: CategoryIcon,
+    icon: InventoryIcon,
     color: '#fb923c',
     title: 'Product Catalog',
     desc: '6 business products (Advisor Connect, Spectrum Equities, Connect OS, GWM Collateral, Client Case Mgmt, IPBOL) with per-product health, service counts, and linked views.',
   },
   {
-    icon: StorageIcon,
+    icon: AppsIcon,
     color: '#4ade80',
-    title: 'Applications Registry',
+    title: 'Applications',
     desc: '20+ registered applications with status, SLA targets, team ownership, and 30-day incident history — filterable by health status with full search.',
   },
   {
@@ -63,7 +66,7 @@ const FEATURES = [
     desc: 'End-to-end path health for Trade Execution, Client Login, and Document Delivery — step-by-step latency and error rate visibility across every service hop.',
   },
   {
-    icon: TimelineIcon,
+    icon: SpeedIcon,
     color: '#38bdf8',
     title: 'SLO Agent',
     desc: 'Autonomous SLO monitoring agent that predicts breaches, proposes auto-remediation actions, and surfaces error budget burn rates before they cause incidents.',
@@ -85,12 +88,6 @@ const FEATURES = [
     color: '#fb923c',
     title: 'Incident Zero',
     desc: 'Proactive pre-incident management — burn rate alerts, error budget dashboards, breach ETAs, and prevention timelines to stop P1s before they happen.',
-  },
-  {
-    icon: LightModeIcon,
-    color: '#fbbf24',
-    title: 'Dark & Light Mode',
-    desc: 'Full dark/light theme toggle with theme-aware cards, graphs, nav bar, and components. Preference persists across sessions.',
   },
 ]
 
@@ -200,6 +197,45 @@ export function BrochureButton() {
             </Grid>
 
             <Divider sx={{ my: 2.5 }} />
+
+            {/* Resources & Support */}
+            <Typography variant="body2" fontWeight={700} color="text.secondary"
+              sx={{ textTransform: 'uppercase', letterSpacing: 1, fontSize: '0.7rem', mb: 1.5 }}>
+              Resources & Support
+            </Typography>
+
+            <Stack direction="row" spacing={1.5} sx={{ mb: 2.5 }}>
+              {[
+                { icon: SupportAgentIcon, label: 'Support',         color: '#60a5fa' },
+                { icon: FeedbackIcon,     label: 'Feature Request', color: '#a78bfa' },
+                { icon: ContactsIcon,     label: 'Contacts',        color: '#4ade80' },
+                { icon: DescriptionIcon,  label: 'Documentation',   color: '#fb923c' },
+              ].map(({ icon: Icon, label, color }) => (
+                <Box
+                  key={label}
+                  sx={{
+                    flex: 1,
+                    display: 'flex', alignItems: 'center', gap: 1,
+                    p: 1.25, borderRadius: 1.5,
+                    border: '1px solid', borderColor: 'divider',
+                    cursor: 'pointer',
+                    bgcolor: (t) => t.palette.mode === 'dark' ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.015)',
+                    '&:hover': {
+                      bgcolor: (t) => t.palette.mode === 'dark' ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)',
+                      borderColor: color,
+                    },
+                    transition: 'all 0.15s',
+                  }}
+                >
+                  <Icon sx={{ fontSize: 18, color }} />
+                  <Typography variant="caption" fontWeight={600} sx={{ fontSize: '0.73rem' }}>
+                    {label}
+                  </Typography>
+                </Box>
+              ))}
+            </Stack>
+
+            <Divider sx={{ mb: 2.5 }} />
 
             <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <Box>

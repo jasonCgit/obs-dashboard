@@ -16,14 +16,14 @@ A real-time observability platform purpose-built for AWM engineering — combini
 ---
 
 ### Favorites
-> Pin your most-used observability views for instant access. Star any view from View Central and see them all in one place.
+> Pinned View Central dashboards for quick access. Star any custom dashboard and find them all here — searchable by name or description with SEAL associations and widget counts.
 
 <img src="docs/gifs/favorites.gif" alt="Favorites" width="100%">
 
 ---
 
 ### View Central
-> 12 observability views across dependency graphs, analytics dashboards, AI-powered tools, and live monitoring — searchable and organized by domain.
+> Custom dashboards scoped to product areas. Create, configure, and monitor with drag-and-drop widget grids, SEAL filtering, per-dashboard notifications, and full search.
 
 <img src="docs/gifs/view-central.gif" alt="View Central" width="100%">
 
@@ -108,8 +108,8 @@ The frontend proxies all `/api/*` requests to the backend via Vite's dev server 
 | Tab | Feature | Description |
 |-----|---------|-------------|
 | **Home** | Dashboard | Critical apps, AI health analysis, regional status, active incidents, incident trends, frequent incidents, recent activities |
-| **Favorites** | Pinned Views | Star any view for quick access — persists across sessions |
-| **View Central** | 12 Views | Dependency graphs, analytics, AI tools, live monitoring by domain |
+| **Favorites** | Pinned Dashboards | Star any View Central for quick access — searchable with SEAL associations and widget counts |
+| **View Central** | Custom Dashboards | Create, configure, and monitor product-scoped dashboards with drag-and-drop widget grids and notifications |
 | **Product Catalog** | 6 Products | Per-product health, service counts, linked views (Advisor Connect, Spectrum, Connect OS, GWM, Client Case, IPBOL) |
 | **Applications** | Registry | 20+ apps with status, SLA, team ownership, incident history, search & filter |
 | **Blast Radius** | Dependency Graphs | 3 interactive scenarios with executive summary, root cause, business processes, dagre layout |
@@ -188,8 +188,11 @@ obs-dashboard/
 │   │   │                #   IncidentTrends, BrochureModal, ActiveIncidentsPanel,
 │   │   │                #   FrequentIncidents, RecentActivities, AIHealthPanel
 │   │   ├── pages/       # Dashboard, GraphExplorer, Applications, Favorites,
-│   │   │                #   ViewCentral, ProductCatalog, CustomerJourney,
-│   │   │                #   SloAgent, IncidentZero, Announcements, Links
+│   │   │                #   ProductCatalog, CustomerJourney, SloAgent,
+│   │   │                #   IncidentZero, Announcements, Links
+│   │   ├── view-central/ # ViewCentralListing, ViewCentralDashboard,
+│   │   │                #   viewCentralStorage, WidgetWrapper, WidgetAddDrawer,
+│   │   │                #   ViewCentralForm, widgetRegistry, NotificationDrawer
 │   │   ├── ThemeContext.jsx  # Dark/light mode context + provider
 │   │   └── App.jsx      # Router and nav
 │   └── vite.config.js   # Dev server — proxy points to :8080

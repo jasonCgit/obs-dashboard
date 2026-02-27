@@ -78,6 +78,15 @@ def gif_dashboard(page):
 def gif_favorites(page):
     print("Capturing favorites.gif ...")
     frames = []
+    # Ensure View Centrals are seeded and some are favorited
+    page.goto(f"{BASE_URL}/view-central", wait_until="networkidle")
+    page.wait_for_timeout(800)
+    page.evaluate("""() => {
+        const KEY = 'obs-view-centrals';
+        const views = JSON.parse(localStorage.getItem(KEY) || '[]');
+        views.forEach(v => { v.favorite = true; });
+        localStorage.setItem(KEY, JSON.stringify(views));
+    }""")
     page.goto(f"{BASE_URL}/favorites", wait_until="networkidle")
     page.wait_for_timeout(600)
     for _ in range(4):
