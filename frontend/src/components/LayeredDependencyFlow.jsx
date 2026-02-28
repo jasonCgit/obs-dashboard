@@ -163,7 +163,7 @@ function buildLayeredGraph(apiData, activeLayers) {
         sourceHandle: 'top',
         targetHandle: 'bottom',
         type: 'interactive',
-        data: { color: nodeStatusColor[e.target] || LAYER_EDGE_COLORS.indicator, highlighted: false, dimmed: false, layerType: 'indicator' },
+        data: { color: nodeStatusColor[e.target] || LAYER_EDGE_COLORS.indicator, highlighted: false, dimmed: false, layerType: 'indicator', direction: e.direction || 'uni' },
       })
     })
   }
@@ -190,7 +190,7 @@ function buildLayeredGraph(apiData, activeLayers) {
       sourceHandle: 'right',
       targetHandle: 'left',
       type: 'interactive',
-      data: { color: nodeStatusColor[e.target] || LAYER_EDGE_COLORS.component, highlighted: false, dimmed: false, layerType: 'component' },
+      data: { color: nodeStatusColor[e.target] || LAYER_EDGE_COLORS.component, highlighted: false, dimmed: false, layerType: 'component', direction: e.direction || 'uni' },
     })
   })
 
@@ -236,7 +236,7 @@ function buildLayeredGraph(apiData, activeLayers) {
         sourceHandle: 'bottom',
         targetHandle: 'top',
         type: 'interactive',
-        data: { color: nodeStatusColor[e.target] || LAYER_EDGE_COLORS.platform, highlighted: false, dimmed: false, layerType: 'platform' },
+        data: { color: nodeStatusColor[e.target] || LAYER_EDGE_COLORS.platform, highlighted: false, dimmed: false, layerType: 'platform', direction: e.direction || 'uni' },
       })
     })
 
@@ -281,7 +281,7 @@ function buildLayeredGraph(apiData, activeLayers) {
         sourceHandle: 'bottom',
         targetHandle: 'top',
         type: 'interactive',
-        data: { color: nodeStatusColor[e.target] || LAYER_EDGE_COLORS.datacenter, highlighted: false, dimmed: false, layerType: 'datacenter' },
+        data: { color: nodeStatusColor[e.target] || LAYER_EDGE_COLORS.datacenter, highlighted: false, dimmed: false, layerType: 'datacenter', direction: e.direction || 'uni' },
       })
     })
 

@@ -228,6 +228,7 @@ export const InteractiveEdge = memo(({
   const strokeWidth = isHighlighted ? 2.5 : 1.4
   const opacity = data?.dimmed ? 0.15 : 1
   const layerType = data?.layerType || 'component'
+  const direction = data?.direction || 'uni'
 
   const dashArray =
     layerType === 'platform'   ? '6 3'
@@ -236,8 +237,46 @@ export const InteractiveEdge = memo(({
     : isHighlighted              ? '6 3'
     : 'none'
 
+  // Unique marker IDs scoped to this edge
+  const endMarkerId = `arrow-end-${id}`
+  const startMarkerId = `arrow-start-${id}`
+  const arrowSize = isHighlighted ? 10 : 8
+  const arrowH = isHighlighted ? 8 : 6
+
   return (
     <g style={{ cursor: 'pointer', opacity }}>
+      <defs>
+        <marker
+          id={endMarkerId}
+          markerWidth={arrowSize}
+          markerHeight={arrowH}
+          refX={arrowSize - 1}
+          refY={arrowH / 2}
+          orient="auto"
+          markerUnits="userSpaceOnUse"
+        >
+          <polygon
+            points={`0 0, ${arrowSize} ${arrowH / 2}, 0 ${arrowH}`}
+            fill={activeColor}
+          />
+        </marker>
+        {direction === 'bi' && (
+          <marker
+            id={startMarkerId}
+            markerWidth={arrowSize}
+            markerHeight={arrowH}
+            refX={1}
+            refY={arrowH / 2}
+            orient="auto"
+            markerUnits="userSpaceOnUse"
+          >
+            <polygon
+              points={`${arrowSize} 0, 0 ${arrowH / 2}, ${arrowSize} ${arrowH}`}
+              fill={activeColor}
+            />
+          </marker>
+        )}
+      </defs>
       <path d={edgePath} fill="none" stroke="transparent" strokeWidth={14} />
       {isHighlighted && (
         <path d={edgePath} fill="none" stroke={activeColor}
@@ -247,15 +286,14 @@ export const InteractiveEdge = memo(({
       <path
         d={edgePath} fill="none" stroke={activeColor}
         strokeWidth={strokeWidth}
+        markerEnd={`url(#${endMarkerId})`}
+        markerStart={direction === 'bi' ? `url(#${startMarkerId})` : undefined}
         className={isHighlighted ? 'react-flow__edge-path animated' : 'react-flow__edge-path'}
         style={{
           strokeDasharray: dashArray,
           animation: isHighlighted ? 'dashdraw 0.5s linear infinite' : 'none',
         }}
       />
-      {isHighlighted && (
-        <circle cx={targetX} cy={targetY} r={4} fill={activeColor} stroke={activeColor} strokeWidth={1} />
-      )}
     </g>
   )
 })

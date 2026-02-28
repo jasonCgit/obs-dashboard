@@ -725,6 +725,19 @@ def get_layer_seals():
         for s, l in [("88180", "Connect OS"), ("90176", "Advisor Connect"), ("90215", "Spectrum Portfolio Mgmt")]
     ]
 
+# Component-to-component edges that communicate in both directions
+BIDIRECTIONAL_PAIRS = {
+    # Connect OS — portal and cloud gateway exchange requests/responses
+    ("connect-portal", "connect-cloud-gw"),
+    # Advisor Connect — profile service and data sync synchronize bidirectionally
+    ("connect-profile-svc", "connect-data-sync"),
+    # Spectrum — API gateway and trade service exchange order flow
+    ("spieq-api-gateway", "spieq-trade-service"),
+    # Spectrum — trade service and risk service validate in both directions
+    ("spieq-trade-service", "spieq-risk-service"),
+}
+
+
 @app.get("/api/graph/layers/{seal_id}")
 def get_graph_layers(seal_id: str):
     if seal_id not in SEAL_COMPONENTS:
@@ -736,7 +749,11 @@ def get_graph_layers(seal_id: str):
     # Component layer
     component_nodes = [NODE_MAP[cid] for cid in component_ids if cid in NODE_MAP]
     component_edges = [
-        {"source": src, "target": dst}
+        {
+            "source": src,
+            "target": dst,
+            "direction": "bi" if (src, dst) in BIDIRECTIONAL_PAIRS or (dst, src) in BIDIRECTIONAL_PAIRS else "uni",
+        }
         for src, dst in EDGES_RAW
         if src in component_set and dst in component_set
     ]

@@ -165,31 +165,50 @@ Observability health signals (Dynatrace entities).
 
 ## Edge Schemas (per layer)
 
-### Component → Component
+All edges support a `direction` field that controls arrowhead rendering:
+
+| Value | Arrows | Description |
+|-------|--------|-------------|
+| `"uni"` (default) | `A ──→ B` | One-way dependency — source depends on target |
+| `"bi"` | `A ←──→ B` | Two-way communication — both services exchange data |
+
+If `direction` is omitted, it defaults to `"uni"`.
+
+### Component → Component (uni-directional)
 
 ```json
-{ "source": "connect-portal", "target": "connect-cloud-gw" }
+{ "source": "connect-cloud-gw", "target": "connect-auth-svc", "direction": "uni" }
 ```
+
+One-way dependency: cloud gateway calls auth service.
+
+### Component ↔ Component (bi-directional)
+
+```json
+{ "source": "connect-portal", "target": "connect-cloud-gw", "direction": "bi" }
+```
+
+Two-way communication: portal and cloud gateway exchange requests and responses. Rendered with arrowheads on both ends.
 
 ### Component → Platform
 
 ```json
-{ "source": "connect-portal", "target": "gap-pool-na-01", "layer": "platform" }
+{ "source": "connect-portal", "target": "gap-pool-na-01", "layer": "platform", "direction": "uni" }
 ```
 
 ### Platform → Data Center
 
 ```json
-{ "source": "gap-pool-na-01", "target": "dc-na-nw-c02", "layer": "datacenter" }
+{ "source": "gap-pool-na-01", "target": "dc-na-nw-c02", "layer": "datacenter", "direction": "uni" }
 ```
 
 ### Component → Indicator
 
 ```json
-{ "source": "connect-cloud-gw", "target": "dt-pg-cloud-gw", "layer": "indicator" }
+{ "source": "connect-cloud-gw", "target": "dt-pg-cloud-gw", "layer": "indicator", "direction": "uni" }
 ```
 
-> The `layer` field on non-component edges is used by the frontend to determine edge styling (color, dash pattern, handle routing).
+> The `layer` field on non-component edges is used by the frontend to determine edge styling (color, dash pattern, handle routing). The `direction` field controls arrow rendering on all edge types.
 
 ---
 
@@ -236,6 +255,7 @@ The backend has hardcoded dictionaries:
 | `DATA_CENTER_NODES` | 6 data center nodes | main.py:551–558 |
 | `DC_LOOKUP` | Maps datacenter label → node ID | main.py:560–567 |
 | `INDICATOR_NODES` | 44 Dynatrace indicator nodes | main.py:570–618 |
+| `BIDIRECTIONAL_PAIRS` | Component pairs with two-way communication | main.py:728–735 |
 
 ### Target: Real API
 
@@ -253,7 +273,7 @@ async def get_graph_layers(seal_id: str):
         "seal": seal_id,
         "components": {
             "nodes": [transform_component(c) for c in kg_data.components],
-            "edges": [{"source": e.src, "target": e.dst} for e in kg_data.component_edges],
+            "edges": [{"source": e.src, "target": e.dst, "direction": "bi" if e.bidirectional else "uni"} for e in kg_data.component_edges],
         },
         "platform": {
             "nodes": [transform_platform(p) for p in kg_data.platforms],
@@ -327,7 +347,9 @@ These files consume the API response and render the graph. They stay untouched a
 
 ---
 
-## Edge Color Logic (Frontend Reference)
+## Edge Rendering Logic (Frontend Reference)
+
+### Colors
 
 The frontend colors edges based on the **target node's status/health**:
 
@@ -346,6 +368,27 @@ warning / amber  → #ff9800
 critical / red   → #f44336
 ```
 
+### Arrows & Direction
+
+Every edge renders an arrowhead at its target end. The `direction` field controls whether a second arrowhead appears at the source end:
+
+| `direction` | Visual | Arrowheads |
+|-------------|--------|------------|
+| `"uni"` | `A ──────→ B` | Target only (`markerEnd`) |
+| `"bi"` | `A ←─────→ B` | Both ends (`markerEnd` + `markerStart`) |
+
+Arrow color always matches the edge stroke color (which is derived from the target node's health status).
+
+### Dash Patterns
+
+| Layer | Dash Pattern |
+|-------|-------------|
+| Component | Solid (no dash) |
+| Platform | `6 3` (long dash) |
+| Data Center | `3 3` (short dash) |
+| Indicator | `4 2` (medium dash) |
+| Highlighted | `6 3` (animated) |
+
 ---
 
 ## Checklist: Integrating the Real API
@@ -354,7 +397,9 @@ critical / red   → #f44336
 - [ ] Write transform functions to map KG response fields to the schemas above
 - [ ] Replace `get_layer_seals()` to query real SEAL list
 - [ ] Replace `get_graph_layers()` to query real KG data and return the expected shape
-- [ ] Remove mock data constants (`SEAL_COMPONENTS`, `PLATFORM_NODES`, `COMPONENT_PLATFORM_EDGES`, `DATA_CENTER_NODES`, `DC_LOOKUP`, `INDICATOR_NODES`)
+- [ ] Remove mock data constants (`SEAL_COMPONENTS`, `PLATFORM_NODES`, `COMPONENT_PLATFORM_EDGES`, `DATA_CENTER_NODES`, `DC_LOOKUP`, `INDICATOR_NODES`, `BIDIRECTIONAL_PAIRS`)
+- [ ] Set `direction: "bi"` on edges where the KG indicates two-way communication
 - [ ] Test with each SEAL to verify nodes render and edges connect correctly
 - [ ] Verify layer toggles still work (Platform, Data Centers, Health Indicators)
 - [ ] Verify edge colors match node health status
+- [ ] Verify uni-directional edges show single arrowhead, bi-directional show double arrowheads
