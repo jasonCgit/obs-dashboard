@@ -73,41 +73,165 @@ def gif_dashboard(page):
     save_gif(frames, "dashboard-overview.gif", fps=6)
 
 
-# ── GIF 2 — Favorites ───────────────────────────────────────────────────────
-
-def gif_favorites(page):
-    print("Capturing favorites.gif ...")
-    frames = []
-    # Ensure View Centrals are seeded and some are favorited
-    page.goto(f"{BASE_URL}/view-central", wait_until="networkidle")
-    page.wait_for_timeout(800)
-    page.evaluate("""() => {
-        const KEY = 'obs-view-centrals';
-        const views = JSON.parse(localStorage.getItem(KEY) || '[]');
-        views.forEach(v => { v.favorite = true; });
-        localStorage.setItem(KEY, JSON.stringify(views));
-    }""")
-    page.goto(f"{BASE_URL}/favorites", wait_until="networkidle")
-    page.wait_for_timeout(600)
-    for _ in range(4):
-        frames.append(shot(page))
-        page.wait_for_timeout(180)
-    scroll_page(page, frames, 0, 600, 100, 80)
-    save_gif(frames, "favorites.gif", fps=5)
-
-
-# ── GIF 3 — View Central ────────────────────────────────────────────────────
+# ── GIF 2 — View Central (full feature showcase) ──────────────────────────
 
 def gif_view_central(page):
     print("Capturing view-central.gif ...")
     frames = []
+
+    # Ensure default views are seeded
     page.goto(f"{BASE_URL}/view-central", wait_until="networkidle")
-    page.wait_for_timeout(600)
-    for _ in range(3):
+    page.wait_for_timeout(800)
+
+    # Show the listing page with view cards
+    for _ in range(4):
         frames.append(shot(page))
-        page.wait_for_timeout(150)
-    scroll_page(page, frames, 0, 1400, 100, 80)
-    save_gif(frames, "view-central.gif", fps=5)
+        page.wait_for_timeout(200)
+
+    # Scroll listing to show all cards
+    scroll_page(page, frames, 0, 400, 100, 80)
+    page.evaluate("window.scrollTo(0,0)")
+    page.wait_for_timeout(300)
+
+    # Click into the first default dashboard (Spectrum Equities)
+    try:
+        cards = page.locator(".MuiCard-root").all()
+        if len(cards) > 0:
+            cards[0].click()
+            page.wait_for_timeout(1200)
+            for _ in range(5):
+                frames.append(shot(page))
+                page.wait_for_timeout(250)
+
+            # Scroll the dashboard to show widgets
+            scroll_page(page, frames, 0, 800, 120, 80)
+            page.evaluate("window.scrollTo(0,0)")
+            page.wait_for_timeout(300)
+    except Exception:
+        pass
+
+    # Click "Edit" to enter edit mode (shows drag handles, dashed borders)
+    try:
+        edit_btn = page.locator("button:has-text('Edit'), [data-testid='EditIcon']").first
+        if edit_btn.is_visible(timeout=500):
+            edit_btn.click()
+            page.wait_for_timeout(600)
+            for _ in range(4):
+                frames.append(shot(page))
+                page.wait_for_timeout(200)
+    except Exception:
+        pass
+
+    # Open the Add Widget drawer
+    try:
+        add_btn = page.locator("button:has-text('Add Widget')").first
+        if add_btn.is_visible(timeout=500):
+            add_btn.click()
+            page.wait_for_timeout(600)
+            for _ in range(4):
+                frames.append(shot(page))
+                page.wait_for_timeout(250)
+
+            # Scroll through available widgets in the drawer
+            drawer = page.locator(".MuiDrawer-paper").first
+            if drawer.is_visible(timeout=500):
+                drawer.evaluate("el => el.scrollTop = 200")
+                page.wait_for_timeout(300)
+                for _ in range(3):
+                    frames.append(shot(page))
+                    page.wait_for_timeout(200)
+
+                drawer.evaluate("el => el.scrollTop = 400")
+                page.wait_for_timeout(300)
+                for _ in range(3):
+                    frames.append(shot(page))
+                    page.wait_for_timeout(200)
+
+            # Add a widget (click an Add button in the drawer)
+            add_btns = page.locator(".MuiDrawer-paper button:has-text('Add')").all()
+            if len(add_btns) > 0:
+                # Find one that isn't already added
+                for btn in add_btns:
+                    try:
+                        text = btn.text_content()
+                        if 'Added' not in text:
+                            btn.click()
+                            page.wait_for_timeout(800)
+                            for _ in range(3):
+                                frames.append(shot(page))
+                                page.wait_for_timeout(200)
+                            break
+                    except Exception:
+                        continue
+
+            # Close the drawer
+            page.keyboard.press("Escape")
+            page.wait_for_timeout(400)
+    except Exception:
+        pass
+
+    # Show the dashboard with the new widget
+    for _ in range(4):
+        frames.append(shot(page))
+        page.wait_for_timeout(200)
+
+    # Drag-and-drop a widget to reorder
+    try:
+        handles = page.locator(".drag-handle").all()
+        if len(handles) >= 2:
+            handles[0].drag_to(handles[1])
+            page.wait_for_timeout(600)
+            for _ in range(3):
+                frames.append(shot(page))
+                page.wait_for_timeout(200)
+    except Exception:
+        pass
+
+    # Resize a widget (drag the resize handle)
+    try:
+        resize_handles = page.locator(".react-resizable-handle").all()
+        if len(resize_handles) > 0:
+            handle = resize_handles[0]
+            box = handle.bounding_box()
+            if box:
+                page.mouse.move(box['x'] + box['width'] / 2, box['y'] + box['height'] / 2)
+                page.mouse.down()
+                page.mouse.move(box['x'] + 150, box['y'] + 80, steps=10)
+                page.wait_for_timeout(300)
+                frames.append(shot(page))
+                page.mouse.up()
+                page.wait_for_timeout(400)
+                for _ in range(3):
+                    frames.append(shot(page))
+                    page.wait_for_timeout(200)
+    except Exception:
+        pass
+
+    # Click "Lock" to exit edit mode
+    try:
+        lock_btn = page.locator("button:has-text('Lock'), [data-testid='LockIcon']").first
+        if lock_btn.is_visible(timeout=500):
+            lock_btn.click()
+            page.wait_for_timeout(400)
+            for _ in range(3):
+                frames.append(shot(page))
+                page.wait_for_timeout(200)
+    except Exception:
+        pass
+
+    # Go back to listing page
+    try:
+        back_btn = page.locator('[data-testid="ArrowBackIcon"]').first
+        if back_btn.is_visible(timeout=500):
+            back_btn.click()
+            page.wait_for_timeout(600)
+            for _ in range(3):
+                frames.append(shot(page))
+                page.wait_for_timeout(200)
+    except Exception:
+        pass
+
+    save_gif(frames, "view-central.gif", fps=4)
 
 
 # ── GIF 4 — Product Catalog ─────────────────────────────────────────────────
@@ -330,133 +454,7 @@ def gif_announcements(page):
     save_gif(frames, "announcements.gif", fps=4)
 
 
-# ── GIF 10 — Links ──────────────────────────────────────────────────────────
-
-def gif_links(page):
-    print("Capturing links.gif ...")
-    frames = []
-    page.goto(f"{BASE_URL}/links", wait_until="networkidle")
-    page.wait_for_timeout(600)
-    for _ in range(3):
-        frames.append(shot(page))
-        page.wait_for_timeout(150)
-    scroll_page(page, frames, 0, 1600, 100, 80)
-    save_gif(frames, "links.gif", fps=5)
-
-
-# ── GIF 11 — Draggable Tabs + Dark / Light mode toggle ────────────────────
-
-def gif_tabs_and_theme(page):
-    print("Capturing tabs-and-theme.gif ...")
-    frames = []
-    page.goto(BASE_URL, wait_until="networkidle")
-    page.wait_for_timeout(600)
-
-    # Clear localStorage so only Home tab is open
-    page.evaluate("localStorage.removeItem('obs-open-tabs')")
-    page.reload(wait_until="networkidle")
-    page.wait_for_timeout(600)
-
-    # Show starting state (only Home tab)
-    for _ in range(3):
-        frames.append(shot(page))
-        page.wait_for_timeout(200)
-
-    # Add several tabs via the + button
-    for label in ["Favorites", "View Central", "Blast Radius", "Applications"]:
-        try:
-            add_btn = page.locator('[data-testid="AddIcon"]').first
-            add_btn.click()
-            page.wait_for_timeout(400)
-            page.get_by_role("menuitem", name=label).click()
-            page.wait_for_timeout(500)
-            for _ in range(2):
-                frames.append(shot(page))
-                page.wait_for_timeout(150)
-        except Exception:
-            pass
-
-    # Capture tabs in their original order
-    for _ in range(3):
-        frames.append(shot(page))
-        page.wait_for_timeout(200)
-
-    # Drag-and-drop: reorder "Blast Radius" tab before "Favorites"
-    try:
-        source = page.locator("button:has-text('Blast Radius')").first
-        target = page.locator("button:has-text('Favorites')").first
-        source.drag_to(target)
-        page.wait_for_timeout(600)
-        for _ in range(3):
-            frames.append(shot(page))
-            page.wait_for_timeout(200)
-    except Exception:
-        pass
-
-    # Drag-and-drop: move "Applications" before "View Central"
-    try:
-        source = page.locator("button:has-text('Applications')").first
-        target = page.locator("button:has-text('View Central')").first
-        source.drag_to(target)
-        page.wait_for_timeout(600)
-        for _ in range(3):
-            frames.append(shot(page))
-            page.wait_for_timeout(200)
-    except Exception:
-        pass
-
-    # Close one tab (Blast Radius) via × button
-    try:
-        # Hover over the Blast Radius tab to reveal the close button
-        br_tab = page.locator("button:has-text('Blast Radius')").first
-        br_tab.hover()
-        page.wait_for_timeout(300)
-        # Click the close icon next to it
-        close_btn = br_tab.locator("..").locator('[data-testid="CloseIcon"]').first
-        close_btn.click()
-        page.wait_for_timeout(500)
-        for _ in range(2):
-            frames.append(shot(page))
-            page.wait_for_timeout(200)
-    except Exception:
-        pass
-
-    # Navigate back to Home for the theme toggle demo
-    page.goto(BASE_URL, wait_until="networkidle")
-    page.wait_for_timeout(400)
-    for _ in range(3):
-        frames.append(shot(page))
-        page.wait_for_timeout(200)
-
-    # Toggle to light mode
-    try:
-        toggle = page.locator('[data-testid="LightModeIcon"], [data-testid="DarkModeIcon"]').first
-        toggle.click()
-        page.wait_for_timeout(600)
-    except Exception:
-        pass
-    for _ in range(4):
-        frames.append(shot(page))
-        page.wait_for_timeout(200)
-
-    # Scroll in light mode
-    scroll_page(page, frames, 0, 800, 120, 80)
-
-    # Toggle back to dark mode
-    try:
-        toggle = page.locator('[data-testid="LightModeIcon"], [data-testid="DarkModeIcon"]').first
-        toggle.click()
-        page.wait_for_timeout(600)
-    except Exception:
-        pass
-    for _ in range(3):
-        frames.append(shot(page))
-        page.wait_for_timeout(200)
-
-    save_gif(frames, "tabs-and-theme.gif", fps=5)
-
-
-# ── GIF 12 — Incident Zero ──────────────────────────────────────────────────
+# ── GIF 10 — Incident Zero ─────────────────────────────────────────────────
 
 def gif_incident_zero(page):
     print("Capturing incident-zero.gif ...")
@@ -564,112 +562,217 @@ def gif_admin(page):
     save_gif(frames, "admin.gif", fps=4)
 
 
-# ── GIF 14 — Search & Filter ────────────────────────────────────────────────
+# ── GIF 12 — Aura AI Chat (full feature showcase) ─────────────────────────
 
-def gif_search_filter(page):
-    print("Capturing search-filter.gif ...")
-    frames = []
-    page.goto(BASE_URL, wait_until="networkidle")
-    page.wait_for_timeout(600)
-
-    # Show initial state
-    for _ in range(3):
-        frames.append(shot(page))
-        page.wait_for_timeout(200)
-
-    # Click the search bar / filter button to open the popover
-    try:
-        search_btn = page.locator('[data-testid="SearchIcon"]').first
-        if search_btn.is_visible(timeout=500):
-            search_btn.click()
-        else:
-            page.locator('[data-testid="FilterListIcon"]').first.click()
-        page.wait_for_timeout(600)
-        for _ in range(4):
+def _aura_scroll_chat(page, frames, positions):
+    """Scroll the AURA chat messages container via JS evaluation."""
+    for pos in positions:
+        page.evaluate(f"""(() => {{
+            const panels = document.querySelectorAll('.MuiPaper-root');
+            for (const p of panels) {{
+                if (getComputedStyle(p).position === 'fixed' && p.textContent.includes('AURA')) {{
+                    const divs = p.querySelectorAll('div');
+                    for (const d of divs) {{
+                        if (d.scrollHeight > d.clientHeight + 20 && getComputedStyle(d).overflowY === 'auto') {{
+                            d.scrollTop = {pos};
+                            return;
+                        }}
+                    }}
+                }}
+            }}
+        }})()""")
+        page.wait_for_timeout(500)
+        for _ in range(3):
             frames.append(shot(page))
-            page.wait_for_timeout(200)
+            page.wait_for_timeout(350)
 
-        # Scroll the filter popover if visible
-        popover = page.locator(".MuiPopover-paper").first
-        if popover.is_visible(timeout=500):
-            popover.evaluate("el => el.scrollTop = 200")
-            page.wait_for_timeout(400)
-            for _ in range(3):
-                frames.append(shot(page))
-                page.wait_for_timeout(200)
 
-            popover.evaluate("el => el.scrollTop = 400")
-            page.wait_for_timeout(400)
-            for _ in range(3):
-                frames.append(shot(page))
-                page.wait_for_timeout(200)
-
-        # Close popover
-        page.keyboard.press("Escape")
-        page.wait_for_timeout(400)
-    except Exception:
-        pass
-
-    for _ in range(3):
+def _aura_scroll_bottom(page, frames):
+    """Scroll the AURA chat to the very bottom."""
+    page.evaluate("""(() => {
+        const panels = document.querySelectorAll('.MuiPaper-root');
+        for (const p of panels) {
+            if (getComputedStyle(p).position === 'fixed' && p.textContent.includes('AURA')) {
+                const divs = p.querySelectorAll('div');
+                for (const d of divs) {
+                    if (d.scrollHeight > d.clientHeight + 20 && getComputedStyle(d).overflowY === 'auto') {
+                        d.scrollTop = d.scrollHeight;
+                        return;
+                    }
+                }
+            }
+        }
+    })()""")
+    page.wait_for_timeout(500)
+    for _ in range(4):
         frames.append(shot(page))
-        page.wait_for_timeout(200)
+        page.wait_for_timeout(400)
 
-    save_gif(frames, "search-filter.gif", fps=4)
-
-
-# ── GIF 15 — Aura AI Chat ─────────────────────────────────────────────────────
 
 def gif_aura_chat(page):
     print("Capturing aura-chat.gif ...")
     frames = []
     page.goto(BASE_URL, wait_until="networkidle")
-    page.wait_for_timeout(600)
+    page.wait_for_timeout(800)
 
-    # Show the page with the FAB visible
+    # Show the page with the FAB pulse
+    for _ in range(4):
+        frames.append(shot(page))
+        page.wait_for_timeout(400)
+
+    # ── Open chat panel ──────────────────────────────────────────────────────
+    fab = page.locator("button.MuiFab-root").first
+    fab.click()
+    page.wait_for_timeout(1200)
+
+    # Hold on the welcome screen
+    for _ in range(6):
+        frames.append(shot(page))
+        page.wait_for_timeout(400)
+
+    # Locate the AURA panel — scoped selectors for all buttons
+    aura_panel = page.locator('.MuiPaper-root:has-text("AURA AI Assistant")').first
+
+    # ══════════════════════════════════════════════════════════════════════════
+    # CHAT 1 — Executive Summary (metric_cards + bar_chart + line_chart + recs)
+    # ══════════════════════════════════════════════════════════════════════════
+    input_field = page.locator('textarea[placeholder*="AURA"], input[placeholder*="AURA"]').first
+    input_field.click()
+    page.wait_for_timeout(200)
+    input_field.fill("Give me an executive summary of platform health")
+    page.wait_for_timeout(500)
     for _ in range(3):
         frames.append(shot(page))
-        page.wait_for_timeout(200)
+        page.wait_for_timeout(300)
+    page.keyboard.press("Enter")
+    page.wait_for_timeout(5000)  # Wait for SSE streaming to finish
+    for _ in range(5):
+        frames.append(shot(page))
+        page.wait_for_timeout(500)
 
-    # Click the Aura FAB to open chat panel
-    try:
-        fab = page.locator("button.MuiFab-root").first
-        fab.click()
+    # Scroll slowly through all response blocks
+    _aura_scroll_chat(page, frames, [200, 400, 600, 800, 1000])
+
+    # Scroll to bottom to show follow-up chips
+    _aura_scroll_bottom(page, frames)
+
+    # ══════════════════════════════════════════════════════════════════════════
+    # NEW CHAT — click + button inside AURA panel, show fresh welcome screen
+    # ══════════════════════════════════════════════════════════════════════════
+    new_chat_btn = aura_panel.locator('[data-testid="AddIcon"]').first
+    new_chat_btn.click()
+    page.wait_for_timeout(1200)
+    for _ in range(5):
+        frames.append(shot(page))
+        page.wait_for_timeout(400)
+
+    # ══════════════════════════════════════════════════════════════════════════
+    # CHAT 2 — SLO Compliance (metric_cards + table + bar_chart)
+    # ══════════════════════════════════════════════════════════════════════════
+    input_field = page.locator('textarea[placeholder*="AURA"], input[placeholder*="AURA"]').first
+    input_field.click()
+    page.wait_for_timeout(200)
+    input_field.fill("Show me the SLO compliance report for all services")
+    page.wait_for_timeout(500)
+    for _ in range(3):
+        frames.append(shot(page))
+        page.wait_for_timeout(300)
+    page.keyboard.press("Enter")
+    page.wait_for_timeout(5000)
+    for _ in range(5):
+        frames.append(shot(page))
+        page.wait_for_timeout(500)
+
+    # Scroll through SLO response (table, bar chart)
+    _aura_scroll_chat(page, frames, [200, 450, 700])
+
+    # ══════════════════════════════════════════════════════════════════════════
+    # MENU — show chat history with BOTH sessions visible
+    # ══════════════════════════════════════════════════════════════════════════
+    menu_btn = aura_panel.locator('[data-testid="MenuIcon"]').first
+    menu_btn.click()
+    page.wait_for_timeout(1000)
+    # Hold on menu — viewer can see 2 history entries + customizations
+    for _ in range(8):
+        frames.append(shot(page))
+        page.wait_for_timeout(450)
+
+    # Click the FIRST (older) chat session to restore it
+    history_entries = aura_panel.locator('[data-testid="ChatBubbleOutlineIcon"]')
+    if history_entries.count() > 0:
+        history_entries.first.click()
+        page.wait_for_timeout(1200)
+        for _ in range(5):
+            frames.append(shot(page))
+            page.wait_for_timeout(400)
+
+    # Close menu
+    close_menu = aura_panel.locator('[data-testid="CloseIcon"]').first
+    close_menu.click()
+    page.wait_for_timeout(600)
+    for _ in range(4):
+        frames.append(shot(page))
+        page.wait_for_timeout(350)
+
+    # ══════════════════════════════════════════════════════════════════════════
+    # RESIZE — slowly drag left edge to widen, then top edge to grow taller
+    # ══════════════════════════════════════════════════════════════════════════
+    box = aura_panel.bounding_box()
+    if box:
+        # Widen by dragging left edge leftward
+        sx = box['x'] + 3
+        sy = box['y'] + box['height'] / 2
+        page.mouse.move(sx, sy)
+        page.wait_for_timeout(300)
+        frames.append(shot(page))
+        page.mouse.down()
+        for step in range(8):
+            page.mouse.move(sx - (step + 1) * 25, sy, steps=3)
+            page.wait_for_timeout(250)
+            frames.append(shot(page))
+        page.mouse.up()
+        page.wait_for_timeout(500)
+        for _ in range(3):
+            frames.append(shot(page))
+            page.wait_for_timeout(400)
+
+        # Grow taller by dragging top edge upward
+        box2 = aura_panel.bounding_box()
+        if box2:
+            tx = box2['x'] + box2['width'] / 2
+            ty = box2['y'] + 3
+            page.mouse.move(tx, ty)
+            page.wait_for_timeout(300)
+            page.mouse.down()
+            for step in range(6):
+                page.mouse.move(tx, ty - (step + 1) * 30, steps=3)
+                page.wait_for_timeout(250)
+                frames.append(shot(page))
+            page.mouse.up()
+            page.wait_for_timeout(500)
+            for _ in range(3):
+                frames.append(shot(page))
+                page.wait_for_timeout(400)
+
+    # ══════════════════════════════════════════════════════════════════════════
+    # CLEAR CHAT — trash icon removes current conversation
+    # ══════════════════════════════════════════════════════════════════════════
+    clear_btn = aura_panel.locator('[data-testid="DeleteOutlineIcon"]').first
+    if clear_btn.is_visible(timeout=500):
+        clear_btn.click()
         page.wait_for_timeout(800)
         for _ in range(4):
             frames.append(shot(page))
-            page.wait_for_timeout(200)
-
-        # Click a suggested prompt if available
-        prompts = page.locator("[class*='prompt'], [class*='suggestion']").all()
-        if not prompts:
-            # Try clicking chip-like buttons in the chat panel
-            prompts = page.locator(".MuiChip-root").all()
-        if len(prompts) > 0:
-            prompts[0].click()
-            page.wait_for_timeout(2000)
-            for _ in range(5):
-                frames.append(shot(page))
-                page.wait_for_timeout(300)
-
-        # Scroll chat messages if any
-        chat_container = page.locator("[class*='messages'], [class*='Messages']").first
-        if chat_container.is_visible(timeout=500):
-            chat_container.evaluate("el => el.scrollTop = el.scrollHeight")
             page.wait_for_timeout(400)
-            for _ in range(4):
-                frames.append(shot(page))
-                page.wait_for_timeout(200)
 
-        # Close the chat panel
-        fab.click()
-        page.wait_for_timeout(400)
-        for _ in range(2):
-            frames.append(shot(page))
-            page.wait_for_timeout(200)
-    except Exception:
-        pass
+    # ── Close panel ──────────────────────────────────────────────────────────
+    fab.click()
+    page.wait_for_timeout(500)
+    for _ in range(3):
+        frames.append(shot(page))
+        page.wait_for_timeout(300)
 
-    save_gif(frames, "aura-chat.gif", fps=4)
+    save_gif(frames, "aura-chat.gif", fps=3)
 
 
 # ── main ─────────────────────────────────────────────────────────────────────
@@ -679,8 +782,8 @@ def main():
         browser = p.chromium.launch(headless=True)
         page    = browser.new_context(viewport={"width": W, "height": H}).new_page()
 
+        gif_aura_chat(page)
         gif_dashboard(page)
-        gif_favorites(page)
         gif_view_central(page)
         gif_product_catalog(page)
         gif_applications(page)
@@ -688,12 +791,8 @@ def main():
         gif_customer_journey(page)
         gif_slo_agent(page)
         gif_announcements(page)
-        gif_links(page)
-        gif_tabs_and_theme(page)
         gif_incident_zero(page)
         gif_admin(page)
-        gif_search_filter(page)
-        gif_aura_chat(page)
 
         browser.close()
 

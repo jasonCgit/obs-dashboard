@@ -6,6 +6,7 @@ import VisibilityOffIcon from '@mui/icons-material/VisibilityOff'
 import VisibilityIcon from '@mui/icons-material/Visibility'
 import { useFilters } from '../FilterContext'
 import { FILTER_FIELDS } from '../data/appData'
+import SearchFilterPopover from './SearchFilterPopover'
 
 const fSmall = { fontSize: 'clamp(0.6rem, 0.8vw, 0.7rem)' }
 
@@ -32,6 +33,7 @@ export default function ScopeBar() {
   const [hidden, setHidden] = useState(false)   // user chose to hide
   const [revealed, setRevealed] = useState(false) // temp reveal on hover
   const hideTimerRef = useRef(null)
+  const [searchAnchor, setSearchAnchor] = useState(null)
 
   const hasScope = activeFilterCount > 0 || searchText.length > 0
 
@@ -112,7 +114,15 @@ export default function ScopeBar() {
         px: 2, py: 0.5,
         bgcolor: (t) => t.palette.mode === 'dark' ? 'rgba(21,101,192,0.06)' : 'rgba(21,101,192,0.03)',
       }}>
-        <FilterListIcon sx={{ fontSize: 14, color: 'text.disabled', mr: 0.25 }} />
+        <FilterListIcon
+          onClick={(e) => setSearchAnchor(e.currentTarget)}
+          sx={{ fontSize: 14, color: 'text.disabled', mr: 0.25, cursor: 'pointer', '&:hover': { color: 'text.secondary' } }}
+        />
+        <SearchFilterPopover
+          anchorEl={searchAnchor}
+          open={Boolean(searchAnchor)}
+          onClose={() => setSearchAnchor(null)}
+        />
         <Typography sx={{ ...fSmall, color: 'text.secondary', fontWeight: 600, mr: 0.5 }}>
           Scope
         </Typography>

@@ -14,6 +14,7 @@ export default defineConfig({
           const file = path.join(gifsDir, req.url)
           if (fs.existsSync(file)) {
             res.setHeader('Content-Type', 'image/gif')
+            res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate')
             fs.createReadStream(file).pipe(res)
           } else next()
         })

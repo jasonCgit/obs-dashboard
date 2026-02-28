@@ -1,5 +1,5 @@
 import { Box, Typography } from '@mui/material'
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts'
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts'
 
 const fSmall = { fontSize: 'clamp(0.7rem, 0.9vw, 0.8rem)' }
 
@@ -33,14 +33,15 @@ export default function ChatBlockBarChart({ data }) {
     }}>
       <ResponsiveContainer width="100%" height={180}>
         <BarChart data={bars} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
+          <CartesianGrid strokeDasharray="3 3" stroke="rgba(128,128,128,0.1)" vertical={false} />
           <XAxis
             dataKey={xKey}
-            tick={{ fill: '#94a3b8', fontSize: 10 }}
+            tick={{ fill: '#94a3b8', fontSize: 9 }}
             tickLine={false}
             axisLine={false}
           />
           <YAxis
-            tick={{ fill: '#94a3b8', fontSize: 10 }}
+            tick={{ fill: '#94a3b8', fontSize: 9 }}
             tickLine={false}
             axisLine={false}
             allowDecimals={false}

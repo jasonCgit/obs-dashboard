@@ -29,7 +29,7 @@ export default function ChatBlockRenderer({ block }) {
       {block.title && (
         <Typography
           fontWeight={700}
-          sx={{ ...fSmall, textTransform: 'uppercase', letterSpacing: 0.8, color: 'text.secondary', mb: 0.75 }}
+          sx={{ ...fSmall, textTransform: 'uppercase', letterSpacing: 1.2, color: 'text.secondary', mb: 0.75 }}
         >
           {block.title}
         </Typography>

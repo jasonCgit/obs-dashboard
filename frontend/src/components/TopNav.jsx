@@ -4,6 +4,7 @@ import {
   Chip, Stack, IconButton, Menu, MenuItem, Tooltip,
   Avatar, Divider, ListItemIcon, ListItemText,
   Popover, List, ListItem, ListItemButton, Tab, Tabs, Dialog, DialogTitle, DialogContent,
+  Paper,
 } from '@mui/material'
 import { useTheme } from '@mui/material/styles'
 import SearchIcon    from '@mui/icons-material/Search'
@@ -19,6 +20,7 @@ import NotificationsIcon from '@mui/icons-material/Notifications'
 import DoneAllIcon from '@mui/icons-material/DoneAll'
 import OpenInFullIcon from '@mui/icons-material/OpenInFull'
 import CloseFullscreenIcon from '@mui/icons-material/CloseFullscreen'
+import OpenInNewIcon from '@mui/icons-material/OpenInNew'
 import HomeIcon from '@mui/icons-material/Home'
 import CampaignIcon from '@mui/icons-material/Campaign'
 import AppsIcon from '@mui/icons-material/Apps'
@@ -95,8 +97,66 @@ export default function TopNav() {
   })
   const [notifExpanded, setNotifExpanded] = useState(false)
   const [detailItem, setDetailItem] = useState(null)
+  const [notifPoppedOut, setNotifPoppedOut] = useState(false)
+  const [notifPos, setNotifPos] = useState(() => {
+    const w = typeof window !== 'undefined' ? window.innerWidth : 1200
+    const h = typeof window !== 'undefined' ? window.innerHeight : 800
+    return { x: Math.max(0, (w - 700) / 2), y: Math.max(40, (h - 680) / 2) }
+  })
+  const [notifSize, setNotifSize] = useState({ w: 700, h: 680 })
+  const notifDragRef = useRef(null)
+  const notifBellRef = useRef(null)
   const theme = useTheme()
   const isDark = theme.palette.mode === 'dark'
+
+  // Drag handler for popped-out notification panel
+  const startNotifDrag = useCallback((e) => {
+    e.preventDefault()
+    const startX = e.clientX
+    const startY = e.clientY
+    const startPos = { ...notifPos }
+
+    const onMove = (ev) => {
+      setNotifPos({
+        x: Math.max(0, Math.min(startPos.x + (ev.clientX - startX), window.innerWidth - 200)),
+        y: Math.max(0, Math.min(startPos.y + (ev.clientY - startY), window.innerHeight - 100)),
+      })
+    }
+    const onUp = () => {
+      document.removeEventListener('mousemove', onMove)
+      document.removeEventListener('mouseup', onUp)
+    }
+    document.addEventListener('mousemove', onMove)
+    document.addEventListener('mouseup', onUp)
+  }, [notifPos])
+
+  // Resize handler for popped-out notification panel
+  const startNotifResize = useCallback((e, direction) => {
+    e.preventDefault()
+    e.stopPropagation()
+    const startX = e.clientX
+    const startY = e.clientY
+    const startW = notifSize.w
+    const startH = notifSize.h
+    const startPos = { ...notifPos }
+
+    const onMove = (ev) => {
+      let newW = startW, newH = startH, newX = startPos.x, newY = startPos.y
+      if (direction.includes('e')) newW = Math.max(380, startW + (ev.clientX - startX))
+      if (direction.includes('w')) { newW = Math.max(380, startW - (ev.clientX - startX)); newX = startPos.x + (ev.clientX - startX) }
+      if (direction.includes('s')) newH = Math.max(300, startH + (ev.clientY - startY))
+      if (direction.includes('n')) { newH = Math.max(300, startH - (ev.clientY - startY)); newY = startPos.y + (ev.clientY - startY) }
+      setNotifSize({ w: Math.min(newW, window.innerWidth - 48), h: Math.min(newH, window.innerHeight - 48) })
+      setNotifPos({ x: newX, y: newY })
+    }
+    const onUp = () => {
+      document.removeEventListener('mousemove', onMove)
+      document.removeEventListener('mouseup', onUp)
+    }
+    document.addEventListener('mousemove', onMove)
+    document.addEventListener('mouseup', onUp)
+  }, [notifSize, notifPos])
+
 
   // Refresh tenant list when profile menu opens
   useEffect(() => {
@@ -566,8 +626,13 @@ export default function TopNav() {
         {/* Notification bell */}
         <Tooltip title="Notifications">
           <IconButton
+            ref={notifBellRef}
             size="small"
-            onClick={(e) => setNotifAnchor(e.currentTarget)}
+            onClick={(e) => {
+              if (notifPoppedOut) { setNotifPoppedOut(false) }
+              else if (notifAnchor) { setNotifExpanded(p => !p) }
+              else { setNotifAnchor(e.currentTarget) }
+            }}
             sx={{
               color: 'rgba(255,255,255,0.7)',
               '&:hover': { color: 'white', bgcolor: 'rgba(255,255,255,0.1)' },
@@ -583,17 +648,21 @@ export default function TopNav() {
           </IconButton>
         </Tooltip>
         <Popover
-          open={Boolean(notifAnchor)}
+          open={Boolean(notifAnchor) && !notifPoppedOut}
           anchorEl={notifAnchor}
           onClose={() => setNotifAnchor(null)}
           anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
           transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+          marginThreshold={0}
+          disableScrollLock
+          slotProps={{ paper: { style: { width: notifExpanded ? 496 : 384, maxHeight: '80vh' } } }}
           PaperProps={{
             sx: {
-              width: notifExpanded ? 560 : 380,
-              maxHeight: notifExpanded ? 640 : 520,
+              width: notifExpanded ? 496 : 384,
+              minWidth: 320,
+              maxWidth: '90vw',
               bgcolor: menuBg, border: `1px solid ${menuBorder}`, mt: 0.5,
-              transition: 'width 0.2s, max-height 0.2s',
+              overflow: 'auto',
             },
           }}
         >
@@ -620,11 +689,24 @@ export default function TopNav() {
                 }
               </IconButton>
             </Tooltip>
+            <Tooltip title="Pop out">
+              <IconButton size="small" onClick={() => {
+                  const w = 700, h = 680
+                  setNotifSize({ w, h })
+                  setNotifPos({ x: Math.max(0, (window.innerWidth - w) / 2), y: Math.max(40, (window.innerHeight - h) / 2) })
+                  setNotifPoppedOut(true)
+                  setNotifAnchor(null)
+                }} sx={{ mr: 0.5, color: 'text.secondary' }}>
+                <OpenInNewIcon sx={{ fontSize: 14 }} />
+              </IconButton>
+            </Tooltip>
           </Box>
 
+          {/* Scrollable content area */}
+          <Box sx={{ flex: 1, overflow: 'auto', minHeight: 0 }}>
           {/* Activities tab */}
           {notifTab === 0 && (
-            <Box sx={{ maxHeight: notifExpanded ? 580 : 440, overflow: 'auto' }}>
+            <Box>
               {recentActivities.length === 0 ? (
                 <Box sx={{ px: 2, py: 4, textAlign: 'center' }}>
                   <NotificationsIcon sx={{ fontSize: 28, color: 'text.disabled', mb: 0.5 }} />
@@ -758,7 +840,7 @@ export default function TopNav() {
 
           {/* Announcements tab */}
           {notifTab === 1 && (
-            <Box sx={{ maxHeight: notifExpanded ? 580 : 440, overflow: 'auto' }}>
+            <Box>
               {notifications.length === 0 ? (
                 <Box sx={{ px: 2, py: 4, textAlign: 'center' }}>
                   <NotificationsIcon sx={{ fontSize: 28, color: 'text.disabled', mb: 0.5 }} />
@@ -799,7 +881,267 @@ export default function TopNav() {
               )}
             </Box>
           )}
+          </Box>
         </Popover>
+
+        {/* Popped-out notification panel */}
+        {notifPoppedOut && (
+          <Paper
+            elevation={16}
+            sx={{
+              position: 'fixed',
+              left: notifPos.x,
+              top: notifPos.y,
+              width: notifSize.w,
+              height: notifSize.h,
+              zIndex: 1600,
+              display: 'flex',
+              flexDirection: 'column',
+              bgcolor: menuBg,
+              border: `1px solid ${menuBorder}`,
+              borderRadius: 2,
+              overflow: 'hidden',
+              boxShadow: '0 8px 32px rgba(0,0,0,0.45)',
+            }}
+          >
+            {/* Resize handles — edges */}
+            {['n', 's', 'e', 'w'].map(dir => (
+              <Box
+                key={dir}
+                onMouseDown={(e) => startNotifResize(e, dir)}
+                sx={{
+                  position: 'absolute',
+                  cursor: dir === 'n' || dir === 's' ? 'ns-resize' : 'ew-resize',
+                  zIndex: 2,
+                  ...(dir === 'n' && { top: 0, left: 6, right: 6, height: 5 }),
+                  ...(dir === 's' && { bottom: 0, left: 6, right: 6, height: 5 }),
+                  ...(dir === 'e' && { right: 0, top: 6, bottom: 6, width: 5 }),
+                  ...(dir === 'w' && { left: 0, top: 6, bottom: 6, width: 5 }),
+                }}
+              />
+            ))}
+            {/* Resize handle — bottom-right corner */}
+            <Box
+              onMouseDown={(e) => startNotifResize(e, 'se')}
+              sx={{ position: 'absolute', bottom: 0, right: 0, width: 14, height: 14, cursor: 'se-resize', zIndex: 3 }}
+            />
+
+            {/* Draggable header */}
+            <Box
+              onMouseDown={startNotifDrag}
+              sx={{
+                display: 'flex', alignItems: 'center',
+                borderBottom: `1px solid ${menuBorder}`,
+                cursor: 'grab', userSelect: 'none',
+                '&:active': { cursor: 'grabbing' },
+              }}
+            >
+              <DragIndicatorIcon sx={{ fontSize: 14, color: 'text.disabled', ml: 1 }} />
+              <Tabs
+                value={notifTab}
+                onChange={(_, v) => setNotifTab(v)}
+                variant="fullWidth"
+                onMouseDown={(e) => e.stopPropagation()}
+                sx={{
+                  flex: 1, minHeight: 36,
+                  '& .MuiTab-root': { minHeight: 36, fontSize: '0.75rem', textTransform: 'none', fontWeight: 600 },
+                  '& .MuiTabs-indicator': { height: 2 },
+                }}
+              >
+                <Tab label={`Activities (${activityCount})`} />
+                <Tab label={`Announcements (${notifications.length})`} />
+              </Tabs>
+              <Tooltip title="Dock back">
+                <IconButton size="small" onClick={() => { setNotifPoppedOut(false); setNotifAnchor(notifBellRef.current) }} sx={{ mr: 0.5, color: 'text.secondary' }}>
+                  <CloseFullscreenIcon sx={{ fontSize: 14 }} />
+                </IconButton>
+              </Tooltip>
+              <Tooltip title="Close">
+                <IconButton size="small" onClick={() => setNotifPoppedOut(false)} sx={{ mr: 0.5, color: 'text.secondary' }}>
+                  <CloseIcon sx={{ fontSize: 14 }} />
+                </IconButton>
+              </Tooltip>
+            </Box>
+
+            {/* Content area */}
+            <Box sx={{ flex: 1, overflow: 'auto' }}>
+              {/* Activities tab */}
+              {notifTab === 0 && (
+                <Box>
+                  {recentActivities.length === 0 ? (
+                    <Box sx={{ px: 2, py: 4, textAlign: 'center' }}>
+                      <NotificationsIcon sx={{ fontSize: 28, color: 'text.disabled', mb: 0.5 }} />
+                      <Typography variant="body2" color="text.secondary">No recent activity</Typography>
+                    </Box>
+                  ) : (
+                    <>
+                      <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1, px: 2, pt: 0.75, pb: 0 }}>
+                        {activityCount > 0 && (
+                          <Button
+                            size="small"
+                            startIcon={<DoneAllIcon sx={{ fontSize: 13 }} />}
+                            onClick={markAllRead}
+                            sx={{ fontSize: '0.65rem', textTransform: 'none', color: 'primary.main', py: 0, minHeight: 0 }}
+                          >
+                            Mark all read
+                          </Button>
+                        )}
+                        {readItems.length > 0 && (
+                          <Button
+                            size="small"
+                            onClick={markAllUnread}
+                            sx={{ fontSize: '0.65rem', textTransform: 'none', color: 'text.secondary', py: 0, minHeight: 0 }}
+                          >
+                            Mark all unread
+                          </Button>
+                        )}
+                      </Box>
+                      <Stack spacing={0} divider={<Divider />}>
+                        {recentActivities.map((section, si) => {
+                          const unreadItems = (section.items || []).filter(it => !isRead(section.category, it.description))
+                          const readItemsList = (section.items || []).filter(it => isRead(section.category, it.description))
+                          if (unreadItems.length === 0 && readItemsList.length === 0) return null
+                          return (
+                            <Box key={si} sx={{ py: 1, px: 2 }}>
+                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, mb: section.items?.length ? 0.75 : 0 }}>
+                                <Box sx={{ width: 3, height: 14, borderRadius: 1, bgcolor: section.color || '#94a3b8' }} />
+                                <Typography sx={{ fontWeight: 800, fontSize: '0.65rem', letterSpacing: 0.9, color: 'text.primary', textTransform: 'uppercase' }}>
+                                  {section.category}
+                                </Typography>
+                                {unreadItems.length > 0 && (
+                                  <Typography sx={{ fontSize: '0.65rem', color: 'text.secondary' }}>({unreadItems.length})</Typography>
+                                )}
+                              </Box>
+                              {unreadItems.length > 0 ? (
+                                <Stack spacing={0.5}>
+                                  {unreadItems.map((item, ii) => {
+                                    const sc = { CRITICAL:'#f44336', WARNING:'#ff9800', UNRESOLVED:'#fbbf24', REASSIGNED:'#60a5fa', RESOLVED:'#4ade80', SUCCESS:'#4ade80', INFO:'#60a5fa' }[item.status] || '#94a3b8'
+                                    return (
+                                      <Box
+                                        key={ii}
+                                        onClick={() => markRead(section.category, item.description)}
+                                        sx={{
+                                          display: 'flex', alignItems: 'flex-start', gap: 0.75,
+                                          cursor: 'pointer', borderRadius: 0.5, px: 0.5, mx: -0.5,
+                                          '&:hover': { bgcolor: 'action.hover' },
+                                        }}
+                                      >
+                                        <Box sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: 'primary.main', flexShrink: 0, mt: '5px' }} />
+                                        <Chip
+                                          label={item.status}
+                                          size="small"
+                                          sx={{
+                                            bgcolor: `${sc}18`, color: sc,
+                                            fontWeight: 700, fontSize: '0.6rem', height: 16, flexShrink: 0,
+                                            borderRadius: 0.5, mt: '1px',
+                                          }}
+                                        />
+                                        <Typography color="text.secondary" sx={{
+                                          fontSize: '0.72rem', lineHeight: 1.4, flex: 1,
+                                          overflow: 'hidden', display: '-webkit-box',
+                                          WebkitLineClamp: 2, WebkitBoxOrient: 'vertical',
+                                        }}>
+                                          {item.description}
+                                        </Typography>
+                                        <Typography color="text.secondary" sx={{ fontSize: '0.6rem', flexShrink: 0, whiteSpace: 'nowrap', mt: '2px' }}>
+                                          {item.time_ago}
+                                        </Typography>
+                                      </Box>
+                                    )
+                                  })}
+                                </Stack>
+                              ) : (
+                                <Typography color="text.secondary" sx={{ fontSize: '0.65rem', fontStyle: 'italic', ml: 1.5 }}>All read</Typography>
+                              )}
+                              {readItemsList.length > 0 && (
+                                <Stack spacing={0.25} sx={{ mt: 0.5, opacity: 0.4 }}>
+                                  {readItemsList.map((item, ii) => {
+                                    const sc = { CRITICAL:'#f44336', WARNING:'#ff9800', UNRESOLVED:'#fbbf24', REASSIGNED:'#60a5fa', RESOLVED:'#4ade80', SUCCESS:'#4ade80', INFO:'#60a5fa' }[item.status] || '#94a3b8'
+                                    return (
+                                      <Box
+                                        key={`r-${ii}`}
+                                        onClick={() => setDetailItem({ ...item, category: section.category, color: section.color })}
+                                        sx={{
+                                          display: 'flex', alignItems: 'flex-start', gap: 0.75, pl: '14px',
+                                          cursor: 'pointer', borderRadius: 0.5, px: 0.5,
+                                          '&:hover': { opacity: 1.8, bgcolor: 'action.hover' },
+                                        }}
+                                      >
+                                        <Chip
+                                          label={item.status}
+                                          size="small"
+                                          sx={{
+                                            bgcolor: `${sc}18`, color: sc,
+                                            fontWeight: 700, fontSize: '0.55rem', height: 14, flexShrink: 0,
+                                            borderRadius: 0.5, mt: '1px',
+                                          }}
+                                        />
+                                        <Typography color="text.disabled" sx={{
+                                          fontSize: '0.65rem', lineHeight: 1.3, flex: 1,
+                                          overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis',
+                                        }}>
+                                          {item.description}
+                                        </Typography>
+                                      </Box>
+                                    )
+                                  })}
+                                </Stack>
+                              )}
+                            </Box>
+                          )
+                        })}
+                      </Stack>
+                    </>
+                  )}
+                </Box>
+              )}
+
+              {/* Announcements tab */}
+              {notifTab === 1 && (
+                <Box>
+                  {notifications.length === 0 ? (
+                    <Box sx={{ px: 2, py: 4, textAlign: 'center' }}>
+                      <NotificationsIcon sx={{ fontSize: 28, color: 'text.disabled', mb: 0.5 }} />
+                      <Typography variant="body2" color="text.secondary">No active announcements</Typography>
+                    </Box>
+                  ) : (
+                    <List dense sx={{ py: 0 }}>
+                      {notifications.map((n) => (
+                        <ListItem key={n.id} disablePadding divider>
+                          <ListItemButton
+                            onClick={() => { setNotifPoppedOut(false); navigate('/announcements') }}
+                            sx={{ py: 1.5, px: 2 }}
+                          >
+                            <ListItemText
+                              primary={
+                                <Typography variant="body2" fontWeight={600} sx={{ fontSize: '0.82rem', lineHeight: 1.3 }}>
+                                  {n.title}
+                                </Typography>
+                              }
+                              secondary={
+                                <Box>
+                                  <Typography variant="caption" color="text.secondary" sx={{
+                                    display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical',
+                                    overflow: 'hidden', fontSize: '0.72rem', lineHeight: 1.4, mt: 0.25,
+                                  }}>
+                                    {n.description}
+                                  </Typography>
+                                  <Typography variant="caption" color="text.disabled" sx={{ fontSize: '0.68rem', mt: 0.5, display: 'block' }}>
+                                    {n.date}
+                                  </Typography>
+                                </Box>
+                              }
+                            />
+                          </ListItemButton>
+                        </ListItem>
+                      ))}
+                    </List>
+                  )}
+                </Box>
+              )}
+            </Box>
+          </Paper>
+        )}
 
         {/* Detail popup for read activity items */}
         <Dialog
@@ -916,17 +1258,18 @@ export default function TopNav() {
             </ListItemIcon>
             <ListItemText primaryTypographyProps={{ fontSize: '0.82rem' }}>Preferences</ListItemText>
           </MenuItem>
-          <MenuItem onClick={() => { setProfileAnchor(null); navigate('/admin') }} sx={{ fontSize: '0.82rem', gap: 1.5, py: 1 }}>
-            <ListItemIcon sx={{ minWidth: 'auto' }}>
-              <AdminPanelSettingsIcon sx={{ fontSize: 18, color: 'text.secondary' }} />
-            </ListItemIcon>
-            <ListItemText primaryTypographyProps={{ fontSize: '0.82rem' }}>Admin</ListItemText>
-          </MenuItem>
           {/* Tenant switcher */}
           <Divider />
-          <Box sx={{ px: 2, py: 0.75 }}>
+          <Box sx={{ px: 2, py: 0.75, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <Typography variant="caption" sx={{ fontWeight: 700, fontSize: '0.68rem', textTransform: 'uppercase', letterSpacing: 0.8, color: 'text.secondary' }}>
               Portal Instance
+            </Typography>
+            <Typography
+              variant="caption"
+              onClick={() => { setProfileAnchor(null); navigate('/portals') }}
+              sx={{ fontSize: '0.68rem', color: 'primary.main', cursor: 'pointer', fontWeight: 600, '&:hover': { textDecoration: 'underline' } }}
+            >
+              Manage
             </Typography>
           </Box>
           <MenuItem

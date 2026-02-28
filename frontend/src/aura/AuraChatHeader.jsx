@@ -41,7 +41,7 @@ export default function AuraChatHeader() {
 
       <Box sx={{ flex: 1 }}>
         <Typography fontWeight={700} sx={{ ...fBody, color: 'text.primary', lineHeight: 1.3 }}>
-          AURA Assistant
+          AURA AI Assistant
         </Typography>
         <Typography sx={{ ...fSmall, color: 'text.secondary', lineHeight: 1.2 }}>
           AI-Powered Observability Insights

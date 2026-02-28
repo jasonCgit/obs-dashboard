@@ -1148,10 +1148,10 @@ def _aura_incident_analysis():
         "content": [
             {"type": "text", "data": "Here's the current incident analysis for your environment. I'm tracking 2 critical and 1 warning application across all regions."},
             {"type": "metric_cards", "data": [
-                {"label": "Active P1s", "value": 2, "color": "#f44336", "trend": -33, "icon": "error"},
-                {"label": "Active P2s", "value": 5, "color": "#ff9800", "trend": 12, "icon": "warning"},
-                {"label": "MTTR (avg)", "value": "2.4h", "color": "#60a5fa", "trend": -18, "icon": "timer"},
-                {"label": "Affected Users", "value": "6,220", "color": "#a78bfa", "trend": -5, "icon": "people"},
+                {"label": "Active P1s", "value": 2, "color": "#f44336", "trend": -33, "icon": "error", "sparkline": [5, 4, 6, 3, 4, 3, 2]},
+                {"label": "Active P2s", "value": 5, "color": "#ff9800", "trend": 12, "icon": "warning", "sparkline": [3, 4, 3, 5, 4, 6, 5]},
+                {"label": "MTTR (avg)", "value": "2.4h", "color": "#60a5fa", "trend": -18, "icon": "timer", "sparkline": [3.8, 3.5, 3.2, 2.9, 2.7, 2.5, 2.4]},
+                {"label": "Affected Users", "value": "6,220", "color": "#a78bfa", "trend": -5, "icon": "people", "sparkline": [8200, 7800, 7200, 6800, 6500, 6400, 6220]},
             ]},
             {"type": "status_list", "title": "Affected Applications", "data": [
                 {"name": "GWM Global Collateral Mgmt", "status": "critical", "detail": "Database connection timeout — recurring pattern in APAC", "seal": "SEAL-90083"},
@@ -1179,10 +1179,10 @@ def _aura_slo_report():
         "content": [
             {"type": "text", "data": "Here's the SLO compliance report across all monitored services. 3 services are currently burning error budget faster than expected."},
             {"type": "metric_cards", "data": [
-                {"label": "Overall SLO", "value": "94.2%", "color": "#4caf50", "trend": -1.3, "icon": "check"},
-                {"label": "Error Budget Left", "value": "38%", "color": "#ff9800", "trend": -12, "icon": "data_usage"},
-                {"label": "Services at Risk", "value": 3, "color": "#f44336", "trend": 50, "icon": "error"},
-                {"label": "Services Healthy", "value": 41, "color": "#4caf50", "trend": 2, "icon": "check_circle"},
+                {"label": "Overall SLO", "value": "94.2%", "color": "#4caf50", "trend": -1.3, "icon": "check", "sparkline": [95.1, 94.8, 94.5, 94.3, 94.1, 94.0, 94.2]},
+                {"label": "Error Budget Left", "value": "38%", "color": "#ff9800", "trend": -12, "icon": "data_usage", "sparkline": [62, 55, 50, 46, 42, 40, 38]},
+                {"label": "Services at Risk", "value": 3, "color": "#f44336", "trend": 50, "icon": "error", "sparkline": [1, 1, 2, 2, 2, 3, 3]},
+                {"label": "Services Healthy", "value": 41, "color": "#4caf50", "trend": 2, "icon": "check_circle", "sparkline": [38, 39, 39, 40, 40, 41, 41]},
             ]},
             {"type": "table", "title": "SLO Compliance by Service", "data": {
                 "columns": ["Service", "SLO Target", "Current", "Error Budget", "Status"],
@@ -1239,6 +1239,7 @@ def _aura_blast_radius():
                     {"label": "Client Exp.", "value": 3, "color": "#60a5fa"},
                     {"label": "Operations", "value": 2, "color": "#a78bfa"},
                 ],
+                "trend": 15,
             }},
             {"type": "recommendations", "data": [
                 {"priority": "high", "text": "Implement async fallback queue for Order Processing Service", "impact": "Allows 30-min degraded operation without data loss"},
@@ -1261,15 +1262,19 @@ def _aura_mttr_analysis():
         "content": [
             {"type": "text", "data": "Here's the MTTR and MTTA analysis for the last quarter. Overall resolution times have improved 18% driven by the new automated runbook adoption."},
             {"type": "metric_cards", "data": [
-                {"label": "Avg MTTR", "value": "2.4h", "color": "#60a5fa", "trend": -18, "icon": "timer"},
-                {"label": "Avg MTTA", "value": "4.2m", "color": "#4caf50", "trend": -25, "icon": "notifications"},
-                {"label": "Resolution Rate", "value": "94.2%", "color": "#4caf50", "trend": 3, "icon": "check_circle"},
-                {"label": "Escalation Rate", "value": "12%", "color": "#ff9800", "trend": -8, "icon": "trending_down"},
+                {"label": "Avg MTTR", "value": "2.4h", "color": "#60a5fa", "trend": -18, "icon": "timer", "sparkline": [3.8, 3.5, 3.2, 2.9, 2.7, 2.5, 2.4]},
+                {"label": "Avg MTTA", "value": "4.2m", "color": "#4caf50", "trend": -25, "icon": "notifications", "sparkline": [6.5, 6.0, 5.5, 5.0, 4.8, 4.5, 4.2]},
+                {"label": "Resolution Rate", "value": "94.2%", "color": "#4caf50", "trend": 3, "icon": "check_circle", "sparkline": [89, 90, 91, 92, 93, 93, 94]},
+                {"label": "Escalation Rate", "value": "12%", "color": "#ff9800", "trend": -8, "icon": "trending_down", "sparkline": [18, 16, 15, 14, 13, 13, 12]},
             ]},
             {"type": "line_chart", "title": "MTTR Trend (12 Weeks)", "data": {
                 "series": [
-                    {"key": "mttr", "name": "MTTR (hours)", "color": "#60a5fa"},
-                    {"key": "mtta", "name": "MTTA (minutes)", "color": "#4caf50"},
+                    {"key": "mttr", "name": "MTTR (hours)", "color": "#60a5fa", "showTrendLine": True, "showLabeledDots": True},
+                    {"key": "mtta", "name": "MTTA (minutes)", "color": "#4caf50", "showTrendLine": True, "showLabeledDots": True},
+                ],
+                "stats": [
+                    {"label": "MTTR", "value": "2.4h", "color": "#60a5fa", "trend": -18},
+                    {"label": "MTTA", "value": "4.2m", "color": "#4caf50", "trend": -25},
                 ],
                 "points": [
                     {"label": "W1", "mttr": 3.8, "mtta": 6.5},
@@ -1312,10 +1317,10 @@ def _aura_executive_summary():
         "content": [
             {"type": "text", "data": "Good morning. Here's your executive platform health briefing. Overall stability has improved week-over-week, though two critical applications require continued attention."},
             {"type": "metric_cards", "data": [
-                {"label": "Platform Health", "value": "94.2%", "color": "#4caf50", "trend": 1.5, "icon": "health"},
-                {"label": "Availability", "value": "99.87%", "color": "#4caf50", "trend": 0.02, "icon": "cloud"},
-                {"label": "Active Incidents", "value": 7, "color": "#ff9800", "trend": -22, "icon": "warning"},
-                {"label": "Est. Impact", "value": "$142K", "color": "#f44336", "trend": -35, "icon": "money"},
+                {"label": "Platform Health", "value": "94.2%", "color": "#4caf50", "trend": 1.5, "icon": "health", "sparkline": [91.5, 92.0, 92.8, 93.2, 93.5, 94.0, 94.2]},
+                {"label": "Availability", "value": "99.87%", "color": "#4caf50", "trend": 0.02, "icon": "cloud", "sparkline": [99.82, 99.83, 99.84, 99.85, 99.85, 99.86, 99.87]},
+                {"label": "Active Incidents", "value": 7, "color": "#ff9800", "trend": -22, "icon": "warning", "sparkline": [12, 10, 9, 11, 8, 9, 7]},
+                {"label": "Est. Impact", "value": "$142K", "color": "#f44336", "trend": -35, "icon": "money", "sparkline": [280, 240, 210, 195, 180, 160, 142]},
             ]},
             {"type": "bar_chart", "title": "Incidents by Line of Business", "data": {
                 "bars": [
@@ -1330,8 +1335,13 @@ def _aura_executive_summary():
             }},
             {"type": "line_chart", "title": "Weekly Incident Trend", "data": {
                 "series": [
-                    {"key": "p1", "name": "P1 Incidents", "color": "#f44336"},
-                    {"key": "p2", "name": "P2 Incidents", "color": "#ffab00"},
+                    {"key": "p1", "name": "P1 Incidents", "color": "#f44336", "showTrendLine": True, "showLabeledDots": True},
+                    {"key": "p2", "name": "P2 Incidents", "color": "#ffab00", "showTrendLine": True, "showLabeledDots": True},
+                ],
+                "stats": [
+                    {"label": "P1", "value": 18, "color": "#f44336", "trend": -29},
+                    {"label": "P2", "value": 137, "color": "#ffab00", "trend": -10},
+                    {"label": "Resolved", "value": "94.2%", "color": "#4caf50"},
                 ],
                 "points": [
                     {"label": "W1", "p1": 3, "p2": 18},
@@ -1422,6 +1432,7 @@ def _aura_deployment_status():
                     {"label": "Successful", "value": 21, "color": "#4caf50"},
                     {"label": "Rolled Back", "value": 2, "color": "#f44336"},
                 ],
+                "trend": -8,
             }},
             {"type": "status_list", "title": "Upcoming Scheduled Deployments", "data": [
                 {"name": "Payment Gateway API v3.13.0", "status": "healthy", "detail": "Scheduled: Tomorrow 2:00 AM EST — connection pool fix", "seal": "SEAL-90176"},
@@ -1443,10 +1454,10 @@ def _aura_alert_analysis():
         "content": [
             {"type": "text", "data": "I've analyzed your alerting patterns for the past 30 days. Alert noise is at 34%, meaning roughly 1 in 3 alerts doesn't require human action. Here's the breakdown."},
             {"type": "metric_cards", "data": [
-                {"label": "Total Alerts", "value": "1,247", "color": "#60a5fa", "trend": 8, "icon": "notifications"},
-                {"label": "Actionable", "value": "66%", "color": "#4caf50", "trend": 5, "icon": "check"},
-                {"label": "Noise Rate", "value": "34%", "color": "#f44336", "trend": -3, "icon": "volume_off"},
-                {"label": "Avg Response", "value": "4.2m", "color": "#60a5fa", "trend": -12, "icon": "timer"},
+                {"label": "Total Alerts", "value": "1,247", "color": "#60a5fa", "trend": 8, "icon": "notifications", "sparkline": [980, 1020, 1050, 1100, 1150, 1200, 1247]},
+                {"label": "Actionable", "value": "66%", "color": "#4caf50", "trend": 5, "icon": "check", "sparkline": [58, 60, 61, 63, 64, 65, 66]},
+                {"label": "Noise Rate", "value": "34%", "color": "#f44336", "trend": -3, "icon": "volume_off", "sparkline": [42, 40, 39, 37, 36, 35, 34]},
+                {"label": "Avg Response", "value": "4.2m", "color": "#60a5fa", "trend": -12, "icon": "timer", "sparkline": [5.8, 5.5, 5.2, 4.9, 4.6, 4.4, 4.2]},
             ]},
             {"type": "bar_chart", "title": "Alert Volume by Source", "data": {
                 "bars": [
@@ -1490,10 +1501,10 @@ def _aura_regional_comparison():
         "content": [
             {"type": "text", "data": "Here's the regional operational health comparison. APAC is currently the most impacted region, driven primarily by database infrastructure issues affecting the GWM platform."},
             {"type": "metric_cards", "data": [
-                {"label": "NA Health", "value": "97.1%", "color": "#4caf50", "trend": 0.3, "icon": "public"},
-                {"label": "EMEA Health", "value": "95.8%", "color": "#4caf50", "trend": -0.5, "icon": "public"},
-                {"label": "APAC Health", "value": "89.4%", "color": "#f44336", "trend": -2.1, "icon": "public"},
-                {"label": "LATAM Health", "value": "96.2%", "color": "#4caf50", "trend": 1.2, "icon": "public"},
+                {"label": "NA Health", "value": "97.1%", "color": "#4caf50", "trend": 0.3, "icon": "public", "sparkline": [96.2, 96.5, 96.7, 96.8, 96.9, 97.0, 97.1]},
+                {"label": "EMEA Health", "value": "95.8%", "color": "#4caf50", "trend": -0.5, "icon": "public", "sparkline": [96.5, 96.3, 96.1, 96.0, 95.9, 95.8, 95.8]},
+                {"label": "APAC Health", "value": "89.4%", "color": "#f44336", "trend": -2.1, "icon": "public", "sparkline": [93.2, 92.5, 91.8, 91.0, 90.5, 90.0, 89.4]},
+                {"label": "LATAM Health", "value": "96.2%", "color": "#4caf50", "trend": 1.2, "icon": "public", "sparkline": [94.8, 95.0, 95.3, 95.5, 95.8, 96.0, 96.2]},
             ]},
             {"type": "bar_chart", "title": "Incidents by Region (30 Days)", "data": {
                 "bars": [
@@ -1531,8 +1542,12 @@ def _aura_trend_forecast():
             {"type": "text", "data": "Based on the last 12 weeks of data and seasonal patterns, here's the projected incident forecast. The model suggests a continued downward trend in P1s, but P2 volume may increase slightly due to upcoming deployment activity."},
             {"type": "line_chart", "title": "Incident Forecast (Historical + Projected)", "data": {
                 "series": [
-                    {"key": "actual", "name": "Actual", "color": "#60a5fa"},
+                    {"key": "actual", "name": "Actual", "color": "#60a5fa", "showTrendLine": True, "showLabeledDots": True},
                     {"key": "forecast", "name": "Forecast", "color": "#60a5fa", "dashed": True},
+                ],
+                "stats": [
+                    {"label": "Actual (Avg)", "value": "24.3", "color": "#60a5fa", "trend": -18},
+                    {"label": "Forecast", "value": "15.5", "color": "#a78bfa", "trend": -36},
                 ],
                 "points": [
                     {"label": "W-8", "actual": 28, "forecast": None},
@@ -1550,8 +1565,8 @@ def _aura_trend_forecast():
                 ],
             }},
             {"type": "metric_cards", "data": [
-                {"label": "Predicted P1s", "value": 1, "color": "#4caf50", "trend": -50, "icon": "error"},
-                {"label": "Predicted P2s", "value": 14, "color": "#ff9800", "trend": 8, "icon": "warning"},
+                {"label": "Predicted P1s", "value": 1, "color": "#4caf50", "trend": -50, "icon": "error", "sparkline": [4, 3, 3, 2, 2, 2, 1]},
+                {"label": "Predicted P2s", "value": 14, "color": "#ff9800", "trend": 8, "icon": "warning", "sparkline": [10, 11, 12, 12, 13, 13, 14]},
                 {"label": "Confidence", "value": "78%", "color": "#60a5fa", "trend": None, "icon": "analytics"},
                 {"label": "Risk Level", "value": "Medium", "color": "#ff9800", "trend": None, "icon": "shield"},
             ]},

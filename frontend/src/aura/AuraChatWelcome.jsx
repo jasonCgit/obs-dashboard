@@ -52,7 +52,7 @@ export default function AuraChatWelcome() {
           <AutoAwesomeIcon sx={{ fontSize: 24, color: '#fff' }} />
         </Box>
         <Typography fontWeight={700} sx={{ ...fBody, color: 'text.primary', mb: 0.5, textAlign: 'center' }}>
-          AURA Assistant
+          AURA AI Assistant
         </Typography>
         <Typography sx={{ ...fSmall, color: 'text.secondary', textAlign: 'center', maxWidth: 340 }}>
           AI-Powered Observability Insights. Select a prompt below or type your own question.

@@ -59,6 +59,7 @@ export default function CustomerJourneyWidget() {
               {steps.filter(s => s.status === 'critical').length} critical · {steps.filter(s => s.status === 'warning').length} warning · {steps.filter(s => s.status === 'healthy').length} healthy
             </Typography>
           </Box>
+          <Chip label={`${steps.length} steps`} size="small" sx={{ ml: 'auto', color: 'text.secondary', fontSize: '0.62rem', height: 20 }} variant="outlined" />
         </CardContent>
       </Card>
 
@@ -98,6 +99,23 @@ export default function CustomerJourneyWidget() {
           )
         })}
       </Box>
+
+      {/* Health bars */}
+      <Grid container spacing={1} sx={{ mt: 1.5 }}>
+        {steps.map(step => (
+          <Grid item xs={12} sm={6} md={4} key={step.step}>
+            <Box sx={{ mb: 0.25, display: 'flex', justifyContent: 'space-between' }}>
+              <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.6rem' }}>{step.step}</Typography>
+              <Typography variant="caption" sx={{ color: STATUS_COLOR[step.status], fontWeight: 600, fontSize: '0.6rem' }}>{step.errorRate} errors</Typography>
+            </Box>
+            <LinearProgress
+              variant="determinate"
+              value={Math.max(0, 100 - parseFloat(step.errorRate))}
+              sx={{ height: 4, borderRadius: 2, bgcolor: (t) => t.palette.mode === 'dark' ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.08)', '& .MuiLinearProgress-bar': { bgcolor: STATUS_COLOR[step.status], borderRadius: 2 } }}
+            />
+          </Grid>
+        ))}
+      </Grid>
     </Box>
   )
 }

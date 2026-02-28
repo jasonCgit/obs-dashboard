@@ -111,7 +111,7 @@ export const WIDGET_REGISTRY = {
     component: GraphExplorerWidget,
     apiEndpoint: null,
     dataKey: null,
-    defaultLayout: { w: 12, h: 14, minW: 2, minH: 4 },
+    defaultLayout: { w: 12, h: 14, minW: 12, minH: 6 },
     selfContained: true,
   },
   'customer-journey': {

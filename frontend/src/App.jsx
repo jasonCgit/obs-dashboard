@@ -62,7 +62,8 @@ export default function App() {
           <Route path="/incident-zero"   element={<IncidentZero />} />
           <Route path="/announcements"   element={<Announcements />} />
           <Route path="/links"           element={<Links />} />
-          <Route path="/admin"           element={<Admin />} />
+          <Route path="/portals"         element={<Admin />} />
+          <Route path="/admin"           element={<Navigate to="/portals" replace />} />
           <Route path="/views"           element={<Navigate to="/view-central" replace />} />
           <Route path="*"                element={<Navigate to="/" replace />} />
         </Routes>

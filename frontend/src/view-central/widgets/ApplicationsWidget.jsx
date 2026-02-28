@@ -61,22 +61,26 @@ export default function ApplicationsWidget({ viewFilters }) {
           <TableHead>
             <TableRow sx={{ '& th': { color: 'text.secondary', fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: 0.8, borderColor: 'divider', bgcolor: 'background.paper' } }}>
               <TableCell>Application</TableCell>
-              <TableCell>SEAL</TableCell>
+              <TableCell sx={{ display: { xs: 'none', md: 'table-cell' } }}>SEAL</TableCell>
+              <TableCell>Team</TableCell>
               <TableCell>Status</TableCell>
-              <TableCell>SLA</TableCell>
-              <TableCell>Incidents</TableCell>
+              <TableCell sx={{ display: { xs: 'none', md: 'table-cell' } }}>SLA</TableCell>
+              <TableCell>Incidents 30d</TableCell>
+              <TableCell>Last Incident</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
             {visible.map(app => (
               <TableRow key={app.name} hover sx={{ '& td': { borderColor: 'divider', fontSize: '0.72rem', py: 0.5 } }}>
                 <TableCell sx={{ fontWeight: 600, maxWidth: 200 }}>{app.name}</TableCell>
-                <TableCell sx={{ color: 'text.secondary', fontFamily: 'monospace', fontSize: '0.68rem' }}>{app.seal}</TableCell>
+                <TableCell sx={{ color: 'text.secondary', fontFamily: 'monospace', fontSize: '0.68rem', display: { xs: 'none', md: 'table-cell' } }}>{app.seal}</TableCell>
+                <TableCell sx={{ color: 'text.secondary' }}>{app.team}</TableCell>
                 <TableCell>
                   <Chip label={app.status.toUpperCase()} size="small" sx={{ bgcolor: `${STATUS_COLOR[app.status]}22`, color: STATUS_COLOR[app.status], fontWeight: 700, fontSize: '0.58rem', height: 18 }} />
                 </TableCell>
-                <TableCell sx={{ color: 'text.secondary' }}>{app.sla}</TableCell>
+                <TableCell sx={{ color: 'text.secondary', display: { xs: 'none', md: 'table-cell' } }}>{app.sla}</TableCell>
                 <TableCell sx={{ color: app.incidents > 5 ? '#f44336' : app.incidents > 0 ? '#ff9800' : 'text.secondary', fontWeight: app.incidents > 0 ? 600 : 400 }}>{app.incidents}</TableCell>
+                <TableCell sx={{ color: 'text.secondary' }}>{app.last}</TableCell>
               </TableRow>
             ))}
           </TableBody>

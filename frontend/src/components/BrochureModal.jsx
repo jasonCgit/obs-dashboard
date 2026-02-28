@@ -4,8 +4,8 @@ import {
   Dialog, DialogContent, IconButton, Typography, Box, Grid, Chip, Divider, Stack, Button,
 } from '@mui/material'
 import CloseIcon          from '@mui/icons-material/Close'
+import AutoAwesomeIcon    from '@mui/icons-material/AutoAwesome'
 import HomeIcon           from '@mui/icons-material/Home'
-import StarIcon           from '@mui/icons-material/Star'
 import ViewQuiltIcon      from '@mui/icons-material/ViewQuilt'
 import InventoryIcon      from '@mui/icons-material/Inventory'
 import AppsIcon           from '@mui/icons-material/Apps'
@@ -13,12 +13,8 @@ import AccountTreeIcon    from '@mui/icons-material/AccountTree'
 import RouteIcon          from '@mui/icons-material/Route'
 import SpeedIcon          from '@mui/icons-material/Speed'
 import CampaignIcon       from '@mui/icons-material/Campaign'
-import LinkIcon           from '@mui/icons-material/Link'
 import ShieldIcon         from '@mui/icons-material/Shield'
-import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings'
-import TuneIcon           from '@mui/icons-material/Tune'
-import TabIcon            from '@mui/icons-material/Tab'
-import AutoAwesomeIcon    from '@mui/icons-material/AutoAwesome'
+import HubIcon            from '@mui/icons-material/Hub'
 import MenuBookIcon       from '@mui/icons-material/MenuBook'
 import SupportAgentIcon   from '@mui/icons-material/SupportAgent'
 import FeedbackIcon       from '@mui/icons-material/Feedback'
@@ -26,118 +22,89 @@ import ContactsIcon       from '@mui/icons-material/Contacts'
 import DescriptionIcon    from '@mui/icons-material/Description'
 import PlayCircleOutlineIcon from '@mui/icons-material/PlayCircleOutline'
 
-// Ordered by tab order, with gif filename for each
 const FEATURES = [
   {
     icon: HomeIcon,
     color: '#60a5fa',
-    title: 'Home Dashboard',
+    title: 'Executive Overview',
     gif: 'dashboard-overview.gif',
-    desc: 'Single pane of glass — critical apps with recent issues, AI health analysis, regional status, P1/P2 incident donuts, 90-day trend line chart, frequent incidents, and live activity feed.',
+    desc: 'AI-driven summary, live health status, and context-driven measures across your entire platform ecosystem.',
   },
   {
-    icon: StarIcon,
-    color: '#fbbf24',
-    title: 'Favorites',
-    gif: 'favorites.gif',
-    desc: 'Pinned View Central dashboards for quick access. Star any custom dashboard and find them all here — searchable by name or description with SEAL associations and widget counts.',
-  },
-  {
-    icon: ViewQuiltIcon,
-    color: '#c084fc',
-    title: 'View Central',
-    gif: 'view-central.gif',
-    desc: 'Custom dashboards scoped to product areas. Create, configure, and monitor with drag-and-drop widget grids, SEAL filtering, per-dashboard notifications, and full search.',
-  },
-  {
-    icon: InventoryIcon,
-    color: '#fb923c',
-    title: 'Product Catalog',
-    gif: 'product-catalog.gif',
-    desc: '6 business products (Advisor Connect, Spectrum Equities, Connect OS, GWM Collateral, Client Case Mgmt, IPBOL) with per-product health, service counts, and linked views.',
-  },
-  {
-    icon: AppsIcon,
-    color: '#4ade80',
-    title: 'Applications',
-    gif: 'applications.gif',
-    desc: '20+ registered applications with status, SLA targets, team ownership, and 30-day incident history — filterable by health status with full search.',
+    icon: AutoAwesomeIcon,
+    color: '#f59e0b',
+    title: 'AURA AI Assistant',
+    gif: 'aura-chat.gif',
+    desc: 'AI-Powered Observability Insights — smart prompts, rich visual responses, and context-aware platform analysis.',
   },
   {
     icon: AccountTreeIcon,
     color: '#34d399',
-    title: 'Blast Radius — Dependency Graphs',
+    title: 'Blast Radius',
     gif: 'blast-radius.gif',
-    desc: 'Multi-layer dependency visualization with toggleable platform, data center, and health indicator layers — SEAL-scoped component graphs with status-colored edges, dagre layout, and interactive node details.',
-  },
-  {
-    icon: RouteIcon,
-    color: '#a78bfa',
-    title: 'Customer Journeys',
-    gif: 'customer-journey.gif',
-    desc: 'End-to-end path health for Trade Execution, Client Login, and Document Delivery — step-by-step latency and error rate visibility across every service hop.',
-  },
-  {
-    icon: SpeedIcon,
-    color: '#38bdf8',
-    title: 'SLO Agent',
-    gif: 'slo-agent.gif',
-    desc: 'Autonomous SLO monitoring agent that predicts breaches, proposes auto-remediation actions, and surfaces error budget burn rates before they cause incidents.',
-  },
-  {
-    icon: CampaignIcon,
-    color: '#f87171',
-    title: 'Announcements',
-    gif: 'announcements.gif',
-    desc: 'Full CRUD announcement management — create, edit, close/reopen, delete, search, type filters, pinning, and auto-refresh every 30 seconds.',
-  },
-  {
-    icon: LinkIcon,
-    color: '#94a3b8',
-    title: 'Links',
-    gif: 'links.gif',
-    desc: 'Quick-access grid for monitoring, CI/CD, security, documentation, and team tools across 8 categories with direct launch.',
+    desc: 'Assess severity of business impacts — trace upstream and downstream impact across components, platforms, and data centers.',
   },
   {
     icon: ShieldIcon,
     color: '#fb923c',
     title: 'Incident Zero',
     gif: 'incident-zero.gif',
-    desc: 'Proactive pre-incident management — burn rate alerts, error budget dashboards, breach ETAs, and prevention timelines to stop P1s before they happen.',
+    desc: 'Proactive pre-incident management — burn rate alerts, error budgets, breach ETAs, and prevention timelines to stop P1s before they start.',
   },
   {
-    icon: AdminPanelSettingsIcon,
+    icon: HubIcon,
     color: '#e879f9',
-    title: 'Admin — Portal Instances',
+    title: 'Multi-Tenant Portal',
     gif: 'admin.gif',
-    desc: 'Create, edit, and manage branded portal instances with custom logos, titles, subtitles, default scope filters, and one-click tenant switching.',
+    desc: 'Branded portal instances with custom logos, titles, default scope filters, and one-click tenant switching.',
   },
   {
-    icon: TuneIcon,
-    color: '#22d3ee',
-    title: 'Search & Filter',
-    gif: 'search-filter.gif',
-    desc: 'Global search and grouped multi-select filters — taxonomy, people, risk & compliance — with a persistent scope bar showing active filters and app counts.',
+    icon: ViewQuiltIcon,
+    color: '#c084fc',
+    title: 'View Central',
+    gif: 'view-central.gif',
+    desc: 'Customizable dashboards for your team — drag-and-drop widgets, real-time notifications, and personalized views.',
   },
   {
-    icon: TabIcon,
-    color: '#a3e635',
-    title: 'Tabs & Theming',
-    gif: 'tabs-and-theme.gif',
-    desc: 'Browser-style tab management — add, close, drag-to-reorder with persistent order. Full dark/light theme toggle across all components.',
+    icon: AppsIcon,
+    color: '#4ade80',
+    title: 'Applications',
+    gif: 'applications.gif',
+    desc: 'Full application registry with health status, SLA targets, team ownership, and 30-day incident history.',
   },
   {
-    icon: AutoAwesomeIcon,
-    color: '#f59e0b',
-    title: 'Aura AI Chat',
-    gif: 'aura-chat.gif',
-    desc: 'AI-powered chat assistant with suggested prompts, rich block responses (metrics, charts, tables, recommendations), and context-aware observability insights.',
+    icon: InventoryIcon,
+    color: '#fb923c',
+    title: 'Product Catalog',
+    gif: 'product-catalog.gif',
+    desc: 'Business products at a glance — health status, service counts, and direct links to observability views.',
+  },
+  {
+    icon: RouteIcon,
+    color: '#a78bfa',
+    title: 'Customer Journeys',
+    gif: 'customer-journey.gif',
+    desc: 'End-to-end path health — step-by-step latency and error rates across every service hop in your critical workflows.',
+  },
+  {
+    icon: SpeedIcon,
+    color: '#38bdf8',
+    title: 'SLO Agent',
+    gif: 'slo-agent.gif',
+    desc: 'Autonomous agent that predicts SLO breaches, tracks error budgets, and proposes remediation before incidents happen.',
+  },
+  {
+    icon: CampaignIcon,
+    color: '#f87171',
+    title: 'Announcements',
+    gif: 'announcements.gif',
+    desc: 'Create, manage, and broadcast platform announcements — with search, filters, pinning, and live auto-refresh.',
   },
 ]
 
 const METRICS = [
   { value: '34+',  label: 'Services Monitored' },
-  { value: '15',   label: 'Observability Views' },
+  { value: '11',   label: 'Observability Views' },
   { value: '<30s', label: 'Mean Time to Detect' },
   { value: '90d',  label: 'Incident History' },
 ]
@@ -219,12 +186,12 @@ export function BrochureButton() {
 
             <Grid container spacing={2}>
               {FEATURES.map(({ icon: Icon, color, title, desc, gif }) => (
-                <Grid item xs={12} sm={6} key={title}>
+                <Grid item xs={12} sm={6} key={title} sx={{ display: 'flex' }}>
                   <Box
                     onClick={() => setPreviewGif({ title, gif, desc })}
                     sx={{
                       display: 'flex', gap: 1.5,
-                      p: 1.5, borderRadius: 2,
+                      p: 1.5, borderRadius: 2, height: '100%',
                       border: '1px solid',
                       borderColor: 'divider',
                       bgcolor: (t) => t.palette.mode === 'dark' ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.015)',

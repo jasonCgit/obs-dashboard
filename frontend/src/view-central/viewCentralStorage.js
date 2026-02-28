@@ -1,6 +1,6 @@
 const STORAGE_KEY = 'obs-view-centrals'
 const VERSION_KEY = 'obs-vc-layout-version'
-const LAYOUT_VERSION = 4  // bump when default layouts change
+const LAYOUT_VERSION = 5  // bump when default layouts change
 
 function migrateIfNeeded() {
   const stored = localStorage.getItem(VERSION_KEY)
@@ -126,8 +126,8 @@ export const DEFAULT_VIEW_CENTRALS = [
       { i: 'w-s1', type: 'summary-cards',    x: 0, y: 0,  w: 12, h: 2,  config: {} },
       { i: 'w-s2', type: 'critical-apps',    x: 0, y: 2,  w: 8,  h: 9,  config: {} },
       { i: 'w-s3', type: 'active-incidents', x: 8, y: 2,  w: 4,  h: 9,  config: {} },
-      { i: 'w-s4', type: 'incident-trends',  x: 0, y: 11, w: 6,  h: 8,  config: {} },
-      { i: 'w-s5', type: 'blast-radius',     x: 6, y: 11, w: 6,  h: 8,  config: {} },
+      { i: 'w-s4', type: 'incident-trends',  x: 0, y: 11, w: 12, h: 8,  config: {} },
+      { i: 'w-s5', type: 'blast-radius',     x: 0, y: 19, w: 12, h: 14, config: {} },
     ],
   },
   {

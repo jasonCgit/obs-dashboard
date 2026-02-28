@@ -97,7 +97,7 @@ export default function TenantSwitcher() {
         ))}
 
         <Divider />
-        <MenuItem onClick={() => { setAnchorEl(null); navigate('/admin') }} sx={{ gap: 1.5, py: 0.75 }}>
+        <MenuItem onClick={() => { setAnchorEl(null); navigate('/portals') }} sx={{ gap: 1.5, py: 0.75 }}>
           <ListItemIcon sx={{ minWidth: 'auto' }}>
             <AdminPanelSettingsIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
           </ListItemIcon>
