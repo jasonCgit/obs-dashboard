@@ -8,17 +8,38 @@ A real-time observability platform purpose-built for AWM engineering — combini
 
 ## Demo
 
-### AURA AI Assistant
-> AI-Powered Observability Insights — smart prompts, rich visual responses, and context-aware platform analysis.
-
-<img src="docs/gifs/aura-chat.gif" alt="AURA AI Chat" width="100%">
-
----
-
 ### Executive Overview
 > AI-driven summary, live health status, and context-driven measures across your entire platform ecosystem.
 
 <img src="docs/gifs/dashboard-overview.gif" alt="Executive Overview" width="100%">
+
+---
+
+### AURA AI Assistant
+> AI-Powered Observability Insights — smart prompts, rich visual responses, and context-aware platform analysis.
+
+<img src="docs/gifs/aura-chat.gif" alt="AURA AI Assistant" width="100%">
+
+---
+
+### Blast Radius
+> Assess severity of business impacts — trace upstream and downstream impact across components, platforms, and data centers.
+
+<img src="docs/gifs/blast-radius.gif" alt="Blast Radius" width="100%">
+
+---
+
+### Incident Zero
+> Proactive pre-incident management — burn rate alerts, error budgets, breach ETAs, and prevention timelines to stop P1s before they start.
+
+<img src="docs/gifs/incident-zero.gif" alt="Incident Zero" width="100%">
+
+---
+
+### Multi-Tenant Portal
+> Branded portal instances with custom logos, titles, default scope filters, and one-click tenant switching.
+
+<img src="docs/gifs/admin.gif" alt="Multi-Tenant Portal" width="100%">
 
 ---
 
@@ -29,13 +50,6 @@ A real-time observability platform purpose-built for AWM engineering — combini
 
 ---
 
-### Product Catalog
-> Business products at a glance — health status, service counts, and direct links to observability views.
-
-<img src="docs/gifs/product-catalog.gif" alt="Product Catalog" width="100%">
-
----
-
 ### Applications
 > Full application registry with health status, SLA targets, team ownership, and 30-day incident history.
 
@@ -43,10 +57,10 @@ A real-time observability platform purpose-built for AWM engineering — combini
 
 ---
 
-### Blast Radius
-> Multi-layer dependency graphs — trace upstream and downstream impact across components, platforms, and data centers.
+### Product Catalog
+> Business products at a glance — health status, service counts, and direct links to observability views.
 
-<img src="docs/gifs/blast-radius.gif" alt="Blast Radius" width="100%">
+<img src="docs/gifs/product-catalog.gif" alt="Product Catalog" width="100%">
 
 ---
 
@@ -71,20 +85,6 @@ A real-time observability platform purpose-built for AWM engineering — combini
 
 ---
 
-### Incident Zero
-> Proactive pre-incident management — burn rate alerts, error budgets, breach ETAs, and prevention timelines to stop P1s before they start.
-
-<img src="docs/gifs/incident-zero.gif" alt="Incident Zero" width="100%">
-
----
-
-### Multi-Tenant Portal
-> Branded portal instances with custom logos, titles, default scope filters, and one-click tenant switching.
-
-<img src="docs/gifs/admin.gif" alt="Multi-Tenant Portal" width="100%">
-
----
-
 ## Architecture
 
 | Layer    | Stack                        | Port  |
@@ -100,17 +100,17 @@ The frontend proxies all `/api/*` requests to the backend via Vite's dev server 
 
 | Feature | Description |
 |---------|-------------|
+| **Executive Overview** | AI-driven summary, live health status, and context-driven measures across your entire platform ecosystem |
 | **AURA AI Assistant** | AI-Powered Observability Insights — smart prompts, rich visual responses, and context-aware platform analysis |
-| **Executive Overview** | AI-driven summary, live health status, and context-driven measures |
-| **View Central** | Customizable dashboards with drag-and-drop widgets, notifications, and personalized views |
-| **Product Catalog** | Business products with health status, service counts, and linked views |
-| **Applications** | Application registry with SLA targets, team ownership, and incident history |
-| **Blast Radius** | Multi-layer dependency graphs across components, platforms, and data centers |
-| **Customer Journeys** | End-to-end path health with step-by-step latency and error rates |
-| **SLO Agent** | SLO breach prediction, error budget tracking, and auto-remediation |
-| **Announcements** | Platform announcements with search, filters, pinning, and auto-refresh |
-| **Incident Zero** | Proactive pre-incident management with burn rate alerts and breach ETAs |
-| **Multi-Tenant Portal** | Branded portal instances with custom logos, titles, and scope filters |
+| **Blast Radius** | Assess severity of business impacts — trace upstream and downstream impact across components, platforms, and data centers |
+| **Incident Zero** | Proactive pre-incident management — burn rate alerts, error budgets, breach ETAs, and prevention timelines to stop P1s before they start |
+| **Multi-Tenant Portal** | Branded portal instances with custom logos, titles, default scope filters, and one-click tenant switching |
+| **View Central** | Customizable dashboards for your team — drag-and-drop widgets, real-time notifications, and personalized views |
+| **Applications** | Full application registry with health status, SLA targets, team ownership, and 30-day incident history |
+| **Product Catalog** | Business products at a glance — health status, service counts, and direct links to observability views |
+| **Customer Journeys** | End-to-end path health — step-by-step latency and error rates across every service hop in your critical workflows |
+| **SLO Agent** | Autonomous agent that predicts SLO breaches, tracks error budgets, and proposes remediation before incidents happen |
+| **Announcements** | Create, manage, and broadcast platform announcements — with search, filters, pinning, and live auto-refresh |
 
 ---
 
