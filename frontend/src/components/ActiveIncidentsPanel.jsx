@@ -69,7 +69,7 @@ function DonutChart({ total, breakdown, label, trend, numberColor }) {
           </ResponsiveContainer>
           {/* Center number */}
           <Box sx={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <Typography sx={{ ...fMetric, fontWeight: 800, color: isEmpty ? '#64748b' : (numberColor || '#60a5fa'), lineHeight: 1 }}>
+            <Typography sx={{ ...fMetric, fontWeight: 800, color: isEmpty ? '#64748b' : (numberColor || (isDark ? '#60a5fa' : '#1565C0')), lineHeight: 1 }}>
               {total}
             </Typography>
           </Box>

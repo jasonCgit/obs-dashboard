@@ -36,8 +36,8 @@ export default function RegionalStatus({ data }) {
                   justifyContent: 'space-between',
                   p: 1,
                   borderRadius: 1.5,
-                  bgcolor: `${color}12`,
-                  border: `1px solid ${color}35`,
+                  bgcolor: (t) => t.palette.mode === 'dark' ? `${color}12` : `${color}18`,
+                  border: (t) => `1px solid ${color}${t.palette.mode === 'dark' ? '35' : '40'}`,
                 }}
               >
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>

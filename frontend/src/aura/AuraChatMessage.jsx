@@ -161,7 +161,7 @@ export default function AuraChatMessage({ message, onFollowup }) {
 
       <Box sx={{ maxWidth: '92%', minWidth: 0, flex: 1 }}>
         <Box sx={{
-          bgcolor: t => t.palette.mode === 'dark' ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.03)',
+          bgcolor: t => t.palette.mode === 'dark' ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.05)',
           border: '1px solid',
           borderColor: t => t.palette.mode === 'dark' ? 'rgba(255,255,255,0.12)' : 'divider',
           borderRadius: '4px 12px 12px 12px',
@@ -176,7 +176,8 @@ export default function AuraChatMessage({ message, onFollowup }) {
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mt: 1.5 }}>
               {[0, 0.15, 0.3].map((delay, i) => (
                 <Box key={i} sx={{
-                  width: 5, height: 5, borderRadius: '50%', bgcolor: '#60a5fa',
+                  width: 5, height: 5, borderRadius: '50%',
+                  bgcolor: t => t.palette.mode === 'dark' ? '#60a5fa' : '#1565C0',
                   animation: 'auraBounce 1.2s ease-in-out infinite',
                   animationDelay: `${delay}s`,
                   '@keyframes auraBounce': {

@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import {
   Box, Typography, Chip, Divider, CircularProgress, Alert, Stack,
-  Card, CardContent, CardHeader, Select, FormControl, MenuItem,
+  Card, CardContent, CardHeader, Autocomplete, TextField,
   Tabs, Tab, IconButton, Tooltip,
 } from '@mui/material'
 import CheckIcon          from '@mui/icons-material/Check'
@@ -18,17 +19,25 @@ import { parseSealDisplay } from '../data/appData'
 
 // ── All SEALs (matches backend SEAL_COMPONENTS) ────────────────────────────
 const ALL_SEALS = [
-  { seal: '88180', label: 'Connect OS' },
   { seal: '90176', label: 'Advisor Connect' },
+  { seal: '102987', label: 'AWM Entitlements (WEAVE)' },
+  { seal: '88180', label: 'Connect OS' },
+  { seal: '45440', label: 'Credit Card Processing Engine' },
+  { seal: '16649', label: 'Morgan Money' },
+  { seal: '81884', label: 'Order Decision Engine' },
+  { seal: '35115', label: 'PANDA' },
+  { seal: '91001', label: 'Quantum' },
+  { seal: '62100', label: 'Real-Time Payments Gateway' },
   { seal: '90215', label: 'Spectrum Portfolio Mgmt' },
 ]
 
 // ── Layer definitions ───────────────────────────────────────────────────────
 const LAYER_DEFS = [
-  { key: 'component',  label: 'Components',   color: '#5C8CC2', always: true },
+  { key: 'indicator',  label: 'Health Indicators',   color: '#94a3b8' },
+  { key: 'component',  label: 'Components',   color: '#1565C0', always: true },
+  { key: 'crossapp',   label: 'Upstream / Downstream',  color: '#78716c' },
   { key: 'platform',   label: 'Platform',     color: '#C27BA0' },
   { key: 'datacenter', label: 'Data Centers',  color: '#5DA5A0', requires: 'platform' },
-  { key: 'indicator',  label: 'Health Indicators',   color: '#B8976B' },
 ]
 
 // ── Status helpers ──────────────────────────────────────────────────────────
@@ -48,13 +57,31 @@ function StatusChip({ status }) {
 
 // ── SEAL-specific executive narratives ────────────────────────────────────────
 const SEAL_NARRATIVES = {
+  '16649': 'Morgan Money data service experiencing elevated error rates with database connection pool saturation. API layer reporting intermittent 503 responses during peak client data retrieval windows.',
+  '35115': 'PANDA cache layer showing elevated eviction rates causing increased backend load. Data distribution latency within acceptable thresholds but cache miss ratio trending upward over past 24 hours.',
   '88180': 'Intermittent gateway timeouts on Connect Cloud GW impacting downstream portal and home-app services. DNS resolution delays from regional load balancers contributing to elevated P99 latency across APAC data centers.',
   '90176': 'Coverage app and IPBOL account services in critical state, driving cascading degradation across profile and notification pipelines. Shared DB connection pool nearing exhaustion, causing read timeouts and elevated response times across dependent services.',
+  '81884': 'Order execution service experiencing critical latency due to risk validation bottleneck. Market data feed degradation causing stale pricing in rule engine evaluations, impacting order routing accuracy.',
+  '91001': 'Quantum data lake connector experiencing connection pool exhaustion and elevated query timeouts. Portfolio service unable to sync latest NAV calculations, causing stale position data in downstream analytics.',
+  '45440': 'Fraud detection engine operating at reduced throughput due to model scoring latency. Ledger posting backlog growing as authorization pipeline slows, impacting settlement cycle times and customer notification delivery.',
+  '102987': 'WEAVE policy engine degraded due to user directory synchronization failures. Event bus message backlog causing delayed entitlement propagation across downstream consuming applications. Multiple identity sync retries observed.',
   '90215': 'Settlement processing backlog due to payment gateway throttling under peak load. API gateway circuit breakers tripping intermittently, causing notification delivery delays and partial trade reconciliation failures across Spectrum services.',
+  '62100': 'Routing engine experiencing critical failures during cross-border payment classification. Clearing and settlement engines backlogged as sanctions screening latency impacts downstream processing. FX conversion service intermittently timing out on rate lookups.',
 }
 
 // ── SEAL-specific business processes (matches original Blast Radius) ──────────
 const SEAL_BUSINESS_PROCESSES = {
+  '16649': [
+    { name: 'Client Data Retrieval',     status: 'critical', desc: 'Core data lookup and aggregation' },
+    { name: 'API Request Handling',      status: 'warning',  desc: 'REST API gateway processing' },
+    { name: 'UI Rendering',             status: 'healthy',  desc: 'Client-facing dashboard assembly' },
+  ],
+  '35115': [
+    { name: 'Data Distribution',        status: 'healthy',  desc: 'Client data fan-out to consumers' },
+    { name: 'Cache Management',         status: 'warning',  desc: 'Distributed cache population and eviction' },
+    { name: 'Data Export',              status: 'healthy',  desc: 'Batch and on-demand data extraction' },
+    { name: 'Gateway Routing',          status: 'healthy',  desc: 'Request routing and load balancing' },
+  ],
   '88180': [
     { name: 'User Authentication & SSO', status: 'healthy',  desc: 'Centralised login and token management' },
     { name: 'Home App Rendering',        status: 'warning',  desc: 'NA/APAC/EMEA portal page assembly' },
@@ -69,12 +96,51 @@ const SEAL_BUSINESS_PROCESSES = {
     { name: 'Document Sync',             status: 'warning',  desc: 'Cross-service document replication' },
     { name: 'Audit Trail Recording',     status: 'healthy',  desc: 'Compliance event logging' },
   ],
+  '81884': [
+    { name: 'Order Routing',            status: 'warning',  desc: 'Inbound order classification and routing' },
+    { name: 'Risk Validation',          status: 'critical', desc: 'Pre-trade risk and compliance checks' },
+    { name: 'Trade Execution',          status: 'critical', desc: 'Order matching and fill generation' },
+    { name: 'Market Data Feed',         status: 'warning',  desc: 'Real-time pricing and reference data' },
+    { name: 'Reconciliation',           status: 'warning',  desc: 'Post-trade position reconciliation' },
+  ],
+  '91001': [
+    { name: 'Portfolio Management',     status: 'critical', desc: 'NAV calculation and position tracking' },
+    { name: 'Analytics Pipeline',       status: 'warning',  desc: 'Performance attribution and risk metrics' },
+    { name: 'Data Lake Ingestion',      status: 'critical', desc: 'Batch and streaming data integration' },
+    { name: 'Report Generation',        status: 'healthy',  desc: 'Regulatory and client reporting' },
+    { name: 'Authentication',           status: 'healthy',  desc: 'User identity and access control' },
+  ],
+  '45440': [
+    { name: 'Transaction Authorization', status: 'warning',  desc: 'Real-time card authorization flow' },
+    { name: 'Fraud Detection',          status: 'critical', desc: 'ML-based transaction scoring' },
+    { name: 'Ledger Posting',           status: 'critical', desc: 'Double-entry transaction recording' },
+    { name: 'Settlement Processing',    status: 'warning',  desc: 'End-of-day batch settlement' },
+    { name: 'Dispute Resolution',       status: 'healthy',  desc: 'Chargeback and dispute workflows' },
+    { name: 'Rewards Processing',       status: 'healthy',  desc: 'Points accrual and redemption' },
+  ],
+  '102987': [
+    { name: 'Policy Evaluation',        status: 'critical', desc: 'Real-time entitlement policy checks' },
+    { name: 'Identity Synchronization', status: 'warning',  desc: 'Cross-directory user sync pipeline' },
+    { name: 'Role Management',          status: 'warning',  desc: 'RBAC role assignment and hierarchy' },
+    { name: 'Token Issuance',           status: 'healthy',  desc: 'OAuth/JWT token generation and refresh' },
+    { name: 'Event Processing',         status: 'critical', desc: 'Entitlement change event propagation' },
+    { name: 'Compliance Reporting',     status: 'warning',  desc: 'Access audit and SOX reporting' },
+  ],
   '90215': [
     { name: 'Trade Execution',       status: 'critical', desc: 'Order submission and fill routing' },
     { name: 'Real-time Pricing',     status: 'critical', desc: 'Market data aggregation and distribution' },
     { name: 'Risk Assessment',       status: 'critical', desc: 'Pre-trade and post-trade risk checks' },
     { name: 'Settlement Processing', status: 'warning',  desc: 'T+1 trade settlement workflow' },
     { name: 'Compliance Reporting',  status: 'healthy',  desc: 'Regulatory audit trail generation' },
+  ],
+  '62100': [
+    { name: 'Payment Routing',          status: 'critical', desc: 'Cross-border payment classification and routing' },
+    { name: 'Sanctions Screening',      status: 'warning',  desc: 'OFAC and EU sanctions list screening' },
+    { name: 'AML Compliance',           status: 'healthy',  desc: 'Anti-money laundering transaction checks' },
+    { name: 'Clearing & Settlement',    status: 'critical', desc: 'Real-time gross settlement processing' },
+    { name: 'FX Conversion',            status: 'warning',  desc: 'Multi-currency conversion and rate lookup' },
+    { name: 'Reconciliation',           status: 'healthy',  desc: 'End-of-day position reconciliation' },
+    { name: 'Health Monitoring',        status: 'warning',  desc: 'Platform-wide health and SLA tracking' },
   ],
 }
 
@@ -163,8 +229,9 @@ function InlineExecutiveSummary({ apiData, seal }) {
 
       {/* Executive narrative (two lines available) */}
       <Box sx={{ flexGrow: 1, minWidth: 0, overflow: 'hidden' }}>
-        <Typography color="text.secondary" sx={{
-          fontSize: '0.78rem', lineHeight: 1.35,
+        <Typography sx={{
+          fontSize: '0.78rem', fontWeight: 600, lineHeight: 1.35,
+          color: (t) => t.palette.mode === 'dark' ? '#ffffff' : '#000000',
           display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical',
           overflow: 'hidden', textOverflow: 'ellipsis',
         }}>
@@ -285,7 +352,7 @@ function DependencyOverview({ apiData, activeLayers, seal }) {
 }
 
 // ── Node detail panel (sidebar) ─────────────────────────────────────────────
-function NodeDetailPanel({ node }) {
+function NodeDetailPanel({ node, onNavigateToSeal }) {
   if (!node) {
     return (
       <Box sx={{ textAlign: 'center', mt: 4 }}>
@@ -303,18 +370,22 @@ function NodeDetailPanel({ node }) {
   let statusValue = null
   let title = node.label
 
-  if (nodeType === 'service') {
+  if (nodeType === 'service' || nodeType === 'external') {
     rows = [
-      ['Service ID', node.id],
       ['Team', node.team],
-      ['SLA', node.sla],
+      ['SLO Status', node.sla],
       ['Incidents 30d', node.incidents_30d],
     ]
     statusValue = node.status
+    if (nodeType === 'external') {
+      const dirLabel = node.cross_direction === 'upstream' ? 'Upstream' : node.cross_direction === 'both' ? 'Up/Downstream' : 'Downstream'
+      rows.push(['Application', node.external_seal_label], ['Direction', dirLabel])
+    }
   } else if (nodeType === 'platform') {
+    const subtypeLabels = { pool: 'Pool', cluster: 'Cluster', service: 'Service' }
     rows = [
       ['Type', node.type?.toUpperCase()],
-      ['Subtype', node.subtype],
+      ['Subtype', subtypeLabels[node.subtype] || node.subtype],
       ['Data Center', node.datacenter],
     ]
     statusValue = node.status
@@ -337,13 +408,15 @@ function NodeDetailPanel({ node }) {
   const layerLabel = {
     service: 'COMPONENT', platform: 'PLATFORM',
     datacenter: 'DATA CENTER', indicator: 'INDICATOR',
+    external: 'UPSTREAM / DOWNSTREAM',
   }[nodeType] || 'NODE'
 
   const layerColor = {
-    service: '#5C8CC2',
+    service: '#1565C0',
     platform: '#C27BA0',
     datacenter: '#5DA5A0',
     indicator: '#B8976B',
+    external: '#78716c',
   }[nodeType] || '#94a3b8'
 
   return (
@@ -375,6 +448,34 @@ function NodeDetailPanel({ node }) {
             </Box>
           ))}
         </Stack>
+        {nodeType === 'external' && node.external_seal && (
+          <>
+            <Divider sx={{ my: 1 }} />
+            <Box
+              onClick={() => onNavigateToSeal?.(node.external_seal)}
+              sx={{
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 0.5,
+                py: 0.6, px: 1, borderRadius: 1,
+                cursor: 'pointer',
+                bgcolor: (t) => t.palette.mode === 'dark' ? 'rgba(21,101,192,0.18)' : 'rgba(21,101,192,0.10)',
+                border: '1.5px solid', borderColor: (t) => t.palette.mode === 'dark' ? 'rgba(21,101,192,0.5)' : 'rgba(21,101,192,0.35)',
+                transition: 'all 0.18s',
+                '&:hover': {
+                  bgcolor: (t) => t.palette.mode === 'dark' ? 'rgba(21,101,192,0.30)' : 'rgba(21,101,192,0.18)',
+                  borderColor: (t) => t.palette.mode === 'dark' ? 'rgba(21,101,192,0.7)' : 'rgba(21,101,192,0.5)',
+                  transform: 'translateY(-1px)',
+                  boxShadow: '0 2px 6px rgba(21,101,192,0.2)',
+                },
+              }}
+            >
+              <RadarIcon sx={{ fontSize: 13, color: '#1565C0' }} />
+              <Typography sx={{ fontSize: '0.65rem', fontWeight: 800, color: '#1565C0' }}>
+                View {node.external_seal_label} Blast Radius
+              </Typography>
+              <Typography sx={{ fontSize: '0.75rem', color: '#1565C0', lineHeight: 1 }}>{'\u2192'}</Typography>
+            </Box>
+          </>
+        )}
       </CardContent>
     </Card>
   )
@@ -392,7 +493,8 @@ export default function GraphLayers() {
     return ALL_SEALS.filter(s => rawSeals.includes(s.seal))
   }, [activeFilters])
 
-  const [selectedSeal, setSelectedSeal] = useState('')
+  const [searchParams] = useSearchParams()
+  const [selectedSeal, setSelectedSeal] = useState(() => searchParams.get('seal') || '')
   const [apiData, setApiData]           = useState(null)
   const [loading, setLoading]           = useState(false)
   const [error, setError]               = useState(null)
@@ -402,6 +504,7 @@ export default function GraphLayers() {
 
   const [layers, setLayers] = useState({
     component:  true,
+    crossapp:   true,
     platform:   false,
     datacenter: false,
     indicator:  false,
@@ -475,33 +578,33 @@ export default function GraphLayers() {
         display: 'flex', alignItems: 'center', gap: 1.25,
         flexShrink: 0, flexWrap: 'nowrap', overflow: 'hidden',
       }}>
-        {/* SEAL dropdown */}
-        <FormControl size="small" sx={{ minWidth: 200, flexShrink: 0 }}>
-          <Select
-            value={selectedSeal}
-            onChange={(e) => setSelectedSeal(e.target.value)}
-            displayEmpty
-            autoWidth
-            sx={{
-              bgcolor: (t) => t.palette.mode === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)',
-              fontSize: '0.85rem',
-              color: selectedSeal ? 'text.primary' : 'text.secondary',
-            }}
-          >
-            <MenuItem value="" sx={{ fontSize: '0.85rem', color: 'text.secondary', fontStyle: 'italic' }}>
-              Select an application...
-            </MenuItem>
-            {availableSeals.map(s => (
-              <MenuItem key={s.seal} value={s.seal} sx={{ fontSize: '0.85rem' }}>
-                {s.label}
+        {/* SEAL dropdown (typeable) */}
+        <Autocomplete
+          size="small"
+          options={availableSeals}
+          getOptionLabel={(opt) => `${opt.label} — ${opt.seal}`}
+          value={availableSeals.find(s => s.seal === selectedSeal) || null}
+          onChange={(_e, val) => setSelectedSeal(val ? val.seal : '')}
+          disableClearable={!!selectedSeal}
+          sx={{ minWidth: 260, flexShrink: 0 }}
+          renderOption={(props, opt) => (
+            <li {...props} key={opt.seal}>
+              <Typography sx={{ fontSize: '0.85rem' }}>
+                {opt.label}
                 <Typography component="span"
                   sx={{ fontSize: '0.75rem', color: 'text.secondary', fontFamily: 'monospace', ml: 1.5 }}>
-                  &mdash; {s.seal}
+                  &mdash; {opt.seal}
                 </Typography>
-              </MenuItem>
-            ))}
-          </Select>
-        </FormControl>
+              </Typography>
+            </li>
+          )}
+          renderInput={(params) => (
+            <TextField {...params} placeholder="Search application…"
+              sx={{ '& .MuiInputBase-input': { fontSize: '0.85rem' },
+                    '& .MuiOutlinedInput-root': { bgcolor: (t) => t.palette.mode === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)' } }}
+            />
+          )}
+        />
 
         {/* Inline executive summary (impact + KPIs + narrative) */}
         {apiData && <InlineExecutiveSummary apiData={apiData} seal={selectedSeal} />}
@@ -636,7 +739,7 @@ export default function GraphLayers() {
 
               <Box sx={{ flexGrow: 1, overflowY: 'auto', p: 2 }}>
                 {sidebarTab === 0 && <DependencyOverview apiData={apiData} activeLayers={layers} seal={selectedSeal} />}
-                {sidebarTab === 1 && <NodeDetailPanel node={selectedNode} />}
+                {sidebarTab === 1 && <NodeDetailPanel node={selectedNode} onNavigateToSeal={setSelectedSeal} />}
               </Box>
             </>
           ) : (

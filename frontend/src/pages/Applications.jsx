@@ -1,112 +1,174 @@
-import { useState } from 'react'
+import { useState, useEffect, useRef, useMemo } from 'react'
 import {
-  Container, Typography, Box, Card, CardContent,
-  Table, TableBody, TableCell, TableHead, TableRow,
-  Chip, ToggleButtonGroup, ToggleButton,
+  Box, Typography, Chip, ToggleButtonGroup, ToggleButton,
+  CircularProgress, Breadcrumbs, Link,
 } from '@mui/material'
 import FilterListIcon from '@mui/icons-material/FilterList'
-import { APPS } from '../data/appData'
+import NavigateNextIcon from '@mui/icons-material/NavigateNext'
+import FiberManualRecordIcon from '@mui/icons-material/FiberManualRecord'
 import { useFilters } from '../FilterContext'
+import AppTreeSidebar from '../components/AppTreeSidebar'
+import AppCard from '../components/AppCard'
 
 const STATUS_COLOR = { critical: '#f44336', warning: '#ff9800', healthy: '#4caf50' }
 
 export default function Applications() {
   const { filteredApps, activeFilterCount, totalApps, clearAllFilters } = useFilters()
   const [statusFilter, setStatusFilter] = useState('all')
+  const [selectedPath, setSelectedPath] = useState('all')
+  const [selectedApps, setSelectedApps] = useState(null) // null = show all
+  const [enrichedMap, setEnrichedMap] = useState({})       // slug → enriched data
+  const [loading, setLoading] = useState(true)
 
-  const visible = filteredApps.filter(a => {
-    if (statusFilter !== 'all' && a.status !== statusFilter) return false
-    return true
-  })
+  // Full-viewport height calc
+  const containerRef = useRef(null)
+  const [topOffset, setTopOffset] = useState(0)
+  useEffect(() => {
+    const measure = () => {
+      if (containerRef.current) setTopOffset(containerRef.current.getBoundingClientRect().top)
+    }
+    measure()
+    const observer = new ResizeObserver(measure)
+    if (containerRef.current) observer.observe(containerRef.current)
+    return () => observer.disconnect()
+  }, [])
 
-  const counts = {
-    critical: filteredApps.filter(a => a.status === 'critical').length,
-    warning:  filteredApps.filter(a => a.status === 'warning').length,
-    healthy:  filteredApps.filter(a => a.status === 'healthy').length,
+  // Fetch enriched data once
+  useEffect(() => {
+    setLoading(true)
+    fetch('/api/applications/enriched')
+      .then(r => r.json())
+      .then(data => {
+        const map = {}
+        data.forEach(app => { map[app.name] = app })
+        setEnrichedMap(map)
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false))
+  }, [])
+
+  // Merge enriched data with frontend filtered apps
+  const appsWithEnrichment = useMemo(() => {
+    return filteredApps.map(app => ({
+      ...app,
+      ...(enrichedMap[app.name] || {}),
+    }))
+  }, [filteredApps, enrichedMap])
+
+  // Tree selection filters
+  const treeFiltered = useMemo(() => {
+    if (!selectedApps) return appsWithEnrichment
+    const nameSet = new Set(selectedApps.map(a => a.name))
+    return appsWithEnrichment.filter(a => nameSet.has(a.name))
+  }, [appsWithEnrichment, selectedApps])
+
+  // Status filter on top
+  const visible = useMemo(() => {
+    if (statusFilter === 'all') return treeFiltered
+    return treeFiltered.filter(a => a.status === statusFilter)
+  }, [treeFiltered, statusFilter])
+
+  const counts = useMemo(() => ({
+    critical: treeFiltered.filter(a => a.status === 'critical').length,
+    warning:  treeFiltered.filter(a => a.status === 'warning').length,
+    healthy:  treeFiltered.filter(a => a.status === 'healthy').length,
+  }), [treeFiltered])
+
+  const handleTreeSelect = (path, apps) => {
+    setSelectedPath(path)
+    if (path === 'all') {
+      setSelectedApps(null)
+    } else {
+      setSelectedApps(apps)
+    }
+    setStatusFilter('all')
   }
+
+  // Breadcrumb from selectedPath
+  const breadcrumbParts = useMemo(() => {
+    if (!selectedPath || selectedPath === 'all') return ['All Applications']
+    const after = selectedPath.replace(/^[^:]+:/, '')
+    return after.split('/')
+  }, [selectedPath])
 
   const isFiltered = activeFilterCount > 0
 
   return (
-    <Container maxWidth="xl" sx={{ py: { xs: 1.5, sm: 2 }, px: { xs: 2, sm: 3 } }}>
-      <Box sx={{ mb: 2, display: 'flex', alignItems: 'baseline', justifyContent: 'space-between' }}>
-        <Box>
-          <Typography variant="h5" fontWeight={700} gutterBottom>Applications</Typography>
-          <Typography variant="body2" color="text.secondary">
-            {isFiltered
-              ? `Showing ${filteredApps.length} of ${totalApps} applications (filtered)`
-              : `${totalApps} registered applications across all teams`
-            }
-          </Typography>
-        </Box>
-        {isFiltered && (
-          <Chip
-            icon={<FilterListIcon sx={{ fontSize: 14 }} />}
-            label={`${activeFilterCount} filter${activeFilterCount > 1 ? 's' : ''} active`}
-            size="small"
-            onDelete={clearAllFilters}
-            color="primary"
-            variant="outlined"
-            sx={{ fontSize: '0.72rem' }}
-          />
-        )}
-      </Box>
+    <Box
+      ref={containerRef}
+      sx={{
+        height: `calc(100vh - ${topOffset}px)`,
+        display: 'flex', flexDirection: 'column', overflow: 'hidden',
+      }}
+    >
 
-      {/* Status summary */}
-      <Box sx={{ display: 'flex', gap: 1.5, mb: 2 }}>
-        {Object.entries(counts).map(([status, count]) => (
-          <Card key={status} sx={{ flex: 1, cursor: 'pointer', border: statusFilter === status ? `1px solid ${STATUS_COLOR[status]}` : undefined }} onClick={() => setStatusFilter(statusFilter === status ? 'all' : status)}>
-            <CardContent sx={{ py: '12px !important' }}>
-              <Typography variant="h4" fontWeight={700} sx={{ color: STATUS_COLOR[status] }}>{count}</Typography>
-              <Typography variant="caption" color="text.secondary" sx={{ textTransform: 'uppercase', letterSpacing: 0.8 }}>{status}</Typography>
-            </CardContent>
-          </Card>
-        ))}
-      </Box>
+      {/* ── Main content: tree + cards ── */}
+      <Box sx={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
+        {/* Tree sidebar */}
+        <AppTreeSidebar
+          apps={appsWithEnrichment}
+          selectedPath={selectedPath}
+          onSelect={handleTreeSelect}
+          statusFilter={statusFilter}
+          onStatusFilter={setStatusFilter}
+          width={260}
+        />
 
-      {/* Controls */}
-      <Box sx={{ display: 'flex', gap: 2, mb: 2, alignItems: 'center' }}>
-        <ToggleButtonGroup value={statusFilter} exclusive onChange={(_, v) => v && setStatusFilter(v)} size="small">
-          {['all', 'critical', 'warning', 'healthy'].map(s => (
-            <ToggleButton key={s} value={s} sx={{ textTransform: 'none', fontSize: '0.78rem', px: 1.5 }}>{s.charAt(0).toUpperCase() + s.slice(1)}</ToggleButton>
-          ))}
-        </ToggleButtonGroup>
-        <Typography variant="caption" color="text.secondary" sx={{ ml: 'auto' }}>{visible.length} results</Typography>
-      </Box>
-
-      {/* Table */}
-      <Card>
-        <Box sx={{ overflowX: 'auto' }}>
-        <Table size="small">
-          <TableHead>
-            <TableRow sx={{ '& th': { color: 'text.secondary', fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: 0.8, borderColor: 'divider' } }}>
-              <TableCell>Application</TableCell>
-              <TableCell sx={{ display: { xs: 'none', md: 'table-cell' } }}>SEAL</TableCell>
-              <TableCell>Team</TableCell>
-              <TableCell>Status</TableCell>
-              <TableCell sx={{ display: { xs: 'none', md: 'table-cell' } }}>SLA</TableCell>
-              <TableCell>Incidents 30d</TableCell>
-              <TableCell>Last Incident</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {visible.map(app => (
-              <TableRow key={app.seal} hover sx={{ '& td': { borderColor: 'divider', fontSize: '0.82rem' }, cursor: 'pointer' }}>
-                <TableCell sx={{ fontWeight: 600, color: 'text.primary', maxWidth: 320 }}>{app.name}</TableCell>
-                <TableCell sx={{ color: 'text.secondary', fontFamily: 'monospace', display: { xs: 'none', md: 'table-cell' } }}>{app.seal}</TableCell>
-                <TableCell sx={{ color: 'text.secondary' }}>{app.team}</TableCell>
-                <TableCell>
-                  <Chip label={app.status.toUpperCase()} size="small" sx={{ bgcolor: `${STATUS_COLOR[app.status]}22`, color: STATUS_COLOR[app.status], fontWeight: 700, fontSize: '0.65rem', height: 20 }} />
-                </TableCell>
-                <TableCell sx={{ color: 'text.secondary', display: { xs: 'none', md: 'table-cell' } }}>{app.sla}</TableCell>
-                <TableCell sx={{ color: app.incidents > 5 ? '#f44336' : app.incidents > 0 ? '#ff9800' : 'text.secondary', fontWeight: app.incidents > 0 ? 600 : 400 }}>{app.incidents}</TableCell>
-                <TableCell sx={{ color: 'text.secondary' }}>{app.last}</TableCell>
-              </TableRow>
+        {/* Cards panel */}
+        <Box sx={{ flex: 1, overflow: 'auto', px: 2, py: 1.5 }}>
+          {/* Breadcrumb */}
+          <Breadcrumbs
+            separator={<NavigateNextIcon sx={{ fontSize: 14 }} />}
+            sx={{ mb: 1.5, '& .MuiBreadcrumbs-li': { fontSize: '0.72rem' } }}
+          >
+            {breadcrumbParts.map((part, i) => (
+              i === breadcrumbParts.length - 1 ? (
+                <Typography key={i} variant="caption" fontWeight={600} sx={{ fontSize: '0.72rem' }}>
+                  {part}
+                </Typography>
+              ) : (
+                <Link
+                  key={i}
+                  component="button"
+                  variant="caption"
+                  underline="hover"
+                  color="text.secondary"
+                  sx={{ fontSize: '0.72rem' }}
+                  onClick={() => {
+                    // Navigate up: rebuild path from parts[0..i]
+                    const levels = ['lob', 'sub', 'l3', 'l4']
+                    const prefix = levels[i] || 'all'
+                    if (i === 0 && breadcrumbParts.length === 1) {
+                      handleTreeSelect('all', null)
+                    } else {
+                      const pathStr = breadcrumbParts.slice(0, i + 1).join('/')
+                      handleTreeSelect(`${prefix}:${pathStr}`, null)
+                    }
+                  }}
+                >
+                  {part}
+                </Link>
+              )
             ))}
-          </TableBody>
-        </Table>
+          </Breadcrumbs>
+
+          {loading ? (
+            <Box sx={{ display: 'flex', justifyContent: 'center', py: 6 }}>
+              <CircularProgress size={32} />
+            </Box>
+          ) : visible.length === 0 ? (
+            <Box sx={{ textAlign: 'center', py: 6 }}>
+              <Typography variant="body2" color="text.secondary">
+                No applications match the current filters.
+              </Typography>
+            </Box>
+          ) : (
+            visible.map(app => (
+              <AppCard key={app.name} app={app} />
+            ))
+          )}
         </Box>
-      </Card>
-    </Container>
+      </Box>
+    </Box>
   )
 }

@@ -4,7 +4,6 @@ import {
   useNodesState,
   useEdgesState,
   Background,
-  BackgroundVariant,
   Controls,
   MiniMap,
   Handle,
@@ -18,11 +17,11 @@ import dagre from '@dagrejs/dagre'
 
 // ── Status color map ──────────────────────────────────────────────────────────
 const STATUS = {
-  healthy:  { border: '#4caf50', text: '#4caf50', bg: 'rgba(76,175,80,0.12)' },
-  warning:  { border: '#ff9800', text: '#ff9800', bg: 'rgba(255,152,0,0.12)' },
-  critical: { border: '#f44336', text: '#f44336', bg: 'rgba(244,67,54,0.12)' },
+  healthy:  { border: '#4caf50', text: '#4caf50', bgDark: 'rgba(76,175,80,0.12)',  bgLight: 'rgba(76,175,80,0.16)' },
+  warning:  { border: '#ff9800', text: '#ff9800', bgDark: 'rgba(255,152,0,0.12)',  bgLight: 'rgba(255,152,0,0.16)' },
+  critical: { border: '#f44336', text: '#f44336', bgDark: 'rgba(244,67,54,0.12)',  bgLight: 'rgba(244,67,54,0.16)' },
 }
-const defaultStatus = { border: '#64748b', text: '#64748b', bg: 'rgba(100,116,139,0.12)' }
+const defaultStatus = { border: '#64748b', text: '#64748b', bgDark: 'rgba(100,116,139,0.12)', bgLight: 'rgba(100,116,139,0.16)' }
 
 // ── Custom node: root (selected service) ─────────────────────────────────────
 const RootNode = memo(({ data, selected }) => {
@@ -61,7 +60,7 @@ const ServiceNode = memo(({ data, selected }) => {
   const isDark = theme.palette.mode === 'dark'
   return (
     <Box sx={{
-      bgcolor: s.bg,
+      bgcolor: isDark ? s.bgDark : s.bgLight,
       border: `1.5px solid ${s.border}`,
       borderRadius: 1.5,
       px: 1.5, py: 1,
@@ -70,7 +69,7 @@ const ServiceNode = memo(({ data, selected }) => {
       opacity: selected ? 1 : 0.92,
       cursor: 'pointer',
       transition: 'box-shadow 0.15s',
-      boxShadow: '0 1px 4px rgba(0,0,0,0.1)',
+      boxShadow: isDark ? '0 1px 4px rgba(0,0,0,0.1)' : '0 1px 6px rgba(0,0,0,0.15)',
       '&:hover': { boxShadow: `0 0 8px ${s.border}50` },
     }}>
       <Handle type="target" position={Position.Left}  style={{ background: s.border, width: 5, height: 5 }} />
@@ -99,6 +98,8 @@ const InteractiveEdge = memo(({
   sourcePosition, targetPosition,
   style = {}, data, selected,
 }) => {
+  const theme = useTheme()
+  const isDark = theme.palette.mode === 'dark'
   const [edgePath] = getSmoothStepPath({
     sourceX, sourceY, targetX, targetY,
     sourcePosition, targetPosition,
@@ -108,7 +109,7 @@ const InteractiveEdge = memo(({
   const isHighlighted = data?.highlighted
   const edgeColor = data?.color || '#64748b'
   const activeColor = isHighlighted ? edgeColor : '#64748b'
-  const strokeWidth = isHighlighted ? 2.5 : 1.4
+  const strokeWidth = isHighlighted ? 2.5 : (isDark ? 1.4 : 1.8)
   const opacity = data?.dimmed ? 0.2 : 1
 
   return (
@@ -359,17 +360,32 @@ export default function DependencyFlow({ apiData, mode, onNodeSelect }) {
     })))
   }, [setEdges])
 
-  const bgColor     = isDark ? '#0a0e1a' : '#f1f5f9'
-  const dotColor    = isDark ? '#1e293b' : '#cbd5e1'
+  const bgColor     = isDark ? '#0a0e1a' : '#ffffff'
   const ctrlBg      = isDark ? '#111827' : '#ffffff'
   const ctrlBorder  = isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.15)'
   const miniMapBg   = isDark ? '#111827' : '#ffffff'
-  const miniMapMask = isDark ? 'rgba(0,0,0,0.5)' : 'rgba(0,0,0,0.15)'
+  const miniMapMask = isDark ? 'rgba(0,0,0,0.5)' : 'rgba(0,0,0,0.1)'
 
   return (
     <Box sx={{
       width: '100%', height: '100%', bgcolor: bgColor,
       '@keyframes dashdraw': { to: { strokeDashoffset: -9 } },
+      // Controls button styling for both modes
+      ...(isDark ? {
+        '& .react-flow__controls button': {
+          bgcolor: '#1e293b',
+          borderBottom: '1px solid rgba(255,255,255,0.1)',
+          '& svg': { fill: '#e2e8f0' },
+          '&:hover': { bgcolor: '#334155' },
+        },
+      } : {
+        '& .react-flow__controls button': {
+          bgcolor: '#ffffff',
+          borderBottom: '1px solid rgba(0,0,0,0.1)',
+          '& svg': { fill: '#334155' },
+          '&:hover': { bgcolor: '#f1f5f9' },
+        },
+      }),
     }}>
       <ReactFlow
         nodes={nodes}
@@ -387,7 +403,7 @@ export default function DependencyFlow({ apiData, mode, onNodeSelect }) {
         maxZoom={2.5}
         proOptions={{ hideAttribution: true }}
       >
-        <Background variant={BackgroundVariant.Dots} color={dotColor} gap={22} size={1.2} />
+        <Background color="transparent" />
         <Controls
           style={{
             background: ctrlBg,

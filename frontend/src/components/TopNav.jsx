@@ -30,7 +30,7 @@ import StarIcon from '@mui/icons-material/Star'
 import LinkIcon from '@mui/icons-material/Link'
 import ShieldIcon from '@mui/icons-material/Shield'
 import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings'
-import InventoryIcon from '@mui/icons-material/Inventory'
+
 import SpeedIcon from '@mui/icons-material/Speed'
 import DragIndicatorIcon from '@mui/icons-material/DragIndicator'
 import ViewQuiltIcon from '@mui/icons-material/ViewQuilt'
@@ -55,7 +55,6 @@ const ALL_TABS = [
   { label: 'Favorites',         path: '/favorites',       Icon: StarIcon,        desc: 'Pinned View Centrals' },
   { label: 'Incident Zero',    path: '/incident-zero',   Icon: ShieldIcon,      desc: 'Proactive pre-incident management' },
   { label: 'Links',             path: '/links',           Icon: LinkIcon,        desc: 'Quick links & resources' },
-  { label: 'Product Catalog',   path: '/product-catalog', Icon: InventoryIcon,   desc: 'Mapping of applications' },
   { label: 'SLO Agent',         path: '/slo-agent',       Icon: SpeedIcon,       desc: 'Auto management of SLOs' },
   { label: 'View Central',      path: '/view-central',    Icon: ViewQuiltIcon,   desc: 'Custom dashboards' },
 ]
@@ -378,10 +377,17 @@ export default function TopNav() {
                 )}
                 <Button
                   size="small"
-                  onClick={() => tab.path && navigate(tab.path)}
+                  component="a"
+                  href={tab.path || '/'}
+                  onClick={(e) => {
+                    if (e.ctrlKey || e.metaKey || e.button === 1) return
+                    e.preventDefault()
+                    tab.path && navigate(tab.path)
+                  }}
                   sx={{
                     color: active ? '#93c5fd' : 'rgba(255,255,255,0.65)',
                     textTransform: 'none',
+                    textDecoration: 'none',
                     fontSize: '0.8rem',
                     px: isHome ? 1 : 0.75,
                     pr: isHome ? 1 : 2.5,

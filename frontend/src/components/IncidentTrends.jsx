@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react'
 import { Card, CardContent, Typography, Box } from '@mui/material'
+import { useTheme } from '@mui/material/styles'
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid,
   Tooltip, ResponsiveContainer, Label, ReferenceDot,
@@ -75,6 +76,8 @@ function LabeledDot({ cx, cy, index, value, dataKey, maxIdx, lastIdx, color, sho
 
 export default function IncidentTrends({ data }) {
   const [filter, setFilter] = useState('all') // 'all' | 'p1' | 'p2'
+  const theme = useTheme()
+  const isDark = theme.palette.mode === 'dark'
 
   if (!data) return null
   const raw = data.data || data
@@ -158,8 +161,8 @@ export default function IncidentTrends({ data }) {
                 onClick={key ? () => toggleFilter(key) : undefined}
                 sx={{
                   flex: 1, py: 0.5, px: 0.75, borderRadius: 1,
-                  bgcolor: `${color}0a`,
-                  border: isActive ? `2px solid ${color}` : `1px solid ${color}22`,
+                  bgcolor: (t) => t.palette.mode === 'dark' ? `${color}0a` : `${color}12`,
+                  border: isActive ? `2px solid ${color}` : (t) => `1px solid ${color}${t.palette.mode === 'dark' ? '22' : '30'}`,
                   opacity: isDimmed ? 0.45 : 1,
                   cursor: key ? 'pointer' : 'default',
                   transition: 'all 0.15s',
@@ -204,18 +207,18 @@ export default function IncidentTrends({ data }) {
           <LineChart data={chartData} margin={{ top: 14, right: 4, left: -28, bottom: 0 }}>
             <CartesianGrid
               strokeDasharray="3 3"
-              stroke="rgba(128,128,128,0.1)"
+              stroke={isDark ? 'rgba(128,128,128,0.1)' : 'rgba(0,0,0,0.08)'}
               vertical
             />
             <XAxis
               dataKey="label"
-              tick={{ fill: '#94a3b8', fontSize: 9 }}
+              tick={{ fill: isDark ? '#94a3b8' : '#64748b', fontSize: 9 }}
               tickLine={false}
               axisLine={false}
               {...(tickFormatter ? { tickFormatter, interval: 0 } : {})}
             />
             <YAxis
-              tick={{ fill: '#94a3b8', fontSize: 9 }}
+              tick={{ fill: isDark ? '#94a3b8' : '#64748b', fontSize: 9 }}
               tickLine={false}
               axisLine={false}
               allowDecimals={false}

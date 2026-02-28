@@ -24,7 +24,7 @@ export default function AIHealthPanel({ data }) {
       <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
         {/* Header */}
         <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1.5, mb: 2 }}>
-          <AutoAwesomeIcon sx={{ color: '#60a5fa', fontSize: 20, mt: 0.2 }} />
+          <AutoAwesomeIcon sx={{ color: (t) => t.palette.mode === 'dark' ? '#60a5fa' : '#1565C0', fontSize: 20, mt: 0.2 }} />
           <Box sx={{ flex: 1 }}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
               <Tooltip
@@ -60,7 +60,9 @@ export default function AIHealthPanel({ data }) {
                 label="Live"
                 size="small"
                 sx={{
-                  bgcolor: 'rgba(21,101,192,0.25)', color: '#60a5fa', ...fSmall, height: 20,
+                  bgcolor: (t) => t.palette.mode === 'dark' ? 'rgba(21,101,192,0.25)' : 'rgba(21,101,192,0.12)',
+                  color: (t) => t.palette.mode === 'dark' ? '#60a5fa' : '#1565C0',
+                  ...fSmall, height: 20,
                   '& .MuiChip-label': {
                     animation: 'livePulse 2s ease-in-out infinite',
                   },
@@ -89,7 +91,7 @@ export default function AIHealthPanel({ data }) {
         {/* Trend Analysis */}
         <Box sx={{ mb: 2 }}>
           <Typography
-            sx={{ color: '#60a5fa', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.8, ...fCaption }}
+            sx={{ color: (t) => t.palette.mode === 'dark' ? '#60a5fa' : '#1565C0', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.8, ...fCaption }}
           >
             Trend Analysis:
           </Typography>

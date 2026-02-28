@@ -56,7 +56,7 @@ export default function ChatBlockPieChart({ data }) {
       border: '1px solid',
       borderColor: t => t.palette.mode === 'dark' ? 'rgba(255,255,255,0.1)' : 'divider',
       p: 1.5,
-      bgcolor: t => t.palette.mode === 'dark' ? 'rgba(0,0,0,0.15)' : 'transparent',
+      bgcolor: t => t.palette.mode === 'dark' ? 'rgba(0,0,0,0.15)' : 'rgba(0,0,0,0.02)',
       display: 'flex', alignItems: 'center', gap: 2,
     }}>
       <Box>
@@ -84,7 +84,7 @@ export default function ChatBlockPieChart({ data }) {
             </PieChart>
           </ResponsiveContainer>
           <Box sx={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <Typography sx={{ ...fMetric, fontWeight: 800, color: isEmpty ? '#64748b' : '#60a5fa', lineHeight: 1 }}>
+            <Typography sx={{ ...fMetric, fontWeight: 800, color: isEmpty ? '#64748b' : (isDark ? '#60a5fa' : '#1565C0'), lineHeight: 1 }}>
               {total}
             </Typography>
           </Box>

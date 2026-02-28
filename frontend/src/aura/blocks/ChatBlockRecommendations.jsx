@@ -25,15 +25,15 @@ export default function ChatBlockRecommendations({ data }) {
             sx={{
               borderRadius: 1.5,
               border: '1px solid',
-              borderColor: t => t.palette.mode === 'dark' ? `${p.color}40` : `${p.color}22`,
-              bgcolor: t => t.palette.mode === 'dark' ? `${p.color}14` : `${p.color}06`,
+              borderColor: t => t.palette.mode === 'dark' ? `${p.color}40` : `${p.color}35`,
+              bgcolor: t => t.palette.mode === 'dark' ? `${p.color}14` : `${p.color}10`,
               px: 1.25, py: 0.75,
               display: 'flex', gap: 1,
             }}
           >
             <Box sx={{
               width: 22, height: 22, borderRadius: '50%',
-              bgcolor: t => t.palette.mode === 'dark' ? `${p.color}30` : `${p.color}18`,
+              bgcolor: t => t.palette.mode === 'dark' ? `${p.color}30` : `${p.color}22`,
               color: p.color,
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               flexShrink: 0, mt: 0.1,

@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
-import { Box, Chip, Typography, Tooltip, IconButton } from '@mui/material'
+import { Box, Chip, Typography, Tooltip, IconButton, Badge } from '@mui/material'
 import FilterListIcon from '@mui/icons-material/FilterList'
 import CloseIcon from '@mui/icons-material/Close'
 import VisibilityOffIcon from '@mui/icons-material/VisibilityOff'
@@ -10,18 +10,17 @@ import SearchFilterPopover from './SearchFilterPopover'
 
 const fSmall = { fontSize: 'clamp(0.6rem, 0.8vw, 0.7rem)' }
 
-const chipSx = (active) => ({
+const chipSx = {
   ...fSmall, height: 22, borderRadius: 1.5, fontWeight: 500,
-  bgcolor: (t) => active
-    ? (t.palette.mode === 'dark' ? 'rgba(96,165,250,0.15)' : 'rgba(21,101,192,0.1)')
-    : (t.palette.mode === 'dark' ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)'),
+  bgcolor: (t) => t.palette.mode === 'dark' ? 'rgba(96,165,250,0.15)' : 'rgba(21,101,192,0.1)',
   border: '1px solid',
-  borderColor: (t) => active
-    ? (t.palette.mode === 'dark' ? 'rgba(96,165,250,0.3)' : 'rgba(21,101,192,0.25)')
-    : 'divider',
-  color: active ? 'primary.main' : 'text.disabled',
+  borderColor: (t) => t.palette.mode === 'dark' ? 'rgba(96,165,250,0.3)' : 'rgba(21,101,192,0.25)',
+  color: 'primary.main',
   '& .MuiChip-deleteIcon': { fontSize: 13 },
-})
+}
+
+// Build a label lookup from FILTER_FIELDS
+const FIELD_LABELS = Object.fromEntries(FILTER_FIELDS.map(f => [f.key, f.label]))
 
 export default function ScopeBar() {
   const {
@@ -30,14 +29,13 @@ export default function ScopeBar() {
     filteredApps, totalApps, activeFilterCount,
   } = useFilters()
 
-  const [hidden, setHidden] = useState(false)   // user chose to hide
-  const [revealed, setRevealed] = useState(false) // temp reveal on hover
+  const [hidden, setHidden] = useState(false)
+  const [revealed, setRevealed] = useState(false)
   const hideTimerRef = useRef(null)
   const [searchAnchor, setSearchAnchor] = useState(null)
 
   const hasScope = activeFilterCount > 0 || searchText.length > 0
 
-  // Auto-hide after 10s once revealed by hover
   const startAutoHide = useCallback(() => {
     clearTimeout(hideTimerRef.current)
     hideTimerRef.current = setTimeout(() => setRevealed(false), 10000)
@@ -48,22 +46,16 @@ export default function ScopeBar() {
       setRevealed(true)
       startAutoHide()
     }
-    // If already revealed, reset the 10s timer
     if (hidden && revealed) {
       startAutoHide()
     }
   }
 
-  const handleMouseLeave = () => {
-    // When hidden + revealed, clicking away starts the 10s countdown
-    // (timer is already running from handleMouseEnter / startAutoHide)
-  }
+  const handleMouseLeave = () => {}
 
-  // Listen for clicks outside to dismiss revealed bar
   useEffect(() => {
     if (!(hidden && revealed)) return
     const handler = (e) => {
-      // If click is outside the scope bar, hide it
       const bar = document.getElementById('scope-bar')
       if (bar && !bar.contains(e.target)) {
         clearTimeout(hideTimerRef.current)
@@ -74,7 +66,6 @@ export default function ScopeBar() {
     return () => document.removeEventListener('mousedown', handler)
   }, [hidden, revealed])
 
-  // When filters change while bar is hidden (e.g. tenant switch), temporarily reveal
   const prevFilterCountRef = useRef(activeFilterCount)
   useEffect(() => {
     if (activeFilterCount !== prevFilterCountRef.current) {
@@ -86,10 +77,59 @@ export default function ScopeBar() {
     }
   }, [activeFilterCount, hidden, startAutoHide])
 
-  // Clean up timer on unmount
   useEffect(() => () => clearTimeout(hideTimerRef.current), [])
 
   const showBar = !hidden || revealed
+
+  // Flat list of active filter chips
+  const activeChips = []
+  for (const { key } of FILTER_FIELDS) {
+    const values = activeFilters[key] || []
+    if (values.length > 0) {
+      const label = FIELD_LABELS[key] || key
+      values.forEach((v, i) => {
+        activeChips.push({ key, label, value: v, idx: i })
+      })
+    }
+  }
+
+  // Drag-to-scroll for the chips area
+  const chipsRef = useRef(null)
+  const dragState = useRef({ isDragging: false, startX: 0, scrollLeft: 0 })
+
+  const handleDragStart = (e) => {
+    const el = chipsRef.current
+    if (!el) return
+    dragState.current = { isDragging: true, startX: e.clientX, scrollLeft: el.scrollLeft }
+    el.style.cursor = 'grabbing'
+    el.style.userSelect = 'none'
+  }
+
+  const handleDragMove = useCallback((e) => {
+    const ds = dragState.current
+    if (!ds.isDragging) return
+    const el = chipsRef.current
+    if (!el) return
+    el.scrollLeft = ds.scrollLeft - (e.clientX - ds.startX)
+  }, [])
+
+  const handleDragEnd = useCallback(() => {
+    dragState.current.isDragging = false
+    const el = chipsRef.current
+    if (el) {
+      el.style.cursor = 'grab'
+      el.style.userSelect = ''
+    }
+  }, [])
+
+  useEffect(() => {
+    document.addEventListener('mousemove', handleDragMove)
+    document.addEventListener('mouseup', handleDragEnd)
+    return () => {
+      document.removeEventListener('mousemove', handleDragMove)
+      document.removeEventListener('mouseup', handleDragEnd)
+    }
+  }, [handleDragMove, handleDragEnd])
 
   return (
     <Box
@@ -98,125 +138,141 @@ export default function ScopeBar() {
       onMouseLeave={handleMouseLeave}
       sx={{
         overflow: 'hidden',
-        maxHeight: showBar ? 200 : 3,
+        maxHeight: showBar ? 40 : 3,
         transition: 'max-height 0.25s ease-in-out',
         borderBottom: '1px solid',
         borderColor: 'divider',
         cursor: !showBar ? 'pointer' : 'default',
-        // Thin colored line hint when collapsed
         ...(!showBar && {
           bgcolor: (t) => t.palette.mode === 'dark' ? 'rgba(96,165,250,0.2)' : 'rgba(21,101,192,0.15)',
         }),
       }}
     >
       <Box sx={{
-        display: 'flex', alignItems: 'center', gap: 0.5, flexWrap: 'wrap',
-        px: 2, py: 0.5,
+        display: 'flex', alignItems: 'center',
         bgcolor: (t) => t.palette.mode === 'dark' ? 'rgba(21,101,192,0.06)' : 'rgba(21,101,192,0.03)',
       }}>
-        <FilterListIcon
-          onClick={(e) => setSearchAnchor(e.currentTarget)}
-          sx={{ fontSize: 14, color: 'text.disabled', mr: 0.25, cursor: 'pointer', '&:hover': { color: 'text.secondary' } }}
-        />
-        <SearchFilterPopover
-          anchorEl={searchAnchor}
-          open={Boolean(searchAnchor)}
-          onClose={() => setSearchAnchor(null)}
-        />
-        <Typography sx={{ ...fSmall, color: 'text.secondary', fontWeight: 600, mr: 0.5 }}>
-          Scope
-        </Typography>
-
-        {/* Search chip */}
-        {searchText ? (
-          <Chip
-            label={`Search: "${searchText}"`}
-            size="small"
-            onDelete={() => setSearchText('')}
-            deleteIcon={<CloseIcon sx={{ fontSize: '12px !important' }} />}
-            sx={chipSx(true)}
+        {/* Left pinned: filter icon */}
+        <Box sx={{ display: 'flex', alignItems: 'center', pl: 2, py: 0.5, flexShrink: 0 }}>
+          <Badge
+            badgeContent={activeFilterCount}
+            color="primary"
+            max={99}
+            sx={{
+              '& .MuiBadge-badge': {
+                fontSize: 9, height: 14, minWidth: 14, p: '0 3px',
+                display: activeFilterCount > 0 ? 'flex' : 'none',
+              },
+            }}
+          >
+            <FilterListIcon
+              onClick={(e) => setSearchAnchor(e.currentTarget)}
+              sx={{ fontSize: 16, color: hasScope ? 'primary.main' : 'text.disabled', cursor: 'pointer', '&:hover': { color: 'text.secondary' } }}
+            />
+          </Badge>
+          <SearchFilterPopover
+            anchorEl={searchAnchor}
+            open={Boolean(searchAnchor)}
+            onClose={() => setSearchAnchor(null)}
           />
-        ) : null}
+        </Box>
 
-        {/* All filter fields in order — show value or "All" */}
-        {FILTER_FIELDS.map(({ key, label }) => {
-          const values = activeFilters[key] || []
-          const active = values.length > 0
-
-          if (!active) {
-            return (
-              <Chip
-                key={key}
-                label={`${label}: All`}
-                size="small"
-                sx={chipSx(false)}
-              />
-            )
-          }
-
-          return values.map((v, i) => (
+        {/* Middle: scrollable / draggable chips area */}
+        <Box
+          ref={chipsRef}
+          onMouseDown={handleDragStart}
+          sx={{
+            flex: 1, minWidth: 0,
+            display: 'flex', alignItems: 'center', gap: 0.5,
+            px: 1, py: 0.5,
+            overflowX: 'auto',
+            cursor: activeChips.length > 0 || searchText ? 'grab' : 'default',
+            '&::-webkit-scrollbar': { display: 'none' },
+            scrollbarWidth: 'none',
+          }}
+        >
+          {/* Search chip */}
+          {searchText ? (
             <Chip
-              key={`${key}-${v}-${i}`}
-              label={`${label}: ${v}`}
+              label={`Search: "${searchText}"`}
+              size="small"
+              onDelete={() => setSearchText('')}
+              deleteIcon={<CloseIcon sx={{ fontSize: '12px !important' }} />}
+              sx={{ ...chipSx, flexShrink: 0 }}
+            />
+          ) : null}
+
+          {/* Active filter chips only */}
+          {activeChips.map((chip) => (
+            <Chip
+              key={`${chip.key}-${chip.value}-${chip.idx}`}
+              label={`${chip.label}: ${chip.value}`}
               size="small"
               onDelete={() => {
-                const next = values.filter(x => x !== v)
-                setFilterValues(key, next)
+                const values = activeFilters[chip.key] || []
+                const next = values.filter(x => x !== chip.value)
+                setFilterValues(chip.key, next)
               }}
               deleteIcon={<CloseIcon sx={{ fontSize: '12px !important' }} />}
-              sx={chipSx(true)}
+              sx={{ ...chipSx, flexShrink: 0 }}
             />
-          ))
-        })}
+          ))}
 
-        <Box sx={{ flex: 1 }} />
+          {/* Empty state */}
+          {!hasScope && (
+            <Typography sx={{ ...fSmall, color: 'text.disabled', fontStyle: 'italic', flexShrink: 0 }}>
+              No filters applied
+            </Typography>
+          )}
+        </Box>
 
-        {/* App count */}
-        <Typography sx={{ ...fSmall, color: 'text.secondary' }}>
-          <Box component="span" sx={{ color: 'primary.main', fontWeight: 700 }}>{filteredApps.length}</Box>
-          {' '}of {totalApps} apps
-        </Typography>
-
-        {/* Clear all */}
-        {hasScope && (
-          <Typography
-            onClick={clearAllFilters}
-            sx={{
-              ...fSmall, color: 'error.main', cursor: 'pointer', fontWeight: 600, ml: 0.5,
-              '&:hover': { textDecoration: 'underline' },
-            }}
-          >
-            Clear
+        {/* Right pinned: app count, clear, hide toggle */}
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, pr: 2, py: 0.5, flexShrink: 0 }}>
+          {/* App count */}
+          <Typography sx={{ ...fSmall, color: 'text.secondary', whiteSpace: 'nowrap' }}>
+            <Box component="span" sx={{ color: 'primary.main', fontWeight: 700 }}>{filteredApps.length}</Box>
+            {' '}of {totalApps} apps
           </Typography>
-        )}
 
-        {/* Hide / Show toggle */}
-        <Tooltip title={hidden ? 'Keep bar visible' : 'Hide bar'} placement="bottom">
-          <IconButton
-            size="small"
-            onClick={() => {
-              if (hidden) {
-                // Unhide permanently
-                setHidden(false)
-                setRevealed(false)
-                clearTimeout(hideTimerRef.current)
-              } else {
-                // Hide immediately
-                setHidden(true)
+          {/* Clear all */}
+          {hasScope && (
+            <Typography
+              onClick={clearAllFilters}
+              sx={{
+                ...fSmall, color: 'error.main', cursor: 'pointer', fontWeight: 600, ml: 0.5, whiteSpace: 'nowrap',
+                '&:hover': { textDecoration: 'underline' },
+              }}
+            >
+              Clear
+            </Typography>
+          )}
+
+          {/* Hide / Show toggle */}
+          <Tooltip title={hidden ? 'Keep bar visible' : 'Hide bar'} placement="bottom">
+            <IconButton
+              size="small"
+              onClick={() => {
+                if (hidden) {
+                  setHidden(false)
+                  setRevealed(false)
+                  clearTimeout(hideTimerRef.current)
+                } else {
+                  setHidden(true)
+                }
+              }}
+              sx={{
+                p: 0.25, ml: 0.5,
+                color: 'text.disabled',
+                '&:hover': { color: 'text.secondary' },
+              }}
+            >
+              {hidden
+                ? <VisibilityIcon sx={{ fontSize: 14 }} />
+                : <VisibilityOffIcon sx={{ fontSize: 14 }} />
               }
-            }}
-            sx={{
-              p: 0.25, ml: 0.5,
-              color: 'text.disabled',
-              '&:hover': { color: 'text.secondary' },
-            }}
-          >
-            {hidden
-              ? <VisibilityIcon sx={{ fontSize: 14 }} />
-              : <VisibilityOffIcon sx={{ fontSize: 14 }} />
-            }
-          </IconButton>
-        </Tooltip>
+            </IconButton>
+          </Tooltip>
+        </Box>
       </Box>
     </Box>
   )

@@ -1,5 +1,6 @@
 import { useMemo } from 'react'
 import { Box, Typography } from '@mui/material'
+import { useTheme } from '@mui/material/styles'
 import TrendingUpIcon from '@mui/icons-material/TrendingUp'
 import TrendingDownIcon from '@mui/icons-material/TrendingDown'
 import {
@@ -72,6 +73,8 @@ function TrendBadge({ trend }) {
 }
 
 export default function ChatBlockLineChart({ data }) {
+  const theme = useTheme()
+  const isDark = theme.palette.mode === 'dark'
   if (!data?.series || !data?.points) return null
   const { series, points, stats } = data
 
@@ -109,15 +112,15 @@ export default function ChatBlockLineChart({ data }) {
       border: '1px solid',
       borderColor: t => t.palette.mode === 'dark' ? 'rgba(255,255,255,0.1)' : 'divider',
       p: 1.5,
-      bgcolor: t => t.palette.mode === 'dark' ? 'rgba(0,0,0,0.15)' : 'transparent',
+      bgcolor: t => t.palette.mode === 'dark' ? 'rgba(0,0,0,0.15)' : 'rgba(0,0,0,0.02)',
     }}>
       {stats?.length > 0 && (
         <Box sx={{ display: 'flex', gap: 1, mb: 1 }}>
           {stats.map(st => (
             <Box key={st.label} sx={{
               flex: 1, py: 0.5, px: 0.75, borderRadius: 1,
-              bgcolor: `${st.color}0a`,
-              border: `1px solid ${st.color}22`,
+              bgcolor: t => t.palette.mode === 'dark' ? `${st.color}0a` : `${st.color}12`,
+              border: t => `1px solid ${st.color}${t.palette.mode === 'dark' ? '22' : '30'}`,
             }}>
               <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 0.25 }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
@@ -136,15 +139,15 @@ export default function ChatBlockLineChart({ data }) {
 
       <ResponsiveContainer width="100%" height={180}>
         <LineChart data={chartData} margin={{ top: 14, right: 4, left: -28, bottom: 0 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke="rgba(128,128,128,0.1)" />
+          <CartesianGrid strokeDasharray="3 3" stroke={isDark ? 'rgba(128,128,128,0.1)' : 'rgba(0,0,0,0.08)'} />
           <XAxis
             dataKey="label"
-            tick={{ fill: '#94a3b8', fontSize: 9 }}
+            tick={{ fill: isDark ? '#94a3b8' : '#64748b', fontSize: 9 }}
             tickLine={false}
             axisLine={false}
           />
           <YAxis
-            tick={{ fill: '#94a3b8', fontSize: 9 }}
+            tick={{ fill: isDark ? '#94a3b8' : '#64748b', fontSize: 9 }}
             tickLine={false}
             axisLine={false}
             allowDecimals={false}

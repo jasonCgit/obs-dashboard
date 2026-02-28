@@ -28,9 +28,9 @@ export default function WarningApps({ data }) {
             <Box key={app.id} sx={{
               borderRadius: 2,
               border: '1px solid',
-              borderColor: 'rgba(255,152,0,0.3)',
+              borderColor: (t) => t.palette.mode === 'dark' ? 'rgba(255,152,0,0.3)' : 'rgba(255,152,0,0.4)',
               borderLeft: '3px solid #ff9800',
-              bgcolor: 'rgba(255,152,0,0.06)',
+              bgcolor: (t) => t.palette.mode === 'dark' ? 'rgba(255,152,0,0.06)' : 'rgba(255,152,0,0.08)',
               p: 1.5,
             }}>
               <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', mb: 1 }}>

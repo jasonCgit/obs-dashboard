@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import {
   Box, Typography, Chip, CircularProgress, Alert, Stack,
-  FormControl, Select, MenuItem, Tabs, Tab, Divider,
+  Autocomplete, TextField, Tabs, Tab, Divider,
   Card, CardContent, CardHeader, IconButton, Tooltip,
 } from '@mui/material'
 import CheckIcon from '@mui/icons-material/Check'
@@ -16,17 +16,18 @@ import LayeredDependencyFlow from '../../components/LayeredDependencyFlow'
 
 // ── All SEALs ────────────────────────────────────────────────────────────────
 const ALL_SEALS = [
-  { seal: '88180', label: 'Connect OS' },
   { seal: '90176', label: 'Advisor Connect' },
+  { seal: '88180', label: 'Connect OS' },
   { seal: '90215', label: 'Spectrum Portfolio Mgmt' },
-]
+].sort((a, b) => a.label.localeCompare(b.label))
 
 // ── Layer definitions ────────────────────────────────────────────────────────
 const LAYER_DEFS = [
-  { key: 'component',  label: 'Components',        color: '#5C8CC2', always: true },
+  { key: 'indicator',  label: 'Health Indicators',  color: '#94a3b8' },
+  { key: 'component',  label: 'Components',        color: '#1565C0', always: true },
+  { key: 'crossapp',   label: 'Upstream / Downstream',  color: '#78716c' },
   { key: 'platform',   label: 'Platform',          color: '#C27BA0' },
   { key: 'datacenter', label: 'Data Centers',       color: '#5DA5A0', requires: 'platform' },
-  { key: 'indicator',  label: 'Health Indicators',  color: '#B8976B' },
 ]
 
 // ── Status helpers ───────────────────────────────────────────────────────────
@@ -100,39 +101,40 @@ function InlineExecutiveSummary({ apiData, seal }) {
   return (
     <>
       <Box sx={{ width: '1px', height: 20, bgcolor: `${levelColor}28`, flexShrink: 0 }} />
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.4, flexShrink: 0 }}>
-        <RadarIcon sx={{ fontSize: 14, color: levelColor }} />
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, flexShrink: 0 }}>
+        <RadarIcon sx={{ fontSize: 17, color: levelColor }} />
         <Box>
-          <Typography sx={{ color: levelColor, fontWeight: 800, letterSpacing: 0.9, fontSize: '0.68rem', lineHeight: 1 }}>
+          <Typography sx={{ color: levelColor, fontWeight: 800, letterSpacing: 0.9, fontSize: '0.82rem', lineHeight: 1 }}>
             {level}
           </Typography>
-          <Typography sx={{ color: 'text.secondary', fontSize: '0.55rem', lineHeight: 1.2, mt: 0.1 }}>
+          <Typography sx={{ color: 'text.secondary', fontSize: '0.65rem', lineHeight: 1.2, mt: 0.15 }}>
             IMPACT
           </Typography>
         </Box>
       </Box>
-      <Stack direction="row" spacing={1} sx={{ flexShrink: 0 }}>
+      <Stack direction="row" spacing={1.2} sx={{ flexShrink: 0 }}>
         {[
           { label: 'Services', value: compNodes.length, color: '#94a3b8' },
           { label: 'Degraded', value: degraded, color: degraded > 0 ? '#ff9800' : '#4caf50' },
         ].map(k => (
           <Box key={k.label} sx={{ textAlign: 'center' }}>
-            <Typography sx={{ fontSize: '0.85rem', fontWeight: 800, lineHeight: 1, color: k.color }}>{k.value}</Typography>
-            <Typography sx={{ fontSize: '0.55rem', color: 'text.secondary', mt: 0.1, whiteSpace: 'nowrap' }}>{k.label}</Typography>
+            <Typography sx={{ fontSize: '1rem', fontWeight: 800, lineHeight: 1, color: k.color }}>{k.value}</Typography>
+            <Typography sx={{ fontSize: '0.65rem', color: 'text.secondary', mt: 0.15, whiteSpace: 'nowrap' }}>{k.label}</Typography>
           </Box>
         ))}
       </Stack>
       {totalInc > 0 && (
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.3, flexShrink: 0 }}>
-          <TrendingUpIcon sx={{ fontSize: 12, color: totalInc > 5 ? '#f44336' : '#ff9800' }} />
-          <Typography sx={{ fontSize: '0.65rem', fontWeight: 600, color: totalInc > 5 ? '#f44336' : '#ff9800', whiteSpace: 'nowrap' }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.4, flexShrink: 0 }}>
+          <TrendingUpIcon sx={{ fontSize: 14, color: totalInc > 5 ? '#f44336' : '#ff9800' }} />
+          <Typography sx={{ fontSize: '0.78rem', fontWeight: 700, color: totalInc > 5 ? '#f44336' : '#ff9800', whiteSpace: 'nowrap' }}>
             {totalInc} inc/30d
           </Typography>
         </Box>
       )}
       <Box sx={{ flexGrow: 1, minWidth: 0, overflow: 'hidden' }}>
-        <Typography color="text.secondary" sx={{
-          fontSize: '0.65rem', lineHeight: 1.3,
+        <Typography sx={{
+          fontSize: '0.78rem', fontWeight: 600, lineHeight: 1.35,
+          color: (t) => t.palette.mode === 'dark' ? '#ffffff' : '#000000',
           display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical',
           overflow: 'hidden', textOverflow: 'ellipsis',
         }}>
@@ -251,7 +253,7 @@ function DependencyOverview({ apiData, seal }) {
 }
 
 // ── Node detail panel (sidebar) ──────────────────────────────────────────────
-function NodeDetailPanel({ node }) {
+function NodeDetailPanel({ node, onNavigateToSeal }) {
   if (!node) {
     return (
       <Box sx={{ textAlign: 'center', mt: 3 }}>
@@ -268,11 +270,16 @@ function NodeDetailPanel({ node }) {
   let rows = []
   let statusValue = null
 
-  if (nodeType === 'service') {
-    rows = [['Service ID', node.id], ['Team', node.team], ['SLA', node.sla], ['Incidents 30d', node.incidents_30d]]
+  if (nodeType === 'service' || nodeType === 'external') {
+    rows = [['Team', node.team], ['SLO Status', node.sla], ['Incidents 30d', node.incidents_30d]]
     statusValue = node.status
+    if (nodeType === 'external') {
+      const dirLabel = node.cross_direction === 'upstream' ? 'Upstream' : node.cross_direction === 'both' ? 'Up/Downstream' : 'Downstream'
+      rows.push(['Application', node.external_seal_label], ['Direction', dirLabel])
+    }
   } else if (nodeType === 'platform') {
-    rows = [['Type', node.type?.toUpperCase()], ['Subtype', node.subtype], ['Data Center', node.datacenter]]
+    const subtypeLabels = { pool: 'Pool', cluster: 'Cluster', service: 'Service' }
+    rows = [['Type', node.type?.toUpperCase()], ['Subtype', subtypeLabels[node.subtype] || node.subtype], ['Data Center', node.datacenter]]
     statusValue = node.status
   } else if (nodeType === 'datacenter') {
     rows = [['Region', node.region], ['Identifier', node.label]]
@@ -283,8 +290,8 @@ function NodeDetailPanel({ node }) {
     statusValue = node.health === 'red' ? 'critical' : node.health === 'amber' ? 'warning' : 'healthy'
   }
 
-  const layerLabel = { service: 'COMPONENT', platform: 'PLATFORM', datacenter: 'DATA CENTER', indicator: 'INDICATOR' }[nodeType] || 'NODE'
-  const layerColor = { service: '#5C8CC2', platform: '#C27BA0', datacenter: '#5DA5A0', indicator: '#B8976B' }[nodeType] || '#94a3b8'
+  const layerLabel = { service: 'COMPONENT', platform: 'PLATFORM', datacenter: 'DATA CENTER', indicator: 'INDICATOR', external: 'UPSTREAM / DOWNSTREAM' }[nodeType] || 'NODE'
+  const layerColor = { service: '#1565C0', platform: '#C27BA0', datacenter: '#5DA5A0', indicator: '#B8976B', external: '#78716c' }[nodeType] || '#94a3b8'
 
   return (
     <Card sx={{ bgcolor: (t) => t.palette.mode === 'dark' ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)', border: '1px solid rgba(128,128,128,0.2)' }}>
@@ -314,6 +321,34 @@ function NodeDetailPanel({ node }) {
             </Box>
           ))}
         </Stack>
+        {nodeType === 'external' && node.external_seal && (
+          <>
+            <Divider sx={{ my: 1 }} />
+            <Box
+              onClick={() => onNavigateToSeal?.(node.external_seal)}
+              sx={{
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 0.5,
+                py: 0.75, px: 1, borderRadius: 1,
+                cursor: 'pointer',
+                bgcolor: (t) => t.palette.mode === 'dark' ? 'rgba(21,101,192,0.18)' : 'rgba(21,101,192,0.10)',
+                border: '1.5px solid', borderColor: (t) => t.palette.mode === 'dark' ? 'rgba(21,101,192,0.5)' : 'rgba(21,101,192,0.35)',
+                transition: 'all 0.15s',
+                '&:hover': {
+                  bgcolor: (t) => t.palette.mode === 'dark' ? 'rgba(21,101,192,0.30)' : 'rgba(21,101,192,0.18)',
+                  borderColor: (t) => t.palette.mode === 'dark' ? 'rgba(21,101,192,0.7)' : 'rgba(21,101,192,0.5)',
+                  transform: 'translateY(-1px)',
+                  boxShadow: '0 2px 6px rgba(21,101,192,0.2)',
+                },
+              }}
+            >
+              <RadarIcon sx={{ fontSize: 14, color: '#1565C0' }} />
+              <Typography sx={{ fontSize: '0.65rem', fontWeight: 800, color: '#1565C0' }}>
+                View {node.external_seal_label}
+              </Typography>
+              <Typography sx={{ fontSize: '0.8rem', color: '#1565C0', lineHeight: 1, fontWeight: 700 }}>{'\u2192'}</Typography>
+            </Box>
+          </>
+        )}
       </CardContent>
     </Card>
   )
@@ -334,6 +369,7 @@ export default function GraphExplorerWidget({ viewFilters }) {
 
   const [layers, setLayers] = useState({
     component:  true,
+    crossapp:   true,
     platform:   false,
     datacenter: false,
     indicator:  false,
@@ -382,22 +418,31 @@ export default function GraphExplorerWidget({ viewFilters }) {
         display: 'flex', alignItems: 'center', gap: 1,
         flexShrink: 0, flexWrap: 'nowrap', overflow: 'hidden',
       }}>
-        <FormControl size="small" sx={{ minWidth: 180, flexShrink: 0 }}>
-          <Select
-            value={selectedSeal}
-            onChange={(e) => setSelectedSeal(e.target.value)}
-            sx={{ fontSize: '0.75rem', bgcolor: (t) => t.palette.mode === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)' }}
-          >
-            {ALL_SEALS.map(s => (
-              <MenuItem key={s.seal} value={s.seal} sx={{ fontSize: '0.75rem' }}>
-                {s.label}
+        <Autocomplete
+          size="small"
+          options={ALL_SEALS}
+          getOptionLabel={(opt) => `${opt.label} — ${opt.seal}`}
+          value={ALL_SEALS.find(s => s.seal === selectedSeal) || null}
+          onChange={(_e, val) => val && setSelectedSeal(val.seal)}
+          disableClearable
+          sx={{ minWidth: 220, flexShrink: 0 }}
+          renderOption={(props, opt) => (
+            <li {...props} key={opt.seal}>
+              <Typography sx={{ fontSize: '0.75rem' }}>
+                {opt.label}
                 <Typography component="span" sx={{ fontSize: '0.65rem', color: 'text.secondary', fontFamily: 'monospace', ml: 1 }}>
-                  &mdash; {s.seal}
+                  &mdash; {opt.seal}
                 </Typography>
-              </MenuItem>
-            ))}
-          </Select>
-        </FormControl>
+              </Typography>
+            </li>
+          )}
+          renderInput={(params) => (
+            <TextField {...params} placeholder="Search application…"
+              sx={{ '& .MuiInputBase-input': { fontSize: '0.75rem' },
+                    '& .MuiOutlinedInput-root': { bgcolor: (t) => t.palette.mode === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)' } }}
+            />
+          )}
+        />
 
         {apiData && <InlineExecutiveSummary apiData={apiData} seal={selectedSeal} />}
       </Box>
@@ -519,7 +564,7 @@ export default function GraphExplorerWidget({ viewFilters }) {
 
               <Box sx={{ flexGrow: 1, overflowY: 'auto', p: 1.5 }}>
                 {sidebarTab === 0 && <DependencyOverview apiData={apiData} seal={selectedSeal} />}
-                {sidebarTab === 1 && <NodeDetailPanel node={selectedNode} />}
+                {sidebarTab === 1 && <NodeDetailPanel node={selectedNode} onNavigateToSeal={setSelectedSeal} />}
               </Box>
             </>
           ) : (

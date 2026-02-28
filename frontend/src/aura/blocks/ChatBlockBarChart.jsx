@@ -1,4 +1,5 @@
 import { Box, Typography } from '@mui/material'
+import { useTheme } from '@mui/material/styles'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts'
 
 const fSmall = { fontSize: 'clamp(0.7rem, 0.9vw, 0.8rem)' }
@@ -20,6 +21,8 @@ function CustomTooltip({ active, payload, label }) {
 }
 
 export default function ChatBlockBarChart({ data }) {
+  const { palette } = useTheme()
+  const isDark = palette.mode === 'dark'
   if (!data?.bars) return null
   const { bars, xKey = 'name', yKey = 'value' } = data
 
@@ -27,21 +30,21 @@ export default function ChatBlockBarChart({ data }) {
     <Box sx={{
       borderRadius: 1.5,
       border: '1px solid',
-      borderColor: t => t.palette.mode === 'dark' ? 'rgba(255,255,255,0.1)' : 'divider',
+      borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'divider',
       p: 1.5,
-      bgcolor: t => t.palette.mode === 'dark' ? 'rgba(0,0,0,0.15)' : 'transparent',
+      bgcolor: isDark ? 'rgba(0,0,0,0.15)' : 'rgba(0,0,0,0.02)',
     }}>
       <ResponsiveContainer width="100%" height={180}>
         <BarChart data={bars} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke="rgba(128,128,128,0.1)" vertical={false} />
+          <CartesianGrid strokeDasharray="3 3" stroke={isDark ? 'rgba(128,128,128,0.1)' : 'rgba(0,0,0,0.08)'} vertical={false} />
           <XAxis
             dataKey={xKey}
-            tick={{ fill: '#94a3b8', fontSize: 9 }}
+            tick={{ fill: isDark ? '#94a3b8' : '#64748b', fontSize: 9 }}
             tickLine={false}
             axisLine={false}
           />
           <YAxis
-            tick={{ fill: '#94a3b8', fontSize: 9 }}
+            tick={{ fill: isDark ? '#94a3b8' : '#64748b', fontSize: 9 }}
             tickLine={false}
             axisLine={false}
             allowDecimals={false}

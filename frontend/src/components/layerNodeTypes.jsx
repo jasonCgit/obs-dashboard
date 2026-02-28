@@ -8,9 +8,9 @@ import { Handle, Position, getSmoothStepPath } from '@xyflow/react'
 const STATUS_TEXT = { healthy: '#4caf50', warning: '#ff9800', critical: '#f44336' }
 
 // Component layer color (dusty steel blue — primary layer)
-const COMP_BORDER = '#5C8CC2'
-const COMP_BG_DARK  = 'rgba(92,140,194,0.10)'
-const COMP_BG_LIGHT = 'rgba(92,140,194,0.07)'
+const COMP_BORDER = '#1565C0'
+const COMP_BG_DARK  = 'rgba(92,140,194,0.14)'
+const COMP_BG_LIGHT = 'rgba(92,140,194,0.18)'
 
 // ── Component layer: Service node ───────────────────────────────────────────
 export const ServiceNode = memo(({ data, selected }) => {
@@ -20,7 +20,7 @@ export const ServiceNode = memo(({ data, selected }) => {
   return (
     <Box sx={{
       bgcolor: isDark ? COMP_BG_DARK : COMP_BG_LIGHT,
-      border: `1.5px solid ${COMP_BORDER}`,
+      border: `2px solid ${COMP_BORDER}`,
       borderRadius: 1.5,
       px: 1.5, py: 1,
       minWidth: 160, maxWidth: 240,
@@ -28,13 +28,13 @@ export const ServiceNode = memo(({ data, selected }) => {
       opacity: selected ? 1 : 0.92,
       cursor: 'pointer',
       transition: 'box-shadow 0.15s',
-      boxShadow: '0 1px 4px rgba(0,0,0,0.1)',
+      boxShadow: isDark ? '0 1px 4px rgba(0,0,0,0.1)' : '0 1px 6px rgba(0,0,0,0.15)',
       '&:hover': { boxShadow: `0 0 8px ${COMP_BORDER}50` },
     }}>
-      <Handle id="left"   type="target" position={Position.Left}   style={{ background: COMP_BORDER, width: 5, height: 5 }} />
-      <Handle id="right"  type="source" position={Position.Right}  style={{ background: COMP_BORDER, width: 5, height: 5 }} />
-      <Handle id="top"    type="source" position={Position.Top}    style={{ background: '#B8976B', width: 5, height: 5 }} />
-      <Handle id="bottom" type="source" position={Position.Bottom} style={{ background: '#C27BA0', width: 5, height: 5 }} />
+      <Handle id="left"   type="target" position={Position.Left}   style={{ background: COMP_BORDER, width: 6, height: 6 }} />
+      <Handle id="right"  type="source" position={Position.Right}  style={{ background: COMP_BORDER, width: 6, height: 6 }} />
+      <Handle id="top"    type="source" position={Position.Top}    style={{ background: '#B8976B', width: 6, height: 6 }} />
+      <Handle id="bottom" type="source" position={Position.Bottom} style={{ background: '#C27BA0', width: 6, height: 6 }} />
       <Typography sx={{
         position: 'absolute', top: 3, right: 6,
         fontSize: '0.5rem', fontWeight: 700, letterSpacing: 0.6,
@@ -65,21 +65,21 @@ export const PlatformNode = memo(({ data }) => {
   const typeLabel = data.type?.toUpperCase() || 'PLATFORM'
   return (
     <Box sx={{
-      bgcolor: isDark ? 'rgba(194,123,160,0.12)' : 'rgba(194,123,160,0.08)',
-      border: '1.5px solid #C27BA0',
+      bgcolor: isDark ? 'rgba(194,123,160,0.16)' : 'rgba(194,123,160,0.18)',
+      border: '2px solid #C27BA0',
       borderRadius: 1.5,
       px: 1.5, py: 1,
       minWidth: 150, maxWidth: 200,
       position: 'relative',
       cursor: 'pointer',
       transition: 'box-shadow 0.15s',
-      boxShadow: '0 1px 4px rgba(0,0,0,0.1)',
+      boxShadow: isDark ? '0 1px 4px rgba(0,0,0,0.1)' : '0 1px 6px rgba(0,0,0,0.15)',
       '&:hover': { boxShadow: '0 0 8px rgba(194,123,160,0.4)' },
     }}>
-      <Handle id="top"    type="target" position={Position.Top}    style={{ background: '#C27BA0', width: 5, height: 5 }} />
-      <Handle id="left"   type="target" position={Position.Left}   style={{ background: '#C27BA0', width: 5, height: 5 }} />
-      <Handle id="right"  type="source" position={Position.Right}  style={{ background: '#C27BA0', width: 5, height: 5 }} />
-      <Handle id="bottom" type="source" position={Position.Bottom} style={{ background: '#5DA5A0', width: 5, height: 5 }} />
+      <Handle id="top"    type="target" position={Position.Top}    style={{ background: '#C27BA0', width: 6, height: 6 }} />
+      <Handle id="left"   type="target" position={Position.Left}   style={{ background: '#C27BA0', width: 6, height: 6 }} />
+      <Handle id="right"  type="source" position={Position.Right}  style={{ background: '#C27BA0', width: 6, height: 6 }} />
+      <Handle id="bottom" type="source" position={Position.Bottom} style={{ background: '#5DA5A0', width: 6, height: 6 }} />
       <Typography sx={{
         position: 'absolute', top: 3, right: 6,
         fontSize: '0.5rem', fontWeight: 700, letterSpacing: 0.6,
@@ -112,19 +112,19 @@ export const DataCenterNode = memo(({ data }) => {
   const regionLabel = data.region || 'DC'
   return (
     <Box sx={{
-      bgcolor: isDark ? 'rgba(93,165,160,0.12)' : 'rgba(93,165,160,0.08)',
-      border: `1.5px solid ${DC_BORDER}`,
+      bgcolor: isDark ? 'rgba(93,165,160,0.16)' : 'rgba(93,165,160,0.18)',
+      border: `2px solid ${DC_BORDER}`,
       borderRadius: 1.5,
       px: 1.5, py: 1,
       minWidth: 150, maxWidth: 200,
       position: 'relative',
       cursor: 'pointer',
       transition: 'box-shadow 0.15s',
-      boxShadow: '0 1px 4px rgba(0,0,0,0.1)',
+      boxShadow: isDark ? '0 1px 4px rgba(0,0,0,0.1)' : '0 1px 6px rgba(0,0,0,0.15)',
       '&:hover': { boxShadow: `0 0 8px ${DC_BORDER}50` },
     }}>
-      <Handle id="top"  type="target" position={Position.Top}  style={{ background: DC_BORDER, width: 5, height: 5 }} />
-      <Handle id="left" type="target" position={Position.Left} style={{ background: DC_BORDER, width: 5, height: 5 }} />
+      <Handle id="top"  type="target" position={Position.Top}  style={{ background: DC_BORDER, width: 6, height: 6 }} />
+      <Handle id="left" type="target" position={Position.Left} style={{ background: DC_BORDER, width: 6, height: 6 }} />
       <Typography sx={{
         position: 'absolute', top: 3, right: 6,
         fontSize: '0.5rem', fontWeight: 700, letterSpacing: 0.6,
@@ -148,9 +148,9 @@ export const DataCenterNode = memo(({ data }) => {
 })
 
 // ── Indicator layer node (Process Groups, Services, Synthetics) ─────────────
-const IND_BORDER = '#B8976B'
-const IND_BG_DARK  = 'rgba(184,151,107,0.10)'
-const IND_BG_LIGHT = 'rgba(184,151,107,0.07)'
+const IND_BORDER = '#94a3b8'
+const IND_BG_DARK  = 'rgba(148,163,184,0.14)'
+const IND_BG_LIGHT = 'rgba(148,163,184,0.18)'
 
 const INDICATOR_TYPE_LABELS = {
   process_group: 'PROCESS GROUP',
@@ -171,24 +171,24 @@ export const IndicatorNode = memo(({ data }) => {
   return (
     <Box sx={{
       bgcolor: isDark ? IND_BG_DARK : IND_BG_LIGHT,
-      border: `1.5px solid ${IND_BORDER}`,
+      border: `2px solid ${IND_BORDER}`,
       borderRadius: 1.5,
       px: 1.5, py: 1,
       minWidth: 150, maxWidth: 210,
       position: 'relative',
       cursor: 'pointer',
       transition: 'box-shadow 0.15s',
-      boxShadow: '0 1px 4px rgba(0,0,0,0.1)',
+      boxShadow: isDark ? '0 1px 4px rgba(0,0,0,0.1)' : '0 1px 6px rgba(0,0,0,0.15)',
       '&:hover': { boxShadow: `0 0 8px ${IND_BORDER}50` },
       ...(isImpacted && { animation: 'indicatorFlash 1.5s ease-in-out infinite' }),
     }}>
-      <Handle id="top"    type="target" position={Position.Top}    style={{ background: IND_BORDER, width: 5, height: 5 }} />
-      <Handle id="bottom" type="target" position={Position.Bottom} style={{ background: IND_BORDER, width: 5, height: 5 }} />
-      <Handle id="left"   type="target" position={Position.Left}   style={{ background: IND_BORDER, width: 5, height: 5 }} />
+      <Handle id="top"    type="target" position={Position.Top}    style={{ background: IND_BORDER, width: 6, height: 6 }} />
+      <Handle id="bottom" type="target" position={Position.Bottom} style={{ background: IND_BORDER, width: 6, height: 6 }} />
+      <Handle id="left"   type="target" position={Position.Left}   style={{ background: IND_BORDER, width: 6, height: 6 }} />
       <Typography sx={{
         position: 'absolute', top: 3, right: 6,
         fontSize: '0.5rem', fontWeight: 700, letterSpacing: 0.6,
-        color: IND_BORDER, opacity: 0.7, textTransform: 'uppercase',
+        color: '#94a3b8', opacity: 0.7, textTransform: 'uppercase',
       }}>
         Indicator
       </Typography>
@@ -203,8 +203,94 @@ export const IndicatorNode = memo(({ data }) => {
         </Typography>
       </Box>
       <Typography sx={{ fontSize: '0.72rem', fontWeight: 600,
-        color: isDark ? '#e2e8f0' : '#0f172a', lineHeight: 1.3, wordBreak: 'break-word' }}>
+        color: '#94a3b8', lineHeight: 1.3, wordBreak: 'break-word' }}>
         {`${typeLabel}: ${data.label}`}
+      </Typography>
+    </Box>
+  )
+})
+
+// ── External (cross-application) node ────────────────────────────────────────
+const EXT_BORDER = '#78716c'
+const EXT_BG_DARK  = 'rgba(120,113,108,0.12)'
+const EXT_BG_LIGHT = 'rgba(120,113,108,0.14)'
+
+export const ExternalNode = memo(({ data }) => {
+  const statusColor = STATUS_TEXT[data.status] || '#94a3b8'
+  const theme = useTheme()
+  const isDark = theme.palette.mode === 'dark'
+  const appLabel = data.external_seal_label || 'External'
+  const dir = data.cross_direction || 'downstream'
+  const dirLabel = dir === 'upstream' ? '\u2192 UPSTREAM' : dir === 'downstream' ? 'DOWNSTREAM \u2192' : '\u2194 UP/DOWNSTREAM'
+  return (
+    <Box sx={{
+      bgcolor: isDark ? EXT_BG_DARK : EXT_BG_LIGHT,
+      border: `2px dashed ${EXT_BORDER}`,
+      borderRadius: 1.5,
+      px: 1.5, py: 1,
+      minWidth: 160, maxWidth: 240,
+      position: 'relative',
+      cursor: 'pointer',
+      transition: 'box-shadow 0.15s',
+      boxShadow: isDark ? '0 1px 4px rgba(0,0,0,0.08)' : '0 1px 6px rgba(0,0,0,0.1)',
+      '&:hover': { boxShadow: `0 0 8px ${EXT_BORDER}40` },
+    }}>
+      <Handle id="left"  type="target" position={Position.Left}  style={{ background: EXT_BORDER, width: 6, height: 6 }} />
+      <Handle id="right" type="source" position={Position.Right} style={{ background: EXT_BORDER, width: 6, height: 6 }} />
+      <Typography sx={{
+        position: 'absolute', top: 2, right: 6,
+        fontSize: '0.42rem', fontWeight: 700, letterSpacing: 0.4,
+        color: EXT_BORDER, opacity: 0.8, textTransform: 'uppercase',
+      }}>
+        {dirLabel}
+      </Typography>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, mb: 0.25 }}>
+        <Box sx={{ width: 7, height: 7, borderRadius: '50%', bgcolor: statusColor, flexShrink: 0 }} />
+        <Typography sx={{ fontSize: '0.62rem', color: statusColor, fontWeight: 600,
+          textTransform: 'uppercase', letterSpacing: 0.5 }}>
+          {data.status}
+        </Typography>
+      </Box>
+      <Typography sx={{ fontSize: '0.72rem', color: isDark ? '#a8a29e' : '#57534e',
+        wordBreak: 'break-word', lineHeight: 1.3 }}>
+        {data.label}
+      </Typography>
+      <Typography sx={{ fontSize: '0.5rem', color: EXT_BORDER, opacity: 0.7, mt: 0.25 }}>
+        {appLabel}
+      </Typography>
+    </Box>
+  )
+})
+
+// ── Zone background (upstream / downstream shading) ─────────────────────────
+export const ZoneNode = memo(({ data }) => {
+  const theme = useTheme()
+  const isDark = theme.palette.mode === 'dark'
+  const isUpstream = data.direction === 'upstream'
+  const bg = isDark
+    ? (isUpstream ? 'rgba(100,140,180,0.045)' : 'rgba(180,140,100,0.045)')
+    : (isUpstream ? 'rgba(80,120,180,0.04)' : 'rgba(180,120,80,0.04)')
+  const borderCol = isDark
+    ? (isUpstream ? 'rgba(100,140,180,0.12)' : 'rgba(180,140,100,0.12)')
+    : (isUpstream ? 'rgba(80,120,180,0.10)' : 'rgba(180,120,80,0.10)')
+  const labelCol = isDark
+    ? (isUpstream ? 'rgba(140,170,210,0.55)' : 'rgba(210,170,130,0.55)')
+    : (isUpstream ? 'rgba(60,100,160,0.45)' : 'rgba(160,100,60,0.45)')
+  return (
+    <Box sx={{
+      width: data.width,
+      height: data.height,
+      bgcolor: bg,
+      borderRadius: 3,
+      border: `1.5px dashed ${borderCol}`,
+      pointerEvents: 'none',
+    }}>
+      <Typography sx={{
+        position: 'absolute', top: 14, left: '50%', transform: 'translateX(-50%)',
+        fontSize: '1.1rem', fontWeight: 900, letterSpacing: 3,
+        color: labelCol, textTransform: 'uppercase', whiteSpace: 'nowrap',
+      }}>
+        {data.label}
       </Typography>
     </Box>
   )
@@ -216,16 +302,19 @@ export const InteractiveEdge = memo(({
   sourcePosition, targetPosition,
   style = {}, data,
 }) => {
+  const theme = useTheme()
+  const isDark = theme.palette.mode === 'dark'
   const [edgePath] = getSmoothStepPath({
     sourceX, sourceY, targetX, targetY,
     sourcePosition, targetPosition,
-    borderRadius: 16,
+    borderRadius: 18,
+    offset: data?.offset || 26,
   })
 
   const isHighlighted = data?.highlighted
   const edgeColor = data?.color || '#94a3b8'
   const activeColor = isHighlighted ? edgeColor : (data?.dimmed ? '#94a3b8' : edgeColor)
-  const strokeWidth = isHighlighted ? 2.5 : 1.4
+  const strokeWidth = isHighlighted ? 3 : (isDark ? 2.2 : 2.4)
   const opacity = data?.dimmed ? 0.15 : 1
   const layerType = data?.layerType || 'component'
   const direction = data?.direction || 'uni'
@@ -240,8 +329,8 @@ export const InteractiveEdge = memo(({
   // Unique marker IDs scoped to this edge
   const endMarkerId = `arrow-end-${id}`
   const startMarkerId = `arrow-start-${id}`
-  const arrowSize = isHighlighted ? 10 : 8
-  const arrowH = isHighlighted ? 8 : 6
+  const arrowSize = isHighlighted ? 11 : 10
+  const arrowH = isHighlighted ? 9 : 8
 
   return (
     <g style={{ cursor: 'pointer', opacity }}>
@@ -298,12 +387,71 @@ export const InteractiveEdge = memo(({
   )
 })
 
+// ── Indicator group node (vertically stacked indicators for one component) ──
+export const IndicatorGroupNode = memo(({ data }) => {
+  const theme = useTheme()
+  const isDark = theme.palette.mode === 'dark'
+  const indicators = data.indicators || []
+  const hasImpacted = indicators.some(ind => ind.health === 'red' || ind.health === 'amber')
+
+  return (
+    <Box sx={{
+      width: data.width || 220,
+      bgcolor: isDark ? IND_BG_DARK : IND_BG_LIGHT,
+      border: `2px solid ${IND_BORDER}`,
+      borderRadius: 1.5,
+      px: 1.2, pt: 0.5, pb: 0.75,
+      position: 'relative',
+      cursor: 'pointer',
+      transition: 'box-shadow 0.15s',
+      boxShadow: isDark ? '0 1px 4px rgba(0,0,0,0.1)' : '0 1px 6px rgba(0,0,0,0.15)',
+      '&:hover': { boxShadow: `0 0 8px ${IND_BORDER}50` },
+      ...(hasImpacted && { animation: 'indicatorFlash 1.5s ease-in-out infinite' }),
+    }}>
+      <Handle id="bottom" type="target" position={Position.Bottom} style={{ background: IND_BORDER, width: 6, height: 6 }} />
+      <Typography sx={{
+        fontSize: '0.5rem', fontWeight: 700, letterSpacing: 0.6,
+        color: '#94a3b8', opacity: 0.7, textTransform: 'uppercase', mb: 0.5,
+      }}>
+        Indicators ({indicators.length})
+      </Typography>
+      {indicators.map((ind, i) => {
+        const healthColor = HEALTH_STATUS_TEXT[ind.health] || '#94a3b8'
+        const healthLabel = HEALTH_STATUS_LABEL[ind.health] || 'unknown'
+        const typeLabel = INDICATOR_TYPE_LABELS[ind.indicator_type] || 'INDICATOR'
+        const isImpacted = ind.health === 'red' || ind.health === 'amber'
+        return (
+          <Box key={ind.id || i} sx={{ display: 'flex', alignItems: 'center', gap: 0.5, py: 0.15 }}>
+            <Box sx={{
+              width: 6, height: 6, borderRadius: '50%', bgcolor: healthColor, flexShrink: 0,
+              ...(isImpacted && { animation: 'indicatorDotPulse 1s ease-in-out infinite' }),
+            }} />
+            <Typography sx={{ fontSize: '0.56rem', color: healthColor, fontWeight: 600,
+              textTransform: 'uppercase', letterSpacing: 0.3, flexShrink: 0, minWidth: 42 }}>
+              {healthLabel}
+            </Typography>
+            <Typography noWrap sx={{
+              fontSize: '0.56rem', fontWeight: 500,
+              color: isDark ? '#94a3b8' : '#64748b', lineHeight: 1.2,
+            }}>
+              {typeLabel}: {ind.label}
+            </Typography>
+          </Box>
+        )
+      })}
+    </Box>
+  )
+})
+
 // ── Exported maps (must be at module scope, never inside a component) ───────
 export const layerNodeTypes = {
-  service:    ServiceNode,
-  platform:   PlatformNode,
-  datacenter: DataCenterNode,
-  indicator:  IndicatorNode,
+  service:        ServiceNode,
+  platform:       PlatformNode,
+  datacenter:     DataCenterNode,
+  indicator:      IndicatorNode,
+  indicatorGroup: IndicatorGroupNode,
+  external:       ExternalNode,
+  zone:           ZoneNode,
 }
 
 export const layerEdgeTypes = {

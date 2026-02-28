@@ -339,6 +339,80 @@ NODES = [
     {"id": "connect-session-svc",     "label": "CONNECT-SESSION-SERVICE",         "status": "healthy",  "team": "Connect Identity",  "sla": "99.9%",  "incidents_30d": 0},
     {"id": "connect-config-svc",      "label": "CONNECT-CONFIG-SERVICE",          "status": "healthy",  "team": "Connect Platform",  "sla": "99.0%",  "incidents_30d": 0},
     {"id": "connect-metrics-svc",     "label": "CONNECT-METRICS-COLLECTOR",       "status": "healthy",  "team": "Connect Observability", "sla": "99.0%", "incidents_30d": 0},
+
+    # MORGAN MONEY cluster (16649) — Ultra Simple (3 nodes)
+    {"id": "mm-ui",               "label": "MORGAN-MONEY-UI",              "status": "healthy",  "team": "Client Data",       "sla": "99.9%",  "incidents_30d": 0},
+    {"id": "mm-api",              "label": "MORGAN-MONEY-API",             "status": "warning",  "team": "Client Data",       "sla": "99.5%",  "incidents_30d": 3},
+    {"id": "mm-data-svc",         "label": "MORGAN-MONEY-DATA-SERVICE",    "status": "critical", "team": "Client Data",       "sla": "99.9%",  "incidents_30d": 8},
+
+    # PANDA cluster (35115) — Simple (4 nodes)
+    {"id": "panda-gateway",       "label": "PANDA-GATEWAY",               "status": "healthy",  "team": "Client Data",       "sla": "99.9%",  "incidents_30d": 0},
+    {"id": "panda-data-svc",      "label": "PANDA-DATA-SERVICE",          "status": "healthy",  "team": "Client Data",       "sla": "99.5%",  "incidents_30d": 1},
+    {"id": "panda-cache-svc",     "label": "PANDA-CACHE-SERVICE",         "status": "warning",  "team": "Client Data",       "sla": "99.0%",  "incidents_30d": 2},
+    {"id": "panda-export-svc",    "label": "PANDA-EXPORT-SERVICE",        "status": "healthy",  "team": "Client Data",       "sla": "99.0%",  "incidents_30d": 0},
+
+    # QUANTUM cluster (91001) — Medium (7 nodes)
+    {"id": "quantum-portal",         "label": "QUANTUM-PORTAL",              "status": "healthy",  "team": "JPMAIM Platform",   "sla": "99.9%",  "incidents_30d": 0},
+    {"id": "quantum-api-gw",         "label": "QUANTUM-API-GATEWAY",         "status": "warning",  "team": "JPMAIM Platform",   "sla": "99.99%", "incidents_30d": 3},
+    {"id": "quantum-portfolio-svc",  "label": "QUANTUM-PORTFOLIO-SERVICE",   "status": "critical", "team": "JPMAIM Platform",   "sla": "99.9%",  "incidents_30d": 6},
+    {"id": "quantum-analytics-svc",  "label": "QUANTUM-ANALYTICS-ENGINE",    "status": "warning",  "team": "JPMAIM Platform",   "sla": "99.5%",  "incidents_30d": 2},
+    {"id": "quantum-report-svc",     "label": "QUANTUM-REPORT-SERVICE",      "status": "healthy",  "team": "JPMAIM Platform",   "sla": "99.0%",  "incidents_30d": 0},
+    {"id": "quantum-data-lake",      "label": "QUANTUM-DATA-LAKE",           "status": "critical", "team": "JPMAIM Platform",   "sla": "99.9%",  "incidents_30d": 5},
+    {"id": "quantum-auth-svc",       "label": "QUANTUM-AUTH-SERVICE",        "status": "healthy",  "team": "JPMAIM Platform",   "sla": "99.99%", "incidents_30d": 0},
+
+    # ORDER DECISION ENGINE cluster (81884) — Medium (8 nodes)
+    {"id": "ode-router",          "label": "ODE-ORDER-ROUTER",             "status": "warning",  "team": "Trading",           "sla": "99.9%",  "incidents_30d": 3},
+    {"id": "ode-rule-engine",     "label": "ODE-RULE-ENGINE",              "status": "healthy",  "team": "Trading",           "sla": "99.5%",  "incidents_30d": 0},
+    {"id": "ode-market-feed",     "label": "ODE-MARKET-DATA-FEED",         "status": "warning",  "team": "Trading",           "sla": "99.9%",  "incidents_30d": 4},
+    {"id": "ode-risk-check",      "label": "ODE-RISK-VALIDATION",          "status": "critical", "team": "Trading",           "sla": "99.99%", "incidents_30d": 7},
+    {"id": "ode-exec-svc",        "label": "ODE-EXECUTION-SERVICE",        "status": "critical", "team": "Trading",           "sla": "99.9%",  "incidents_30d": 5},
+    {"id": "ode-audit-log",       "label": "ODE-AUDIT-LOG",                "status": "healthy",  "team": "Trading",           "sla": "99.0%",  "incidents_30d": 0},
+    {"id": "ode-notif-svc",       "label": "ODE-NOTIFICATION-SERVICE",     "status": "healthy",  "team": "Trading",           "sla": "99.5%",  "incidents_30d": 1},
+    {"id": "ode-reconcile-svc",   "label": "ODE-RECONCILIATION-SERVICE",   "status": "warning",  "team": "Trading",           "sla": "99.5%",  "incidents_30d": 2},
+
+    # CREDIT CARD PROCESSING ENGINE cluster (45440) — Complex (11 nodes)
+    {"id": "ccpe-ingress",        "label": "CCPE-TRANSACTION-INGRESS",     "status": "healthy",  "team": "Cards Platform",    "sla": "99.99%", "incidents_30d": 0},
+    {"id": "ccpe-auth-svc",       "label": "CCPE-AUTHORIZATION-SERVICE",   "status": "warning",  "team": "Cards Platform",    "sla": "99.99%", "incidents_30d": 3},
+    {"id": "ccpe-fraud-engine",   "label": "CCPE-FRAUD-DETECTION-ENGINE",  "status": "critical", "team": "Cards Platform",    "sla": "99.99%", "incidents_30d": 5},
+    {"id": "ccpe-ledger-svc",     "label": "CCPE-LEDGER-SERVICE",          "status": "critical", "team": "Cards Platform",    "sla": "99.99%", "incidents_30d": 4},
+    {"id": "ccpe-limit-svc",      "label": "CCPE-CREDIT-LIMIT-SERVICE",    "status": "warning",  "team": "Cards Platform",    "sla": "99.9%",  "incidents_30d": 2},
+    {"id": "ccpe-notif-svc",      "label": "CCPE-CUSTOMER-NOTIFICATIONS",  "status": "healthy",  "team": "Cards Platform",    "sla": "99.5%",  "incidents_30d": 0},
+    {"id": "ccpe-dispute-svc",    "label": "CCPE-DISPUTE-HANDLER",         "status": "healthy",  "team": "Cards Platform",    "sla": "99.5%",  "incidents_30d": 1},
+    {"id": "ccpe-rewards-svc",    "label": "CCPE-REWARDS-PROCESSING",      "status": "healthy",  "team": "Cards Platform",    "sla": "99.0%",  "incidents_30d": 0},
+    {"id": "ccpe-settlement-svc", "label": "CCPE-SETTLEMENT-SERVICE",      "status": "warning",  "team": "Cards Platform",    "sla": "99.9%",  "incidents_30d": 2},
+    {"id": "ccpe-report-svc",     "label": "CCPE-REPORTING-SERVICE",       "status": "healthy",  "team": "Cards Platform",    "sla": "99.0%",  "incidents_30d": 0},
+    {"id": "ccpe-archive-svc",    "label": "CCPE-DATA-ARCHIVAL",           "status": "healthy",  "team": "Cards Platform",    "sla": "99.0%",  "incidents_30d": 0},
+
+    # WEAVE / AWM ENTITLEMENTS cluster (102987) — Complex (12 nodes)
+    {"id": "weave-gateway",       "label": "WEAVE-GATEWAY",                "status": "healthy",  "team": "Tech Shared Svc",   "sla": "99.99%", "incidents_30d": 0},
+    {"id": "weave-policy-engine", "label": "WEAVE-POLICY-ENGINE",          "status": "critical", "team": "Tech Shared Svc",   "sla": "99.99%", "incidents_30d": 9},
+    {"id": "weave-role-svc",      "label": "WEAVE-ROLE-SERVICE",           "status": "warning",  "team": "Tech Shared Svc",   "sla": "99.9%",  "incidents_30d": 3},
+    {"id": "weave-user-store",    "label": "WEAVE-USER-DIRECTORY",         "status": "critical", "team": "Tech Shared Svc",   "sla": "99.99%", "incidents_30d": 7},
+    {"id": "weave-audit-svc",     "label": "WEAVE-AUDIT-SERVICE",          "status": "healthy",  "team": "Tech Shared Svc",   "sla": "99.0%",  "incidents_30d": 0},
+    {"id": "weave-sync-svc",      "label": "WEAVE-IDENTITY-SYNC",         "status": "warning",  "team": "Tech Shared Svc",   "sla": "99.5%",  "incidents_30d": 2},
+    {"id": "weave-token-svc",     "label": "WEAVE-TOKEN-SERVICE",          "status": "healthy",  "team": "Tech Shared Svc",   "sla": "99.99%", "incidents_30d": 0},
+    {"id": "weave-consent-svc",   "label": "WEAVE-CONSENT-SERVICE",        "status": "healthy",  "team": "Tech Shared Svc",   "sla": "99.5%",  "incidents_30d": 0},
+    {"id": "weave-admin-portal",  "label": "WEAVE-ADMIN-PORTAL",           "status": "healthy",  "team": "Tech Shared Svc",   "sla": "99.9%",  "incidents_30d": 1},
+    {"id": "weave-report-svc",    "label": "WEAVE-COMPLIANCE-REPORTS",     "status": "warning",  "team": "Tech Shared Svc",   "sla": "99.0%",  "incidents_30d": 2},
+    {"id": "weave-cache-layer",   "label": "WEAVE-DISTRIBUTED-CACHE",      "status": "healthy",  "team": "Tech Shared Svc",   "sla": "99.9%",  "incidents_30d": 0},
+    {"id": "weave-event-bus",     "label": "WEAVE-EVENT-BUS",              "status": "critical", "team": "Tech Shared Svc",   "sla": "99.9%",  "incidents_30d": 4},
+
+    # REAL-TIME PAYMENTS GATEWAY cluster (62100) — Very Complex (15 nodes)
+    {"id": "rtpg-ingress-lb",     "label": "RTPG-INGRESS-LB",             "status": "healthy",  "team": "Payments Core",     "sla": "99.99%", "incidents_30d": 0},
+    {"id": "rtpg-api-gw",         "label": "RTPG-API-GATEWAY",            "status": "warning",  "team": "Payments Core",     "sla": "99.99%", "incidents_30d": 3},
+    {"id": "rtpg-validation-svc", "label": "RTPG-VALIDATION-SERVICE",     "status": "healthy",  "team": "Payments Core",     "sla": "99.9%",  "incidents_30d": 1},
+    {"id": "rtpg-routing-engine", "label": "RTPG-ROUTING-ENGINE",         "status": "critical", "team": "Payments Core",     "sla": "99.99%", "incidents_30d": 6},
+    {"id": "rtpg-sanctions-svc",  "label": "RTPG-SANCTIONS-SCREENING",    "status": "warning",  "team": "Payments Core",     "sla": "99.99%", "incidents_30d": 2},
+    {"id": "rtpg-aml-svc",        "label": "RTPG-AML-CHECK-SERVICE",      "status": "healthy",  "team": "Payments Core",     "sla": "99.9%",  "incidents_30d": 0},
+    {"id": "rtpg-fx-converter",   "label": "RTPG-FX-CONVERTER",           "status": "warning",  "team": "Payments Core",     "sla": "99.9%",  "incidents_30d": 3},
+    {"id": "rtpg-clearing-svc",   "label": "RTPG-CLEARING-ENGINE",        "status": "critical", "team": "Payments Core",     "sla": "99.99%", "incidents_30d": 5},
+    {"id": "rtpg-settlement-svc", "label": "RTPG-SETTLEMENT-ENGINE",      "status": "critical", "team": "Payments Core",     "sla": "99.99%", "incidents_30d": 4},
+    {"id": "rtpg-ledger-svc",     "label": "RTPG-CORE-LEDGER",            "status": "warning",  "team": "Payments Core",     "sla": "99.99%", "incidents_30d": 2},
+    {"id": "rtpg-notif-svc",      "label": "RTPG-NOTIFICATION-DISPATCH",  "status": "healthy",  "team": "Payments Core",     "sla": "99.5%",  "incidents_30d": 0},
+    {"id": "rtpg-audit-svc",      "label": "RTPG-AUDIT-TRAIL",            "status": "healthy",  "team": "Payments Core",     "sla": "99.0%",  "incidents_30d": 0},
+    {"id": "rtpg-recon-svc",      "label": "RTPG-RECONCILIATION",         "status": "healthy",  "team": "Payments Core",     "sla": "99.5%",  "incidents_30d": 1},
+    {"id": "rtpg-archive-svc",    "label": "RTPG-DATA-ARCHIVAL",          "status": "healthy",  "team": "Payments Core",     "sla": "99.0%",  "incidents_30d": 0},
+    {"id": "rtpg-monitor-svc",    "label": "RTPG-HEALTH-MONITOR",         "status": "warning",  "team": "Payments Core",     "sla": "99.9%",  "incidents_30d": 2},
 ]
 
 # (source, target) means source DEPENDS ON target
@@ -463,9 +537,102 @@ EDGES_RAW = [
     ("active-advisory",          "connect-profile-svc"),
     ("connect-coverage-app",     "ipbol-account"),
     ("ipbol-account",            "ipbol-doc-domain"),
+
+    # Cross-app downstream from Advisor Connect (90176)
+    ("connect-coverage-app",     "spieq-portfolio-svc"),     # coverage reads portfolio data from Spectrum
+    ("connect-data-sync",        "quantum-data-lake"),        # data sync pipeline to Quantum
+    ("ipbol-account",            "ccpe-ledger-svc"),           # IPBOL account queries credit card ledger
     ("spieq-settlement-svc",     "spieq-notif-svc"),
     ("spieq-api-gateway",        "payment-gateway"),
     ("payment-gateway",          "spieq-notif-svc"),
+
+    # MORGAN MONEY cluster (16649) — Ultra Simple
+    ("mm-ui",              "mm-api"),
+    ("mm-api",             "mm-data-svc"),
+
+    # PANDA cluster (35115) — Simple
+    ("panda-gateway",      "panda-data-svc"),
+    ("panda-gateway",      "panda-cache-svc"),
+    ("panda-data-svc",     "panda-cache-svc"),
+    ("panda-data-svc",     "panda-export-svc"),
+
+    # QUANTUM cluster (91001) — Medium
+    ("quantum-portal",          "quantum-api-gw"),
+    ("quantum-api-gw",          "quantum-portfolio-svc"),
+    ("quantum-api-gw",          "quantum-analytics-svc"),
+    ("quantum-api-gw",          "quantum-auth-svc"),
+    ("quantum-portfolio-svc",   "quantum-data-lake"),
+    ("quantum-analytics-svc",   "quantum-data-lake"),
+    ("quantum-analytics-svc",   "quantum-report-svc"),
+    ("quantum-report-svc",      "quantum-data-lake"),
+
+    # ORDER DECISION ENGINE cluster (81884) — Medium
+    ("ode-router",          "ode-rule-engine"),
+    ("ode-router",          "ode-risk-check"),
+    ("ode-router",          "ode-market-feed"),
+    ("ode-rule-engine",     "ode-exec-svc"),
+    ("ode-risk-check",      "ode-market-feed"),
+    ("ode-risk-check",      "ode-exec-svc"),
+    ("ode-exec-svc",        "ode-audit-log"),
+    ("ode-exec-svc",        "ode-notif-svc"),
+    ("ode-exec-svc",        "ode-reconcile-svc"),
+    ("ode-reconcile-svc",   "ode-audit-log"),
+
+    # CREDIT CARD PROCESSING ENGINE cluster (45440) — Complex
+    ("ccpe-ingress",         "ccpe-auth-svc"),
+    ("ccpe-auth-svc",        "ccpe-fraud-engine"),
+    ("ccpe-auth-svc",        "ccpe-limit-svc"),
+    ("ccpe-fraud-engine",    "ccpe-ledger-svc"),
+    ("ccpe-limit-svc",       "ccpe-ledger-svc"),
+    ("ccpe-ledger-svc",      "ccpe-settlement-svc"),
+    ("ccpe-ledger-svc",      "ccpe-rewards-svc"),
+    ("ccpe-ledger-svc",      "ccpe-notif-svc"),
+    ("ccpe-settlement-svc",  "ccpe-report-svc"),
+    ("ccpe-settlement-svc",  "ccpe-archive-svc"),
+    ("ccpe-dispute-svc",     "ccpe-ledger-svc"),
+    ("ccpe-dispute-svc",     "ccpe-notif-svc"),
+    ("ccpe-report-svc",      "ccpe-archive-svc"),
+
+    # WEAVE / AWM ENTITLEMENTS cluster (102987) — Complex
+    ("weave-admin-portal",   "weave-gateway"),
+    ("weave-gateway",        "weave-policy-engine"),
+    ("weave-gateway",        "weave-token-svc"),
+    ("weave-gateway",        "weave-audit-svc"),
+    ("weave-policy-engine",  "weave-role-svc"),
+    ("weave-policy-engine",  "weave-user-store"),
+    ("weave-policy-engine",  "weave-cache-layer"),
+    ("weave-role-svc",       "weave-user-store"),
+    ("weave-role-svc",       "weave-cache-layer"),
+    ("weave-user-store",     "weave-sync-svc"),
+    ("weave-sync-svc",       "weave-event-bus"),
+    ("weave-token-svc",      "weave-cache-layer"),
+    ("weave-token-svc",      "weave-user-store"),
+    ("weave-consent-svc",    "weave-user-store"),
+    ("weave-consent-svc",    "weave-audit-svc"),
+    ("weave-report-svc",     "weave-audit-svc"),
+    ("weave-report-svc",     "weave-role-svc"),
+    ("weave-event-bus",      "weave-audit-svc"),
+
+    # REAL-TIME PAYMENTS GATEWAY cluster (62100) — Very Complex
+    ("rtpg-ingress-lb",      "rtpg-api-gw"),
+    ("rtpg-api-gw",          "rtpg-validation-svc"),
+    ("rtpg-api-gw",          "rtpg-audit-svc"),
+    ("rtpg-api-gw",          "rtpg-monitor-svc"),
+    ("rtpg-validation-svc",  "rtpg-routing-engine"),
+    ("rtpg-routing-engine",  "rtpg-sanctions-svc"),
+    ("rtpg-routing-engine",  "rtpg-aml-svc"),
+    ("rtpg-routing-engine",  "rtpg-fx-converter"),
+    ("rtpg-routing-engine",  "rtpg-clearing-svc"),
+    ("rtpg-sanctions-svc",   "rtpg-clearing-svc"),
+    ("rtpg-aml-svc",         "rtpg-clearing-svc"),
+    ("rtpg-clearing-svc",    "rtpg-settlement-svc"),
+    ("rtpg-settlement-svc",  "rtpg-ledger-svc"),
+    ("rtpg-settlement-svc",  "rtpg-notif-svc"),
+    ("rtpg-settlement-svc",  "rtpg-recon-svc"),
+    ("rtpg-recon-svc",       "rtpg-ledger-svc"),
+    ("rtpg-recon-svc",       "rtpg-archive-svc"),
+    ("rtpg-ledger-svc",      "rtpg-audit-svc"),
+    ("rtpg-monitor-svc",     "rtpg-audit-svc"),
 ]
 
 # ── Blast Radius Layers — mock data ──────────────────────────────────────────
@@ -489,6 +656,40 @@ SEAL_COMPONENTS = {
         "spieq-order-router", "spieq-market-data", "spieq-compliance-svc",
         "spieq-settlement-svc", "spieq-audit-trail", "spieq-notif-svc",
         "payment-gateway", "email-notification",
+    ],
+    # Ultra Simple (3 components) — linear data service chain
+    "16649": ["mm-ui", "mm-api", "mm-data-svc"],
+    # Simple (4 components) — data distribution with caching
+    "35115": ["panda-gateway", "panda-data-svc", "panda-cache-svc", "panda-export-svc"],
+    # Medium (7 components) — investment management platform
+    "91001": [
+        "quantum-portal", "quantum-api-gw", "quantum-portfolio-svc",
+        "quantum-analytics-svc", "quantum-report-svc", "quantum-data-lake",
+        "quantum-auth-svc",
+    ],
+    # Medium (8 components) — order routing and decision engine
+    "81884": [
+        "ode-router", "ode-rule-engine", "ode-market-feed", "ode-risk-check",
+        "ode-exec-svc", "ode-audit-log", "ode-notif-svc", "ode-reconcile-svc",
+    ],
+    # Complex (11 components) — credit card processing chain
+    "45440": [
+        "ccpe-ingress", "ccpe-auth-svc", "ccpe-fraud-engine", "ccpe-ledger-svc",
+        "ccpe-limit-svc", "ccpe-notif-svc", "ccpe-dispute-svc", "ccpe-rewards-svc",
+        "ccpe-settlement-svc", "ccpe-report-svc", "ccpe-archive-svc",
+    ],
+    # Complex (12 components) — enterprise entitlements system
+    "102987": [
+        "weave-gateway", "weave-policy-engine", "weave-role-svc", "weave-user-store",
+        "weave-audit-svc", "weave-sync-svc", "weave-token-svc", "weave-consent-svc",
+        "weave-admin-portal", "weave-report-svc", "weave-cache-layer", "weave-event-bus",
+    ],
+    # Very Complex (15 components) — real-time payments processing
+    "62100": [
+        "rtpg-ingress-lb", "rtpg-api-gw", "rtpg-validation-svc", "rtpg-routing-engine",
+        "rtpg-sanctions-svc", "rtpg-aml-svc", "rtpg-fx-converter", "rtpg-clearing-svc",
+        "rtpg-settlement-svc", "rtpg-ledger-svc", "rtpg-notif-svc", "rtpg-audit-svc",
+        "rtpg-recon-svc", "rtpg-archive-svc", "rtpg-monitor-svc",
     ],
 }
 
@@ -546,6 +747,73 @@ COMPONENT_PLATFORM_EDGES = [
     ("spieq-notif-svc",       "eks-emea-01"),
     ("payment-gateway",       "gap-pool-na-01"),
     ("email-notification",    "ecs-na-01"),
+    # ── Morgan Money (16649) — Ultra Simple ──
+    ("mm-ui",                 "gap-pool-na-01"),
+    ("mm-api",                "gkp-cluster-na-01"),
+    ("mm-data-svc",           "gkp-cluster-na-01"),
+    # ── PANDA (35115) — Simple ──
+    ("panda-gateway",         "gap-pool-na-01"),
+    ("panda-data-svc",        "gkp-cluster-na-01"),
+    ("panda-cache-svc",       "gkp-cluster-na-01"),
+    ("panda-export-svc",      "ecs-na-01"),
+    # ── Quantum (91001) — Medium ──
+    ("quantum-portal",        "gap-pool-na-01"),
+    ("quantum-api-gw",        "gkp-cluster-na-01"),
+    ("quantum-portfolio-svc", "gkp-cluster-na-01"),
+    ("quantum-analytics-svc", "eks-na-01"),
+    ("quantum-report-svc",    "ecs-na-01"),
+    ("quantum-data-lake",     "gkp-cluster-apac-01"),
+    ("quantum-auth-svc",      "gkp-cluster-na-01"),
+    # ── Order Decision Engine (81884) — Medium ──
+    ("ode-router",            "gap-pool-na-01"),
+    ("ode-rule-engine",       "gkp-cluster-na-01"),
+    ("ode-market-feed",       "eks-na-01"),
+    ("ode-risk-check",        "gkp-cluster-na-01"),
+    ("ode-exec-svc",          "gkp-cluster-na-01"),
+    ("ode-audit-log",         "ecs-na-01"),
+    ("ode-notif-svc",         "ecs-na-01"),
+    ("ode-reconcile-svc",     "gkp-cluster-emea-01"),
+    # ── Credit Card Processing Engine (45440) — Complex ──
+    ("ccpe-ingress",          "gap-pool-na-01"),
+    ("ccpe-auth-svc",         "gkp-cluster-na-01"),
+    ("ccpe-fraud-engine",     "gkp-cluster-na-01"),
+    ("ccpe-ledger-svc",       "gkp-cluster-na-01"),
+    ("ccpe-limit-svc",        "eks-na-01"),
+    ("ccpe-notif-svc",        "ecs-na-01"),
+    ("ccpe-dispute-svc",      "gkp-cluster-emea-01"),
+    ("ccpe-rewards-svc",      "ecs-apac-01"),
+    ("ccpe-settlement-svc",   "gkp-cluster-emea-01"),
+    ("ccpe-report-svc",       "ecs-apac-01"),
+    ("ccpe-archive-svc",      "eks-emea-01"),
+    # ── WEAVE / AWM Entitlements (102987) — Complex ──
+    ("weave-gateway",         "gap-pool-na-01"),
+    ("weave-policy-engine",   "gkp-cluster-na-01"),
+    ("weave-role-svc",        "gkp-cluster-na-01"),
+    ("weave-user-store",      "gkp-cluster-na-01"),
+    ("weave-audit-svc",       "ecs-na-01"),
+    ("weave-sync-svc",        "gkp-cluster-apac-01"),
+    ("weave-token-svc",       "gkp-cluster-na-01"),
+    ("weave-consent-svc",     "gap-pool-emea-01"),
+    ("weave-admin-portal",    "gap-pool-na-01"),
+    ("weave-report-svc",      "ecs-apac-01"),
+    ("weave-cache-layer",     "eks-na-01"),
+    ("weave-event-bus",       "gkp-cluster-emea-01"),
+    # ── Real-Time Payments Gateway (62100) — Very Complex ──
+    ("rtpg-ingress-lb",       "gap-pool-na-01"),
+    ("rtpg-api-gw",           "gkp-cluster-na-01"),
+    ("rtpg-validation-svc",   "gkp-cluster-na-01"),
+    ("rtpg-routing-engine",   "gkp-cluster-na-01"),
+    ("rtpg-sanctions-svc",    "eks-na-01"),
+    ("rtpg-aml-svc",          "eks-na-01"),
+    ("rtpg-fx-converter",     "gkp-cluster-emea-01"),
+    ("rtpg-clearing-svc",     "gkp-cluster-na-01"),
+    ("rtpg-settlement-svc",   "gkp-cluster-apac-01"),
+    ("rtpg-ledger-svc",       "gkp-cluster-na-01"),
+    ("rtpg-notif-svc",        "ecs-na-01"),
+    ("rtpg-audit-svc",        "ecs-apac-01"),
+    ("rtpg-recon-svc",        "gkp-cluster-emea-01"),
+    ("rtpg-archive-svc",      "eks-emea-01"),
+    ("rtpg-monitor-svc",      "ecs-na-01"),
 ]
 
 DATA_CENTER_NODES = [
@@ -615,6 +883,102 @@ INDICATOR_NODES = [
     {"id": "dt-svc-payment",       "label": "PaymentGatewaySvc",      "indicator_type": "service",       "health": "red",   "component": "payment-gateway"},
     {"id": "dt-syn-payment",       "label": "Payment Processing",     "indicator_type": "synthetic",     "health": "red",   "component": "payment-gateway"},
     {"id": "dt-pg-email",          "label": "email-notification",     "indicator_type": "process_group", "health": "red",   "component": "email-notification"},
+
+    # ── Morgan Money (16649) — 4 indicators across 3 components ──
+    {"id": "dt-pg-mm-ui",          "label": "morgan-money-ui",        "indicator_type": "process_group", "health": "green", "component": "mm-ui"},
+    {"id": "dt-svc-mm-api",        "label": "MorganMoneyAPI",         "indicator_type": "service",       "health": "amber", "component": "mm-api"},
+    {"id": "dt-pg-mm-data",        "label": "morgan-money-data",      "indicator_type": "process_group", "health": "red",   "component": "mm-data-svc"},
+    {"id": "dt-syn-mm-data",       "label": "Data Lookup",            "indicator_type": "synthetic",     "health": "red",   "component": "mm-data-svc"},
+
+    # ── PANDA (35115) — 5 indicators across 4 components ──
+    {"id": "dt-pg-panda-gw",       "label": "panda-gateway",          "indicator_type": "process_group", "health": "green", "component": "panda-gateway"},
+    {"id": "dt-svc-panda-data",    "label": "PandaDataSvc",           "indicator_type": "service",       "health": "green", "component": "panda-data-svc"},
+    {"id": "dt-pg-panda-cache",    "label": "panda-cache",            "indicator_type": "process_group", "health": "amber", "component": "panda-cache-svc"},
+    {"id": "dt-syn-panda-cache",   "label": "Cache Hit Rate",         "indicator_type": "synthetic",     "health": "amber", "component": "panda-cache-svc"},
+    {"id": "dt-svc-panda-export",  "label": "PandaExportSvc",         "indicator_type": "service",       "health": "green", "component": "panda-export-svc"},
+
+    # ── Quantum (91001) — 10 indicators across 7 components ──
+    {"id": "dt-syn-quantum-portal",   "label": "Portal Health",          "indicator_type": "synthetic",     "health": "green", "component": "quantum-portal"},
+    {"id": "dt-svc-quantum-api",      "label": "QuantumAPISvc",          "indicator_type": "service",       "health": "amber", "component": "quantum-api-gw"},
+    {"id": "dt-pg-quantum-api",       "label": "quantum-api-gateway",    "indicator_type": "process_group", "health": "amber", "component": "quantum-api-gw"},
+    {"id": "dt-pg-quantum-portfolio", "label": "quantum-portfolio",      "indicator_type": "process_group", "health": "red",   "component": "quantum-portfolio-svc"},
+    {"id": "dt-svc-quantum-portfolio","label": "PortfolioSvc",           "indicator_type": "service",       "health": "red",   "component": "quantum-portfolio-svc"},
+    {"id": "dt-pg-quantum-analytics", "label": "quantum-analytics",      "indicator_type": "process_group", "health": "amber", "component": "quantum-analytics-svc"},
+    {"id": "dt-svc-quantum-report",   "label": "QuantumReportSvc",       "indicator_type": "service",       "health": "green", "component": "quantum-report-svc"},
+    {"id": "dt-pg-quantum-lake",      "label": "quantum-data-lake",      "indicator_type": "process_group", "health": "red",   "component": "quantum-data-lake"},
+    {"id": "dt-syn-quantum-lake",     "label": "Data Lake Query",        "indicator_type": "synthetic",     "health": "red",   "component": "quantum-data-lake"},
+    {"id": "dt-svc-quantum-auth",     "label": "QuantumAuthSvc",         "indicator_type": "service",       "health": "green", "component": "quantum-auth-svc"},
+
+    # ── Order Decision Engine (81884) — 12 indicators across 8 components ──
+    {"id": "dt-pg-ode-router",        "label": "ode-order-router",       "indicator_type": "process_group", "health": "amber", "component": "ode-router"},
+    {"id": "dt-svc-ode-router",       "label": "OrderRouterSvc",         "indicator_type": "service",       "health": "amber", "component": "ode-router"},
+    {"id": "dt-pg-ode-rules",         "label": "ode-rule-engine",        "indicator_type": "process_group", "health": "green", "component": "ode-rule-engine"},
+    {"id": "dt-pg-ode-market",        "label": "ode-market-data",        "indicator_type": "process_group", "health": "amber", "component": "ode-market-feed"},
+    {"id": "dt-syn-ode-market",       "label": "Market Feed Latency",    "indicator_type": "synthetic",     "health": "amber", "component": "ode-market-feed"},
+    {"id": "dt-pg-ode-risk",          "label": "ode-risk-validation",    "indicator_type": "process_group", "health": "red",   "component": "ode-risk-check"},
+    {"id": "dt-svc-ode-risk",         "label": "RiskValidationSvc",      "indicator_type": "service",       "health": "red",   "component": "ode-risk-check"},
+    {"id": "dt-pg-ode-exec",          "label": "ode-execution-svc",      "indicator_type": "process_group", "health": "red",   "component": "ode-exec-svc"},
+    {"id": "dt-syn-ode-exec",         "label": "Order Execution",        "indicator_type": "synthetic",     "health": "red",   "component": "ode-exec-svc"},
+    {"id": "dt-pg-ode-audit",         "label": "ode-audit-log",          "indicator_type": "process_group", "health": "green", "component": "ode-audit-log"},
+    {"id": "dt-svc-ode-notif",        "label": "OdeNotifSvc",            "indicator_type": "service",       "health": "green", "component": "ode-notif-svc"},
+    {"id": "dt-svc-ode-recon",        "label": "ReconciliationSvc",      "indicator_type": "service",       "health": "amber", "component": "ode-reconcile-svc"},
+
+    # ── Credit Card Processing Engine (45440) — 15 indicators across 11 components ──
+    {"id": "dt-pg-ccpe-ingress",      "label": "ccpe-ingress",           "indicator_type": "process_group", "health": "green", "component": "ccpe-ingress"},
+    {"id": "dt-svc-ccpe-auth",        "label": "CCAuthorizationSvc",     "indicator_type": "service",       "health": "amber", "component": "ccpe-auth-svc"},
+    {"id": "dt-syn-ccpe-auth",        "label": "Auth Response Time",     "indicator_type": "synthetic",     "health": "amber", "component": "ccpe-auth-svc"},
+    {"id": "dt-pg-ccpe-fraud",        "label": "ccpe-fraud-engine",      "indicator_type": "process_group", "health": "red",   "component": "ccpe-fraud-engine"},
+    {"id": "dt-svc-ccpe-fraud",       "label": "FraudDetectionSvc",      "indicator_type": "service",       "health": "red",   "component": "ccpe-fraud-engine"},
+    {"id": "dt-pg-ccpe-ledger",       "label": "ccpe-ledger",            "indicator_type": "process_group", "health": "red",   "component": "ccpe-ledger-svc"},
+    {"id": "dt-syn-ccpe-ledger",      "label": "Ledger Posting",         "indicator_type": "synthetic",     "health": "red",   "component": "ccpe-ledger-svc"},
+    {"id": "dt-svc-ccpe-limit",       "label": "CreditLimitSvc",         "indicator_type": "service",       "health": "amber", "component": "ccpe-limit-svc"},
+    {"id": "dt-svc-ccpe-notif",       "label": "CustomerNotifSvc",       "indicator_type": "service",       "health": "green", "component": "ccpe-notif-svc"},
+    {"id": "dt-pg-ccpe-dispute",      "label": "ccpe-dispute",           "indicator_type": "process_group", "health": "green", "component": "ccpe-dispute-svc"},
+    {"id": "dt-svc-ccpe-rewards",     "label": "RewardsSvc",             "indicator_type": "service",       "health": "green", "component": "ccpe-rewards-svc"},
+    {"id": "dt-svc-ccpe-settlement",  "label": "SettlementSvc",          "indicator_type": "service",       "health": "amber", "component": "ccpe-settlement-svc"},
+    {"id": "dt-pg-ccpe-report",       "label": "ccpe-reporting",         "indicator_type": "process_group", "health": "green", "component": "ccpe-report-svc"},
+    {"id": "dt-pg-ccpe-archive",      "label": "ccpe-archive",           "indicator_type": "process_group", "health": "green", "component": "ccpe-archive-svc"},
+    {"id": "dt-syn-ccpe-settlement",  "label": "Settlement Cycle",       "indicator_type": "synthetic",     "health": "amber", "component": "ccpe-settlement-svc"},
+
+    # ── WEAVE / AWM Entitlements (102987) — 16 indicators across 12 components ──
+    {"id": "dt-pg-weave-gw",          "label": "weave-gateway",          "indicator_type": "process_group", "health": "green", "component": "weave-gateway"},
+    {"id": "dt-pg-weave-policy",      "label": "weave-policy-engine",    "indicator_type": "process_group", "health": "red",   "component": "weave-policy-engine"},
+    {"id": "dt-svc-weave-policy",     "label": "PolicyEngineSvc",        "indicator_type": "service",       "health": "red",   "component": "weave-policy-engine"},
+    {"id": "dt-svc-weave-role",       "label": "RoleServiceSvc",         "indicator_type": "service",       "health": "amber", "component": "weave-role-svc"},
+    {"id": "dt-pg-weave-user",        "label": "weave-user-store",       "indicator_type": "process_group", "health": "red",   "component": "weave-user-store"},
+    {"id": "dt-syn-weave-user",       "label": "User Lookup",            "indicator_type": "synthetic",     "health": "red",   "component": "weave-user-store"},
+    {"id": "dt-pg-weave-audit",       "label": "weave-audit",            "indicator_type": "process_group", "health": "green", "component": "weave-audit-svc"},
+    {"id": "dt-svc-weave-sync",       "label": "IdentitySyncSvc",        "indicator_type": "service",       "health": "amber", "component": "weave-sync-svc"},
+    {"id": "dt-svc-weave-token",      "label": "TokenServiceSvc",        "indicator_type": "service",       "health": "green", "component": "weave-token-svc"},
+    {"id": "dt-pg-weave-consent",     "label": "weave-consent",          "indicator_type": "process_group", "health": "green", "component": "weave-consent-svc"},
+    {"id": "dt-syn-weave-admin",      "label": "Admin Portal Health",    "indicator_type": "synthetic",     "health": "green", "component": "weave-admin-portal"},
+    {"id": "dt-svc-weave-report",     "label": "ComplianceReportSvc",    "indicator_type": "service",       "health": "amber", "component": "weave-report-svc"},
+    {"id": "dt-pg-weave-cache",       "label": "weave-cache",            "indicator_type": "process_group", "health": "green", "component": "weave-cache-layer"},
+    {"id": "dt-pg-weave-eventbus",    "label": "weave-event-bus",        "indicator_type": "process_group", "health": "red",   "component": "weave-event-bus"},
+    {"id": "dt-svc-weave-eventbus",   "label": "EventBusSvc",            "indicator_type": "service",       "health": "red",   "component": "weave-event-bus"},
+    {"id": "dt-syn-weave-entitle",    "label": "Entitlement Check",      "indicator_type": "synthetic",     "health": "red",   "component": "weave-policy-engine"},
+
+    # ── Real-Time Payments Gateway (62100) — 20 indicators across 15 components ──
+    {"id": "dt-pg-rtpg-lb",           "label": "rtpg-ingress-lb",        "indicator_type": "process_group", "health": "green", "component": "rtpg-ingress-lb"},
+    {"id": "dt-svc-rtpg-api",         "label": "RTPGApiGwSvc",           "indicator_type": "service",       "health": "amber", "component": "rtpg-api-gw"},
+    {"id": "dt-pg-rtpg-api",          "label": "rtpg-api-gateway",       "indicator_type": "process_group", "health": "amber", "component": "rtpg-api-gw"},
+    {"id": "dt-svc-rtpg-validation",  "label": "ValidationSvc",          "indicator_type": "service",       "health": "green", "component": "rtpg-validation-svc"},
+    {"id": "dt-pg-rtpg-routing",      "label": "rtpg-routing-engine",    "indicator_type": "process_group", "health": "red",   "component": "rtpg-routing-engine"},
+    {"id": "dt-svc-rtpg-routing",     "label": "RoutingEngineSvc",       "indicator_type": "service",       "health": "red",   "component": "rtpg-routing-engine"},
+    {"id": "dt-syn-rtpg-routing",     "label": "Payment Routing",        "indicator_type": "synthetic",     "health": "red",   "component": "rtpg-routing-engine"},
+    {"id": "dt-svc-rtpg-sanctions",   "label": "SanctionsSvc",           "indicator_type": "service",       "health": "amber", "component": "rtpg-sanctions-svc"},
+    {"id": "dt-svc-rtpg-aml",         "label": "AMLCheckSvc",            "indicator_type": "service",       "health": "green", "component": "rtpg-aml-svc"},
+    {"id": "dt-svc-rtpg-fx",          "label": "FXConverterSvc",         "indicator_type": "service",       "health": "amber", "component": "rtpg-fx-converter"},
+    {"id": "dt-pg-rtpg-clearing",     "label": "rtpg-clearing",          "indicator_type": "process_group", "health": "red",   "component": "rtpg-clearing-svc"},
+    {"id": "dt-syn-rtpg-clearing",    "label": "Clearing Cycle",         "indicator_type": "synthetic",     "health": "red",   "component": "rtpg-clearing-svc"},
+    {"id": "dt-pg-rtpg-settlement",   "label": "rtpg-settlement",        "indicator_type": "process_group", "health": "red",   "component": "rtpg-settlement-svc"},
+    {"id": "dt-svc-rtpg-settlement",  "label": "SettlementEngineSvc",    "indicator_type": "service",       "health": "red",   "component": "rtpg-settlement-svc"},
+    {"id": "dt-svc-rtpg-ledger",      "label": "CoreLedgerSvc",          "indicator_type": "service",       "health": "amber", "component": "rtpg-ledger-svc"},
+    {"id": "dt-svc-rtpg-notif",       "label": "NotifDispatchSvc",       "indicator_type": "service",       "health": "green", "component": "rtpg-notif-svc"},
+    {"id": "dt-pg-rtpg-audit",        "label": "rtpg-audit-trail",       "indicator_type": "process_group", "health": "green", "component": "rtpg-audit-svc"},
+    {"id": "dt-svc-rtpg-recon",       "label": "ReconciliationSvc",      "indicator_type": "service",       "health": "green", "component": "rtpg-recon-svc"},
+    {"id": "dt-pg-rtpg-archive",      "label": "rtpg-archive",           "indicator_type": "process_group", "health": "green", "component": "rtpg-archive-svc"},
+    {"id": "dt-svc-rtpg-monitor",     "label": "HealthMonitorSvc",       "indicator_type": "service",       "health": "amber", "component": "rtpg-monitor-svc"},
 ]
 
 # Precompute adjacency maps once at startup
@@ -722,8 +1086,34 @@ def get_blast_radius(service_id: str):
 def get_layer_seals():
     return [
         {"seal": s, "label": l, "component_count": len(SEAL_COMPONENTS[s])}
-        for s, l in [("88180", "Connect OS"), ("90176", "Advisor Connect"), ("90215", "Spectrum Portfolio Mgmt")]
+        for s, l in [
+            ("16649", "Morgan Money"),
+            ("35115", "PANDA"),
+            ("88180", "Connect OS"),
+            ("90176", "Advisor Connect"),
+            ("81884", "Order Decision Engine"),
+            ("91001", "Quantum"),
+            ("45440", "Credit Card Processing Engine"),
+            ("102987", "AWM Entitlements (WEAVE)"),
+            ("90215", "Spectrum Portfolio Mgmt"),
+            ("62100", "Real-Time Payments Gateway"),
+        ]
     ]
+
+# Reverse lookup: component_id → seal_id (for cross-app edge detection)
+COMP_TO_SEAL = {}
+for _sid, _comps in SEAL_COMPONENTS.items():
+    for _cid in _comps:
+        COMP_TO_SEAL[_cid] = _sid
+
+# SEAL labels for external node display
+SEAL_LABELS = {
+    "16649": "Morgan Money", "35115": "PANDA", "88180": "Connect OS",
+    "90176": "Advisor Connect", "81884": "Order Decision Engine",
+    "91001": "Quantum", "45440": "Credit Card Processing Engine",
+    "102987": "AWM Entitlements (WEAVE)", "90215": "Spectrum Portfolio Mgmt",
+    "62100": "Real-Time Payments Gateway",
+}
 
 # Component-to-component edges that communicate in both directions
 BIDIRECTIONAL_PAIRS = {
@@ -735,6 +1125,20 @@ BIDIRECTIONAL_PAIRS = {
     ("spieq-api-gateway", "spieq-trade-service"),
     # Spectrum — trade service and risk service validate in both directions
     ("spieq-trade-service", "spieq-risk-service"),
+    # Quantum — portfolio service and data lake exchange data bidirectionally
+    ("quantum-portfolio-svc", "quantum-data-lake"),
+    # ODE — risk check and execution service validate in both directions
+    ("ode-risk-check", "ode-exec-svc"),
+    # CCPE — fraud engine and ledger exchange transaction data
+    ("ccpe-fraud-engine", "ccpe-ledger-svc"),
+    # WEAVE — role service and user store synchronize bidirectionally
+    ("weave-role-svc", "weave-user-store"),
+    # WEAVE — user store and identity sync exchange data
+    ("weave-user-store", "weave-sync-svc"),
+    # RTPG — routing engine and clearing engine exchange flow
+    ("rtpg-routing-engine", "rtpg-clearing-svc"),
+    # RTPG — clearing and settlement exchange transaction data
+    ("rtpg-clearing-svc", "rtpg-settlement-svc"),
 }
 
 
@@ -748,14 +1152,32 @@ def get_graph_layers(seal_id: str):
 
     # Component layer
     component_nodes = [NODE_MAP[cid] for cid in component_ids if cid in NODE_MAP]
-    component_edges = [
+    component_edges = []
+    external_ids: set[str] = set()
+    external_dirs: dict[str, set[str]] = {}   # node_id → {"upstream","downstream"}
+    for src, dst in EDGES_RAW:
+        src_in = src in component_set
+        dst_in = dst in component_set
+        direction = "bi" if (src, dst) in BIDIRECTIONAL_PAIRS or (dst, src) in BIDIRECTIONAL_PAIRS else "uni"
+        if src_in and dst_in:
+            component_edges.append({"source": src, "target": dst, "direction": direction})
+        elif src_in and dst in COMP_TO_SEAL and COMP_TO_SEAL[dst] != seal_id:
+            component_edges.append({"source": src, "target": dst, "direction": direction, "cross_seal": COMP_TO_SEAL[dst]})
+            external_ids.add(dst)
+            external_dirs.setdefault(dst, set()).add("downstream")
+        elif dst_in and src in COMP_TO_SEAL and COMP_TO_SEAL[src] != seal_id:
+            component_edges.append({"source": src, "target": dst, "direction": direction, "cross_seal": COMP_TO_SEAL[src]})
+            external_ids.add(src)
+            external_dirs.setdefault(src, set()).add("upstream")
+    external_nodes = [
         {
-            "source": src,
-            "target": dst,
-            "direction": "bi" if (src, dst) in BIDIRECTIONAL_PAIRS or (dst, src) in BIDIRECTIONAL_PAIRS else "uni",
+            **NODE_MAP[eid],
+            "external": True,
+            "external_seal": COMP_TO_SEAL[eid],
+            "external_seal_label": SEAL_LABELS.get(COMP_TO_SEAL[eid], COMP_TO_SEAL[eid]),
+            "cross_direction": sorted(external_dirs.get(eid, {"downstream"}))[0] if len(external_dirs.get(eid, set())) == 1 else "both",
         }
-        for src, dst in EDGES_RAW
-        if src in component_set and dst in component_set
+        for eid in external_ids if eid in NODE_MAP
     ]
 
     # Platform layer
@@ -786,11 +1208,240 @@ def get_graph_layers(seal_id: str):
 
     return {
         "seal": seal_id,
-        "components": {"nodes": component_nodes, "edges": component_edges},
+        "components": {"nodes": component_nodes, "edges": component_edges, "external_nodes": external_nodes},
         "platform":   {"nodes": platform_nodes,   "edges": platform_edge_list},
         "datacenter": {"nodes": dc_nodes,          "edges": dc_edge_list},
         "indicators": {"nodes": indicator_nodes,   "edges": indicator_edges},
     }
+
+
+# ── Enriched Applications ────────────────────────────────────────────────────
+
+PRODUCT_MAPPING = {}  # No longer needed — product info is embedded in app data
+
+# Map each app (by lowercase name slug) to its component IDs in the knowledge graph
+# Representative mappings for apps that have known components in the graph
+APP_COMPONENT_MAPPING = {
+    "morgan-money":                             ["connect-coverage-app", "connect-notification"],
+    "quantum":                                  ["meridian-query", "meridian-order"],
+    "jedi---j.p.-morgan-etf-data-intelligence": ["spieq-ui-service", "spieq-risk-service"],
+    "order-decision-engine":                    ["sb-service-order", "sb-service-query"],
+    "awm-entitlements-aka-weave":               ["auth-service", "spieq-compliance-svc"],
+    "connect-os":                               ["connect-coverage-app", "api-gateway", "connect-doc-svc"],
+    "pam:-gwm-party-and-account-maintenance":   ["payment-gateway", "connect-notification"],
+    "murex":                                    ["meridian-order", "email-notification"],
+    "omni-core-accounting-(omnitrust)":         ["db-primary", "data-pipeline"],
+}
+
+# Mock SLO data per app slug — critical/warning apps get explicit data; healthy apps use default
+APP_SLO_DATA = {
+    # Critical apps
+    "morgan-money":                             {"target": 99.9,  "current": 99.12, "error_budget": 12, "trend": "down",   "burn_rate": "4.2x",  "breach_eta": "6h",   "status": "critical"},
+    "quantum":                                  {"target": 99.9,  "current": 98.9,  "error_budget": 8,  "trend": "down",   "burn_rate": "5.8x",  "breach_eta": "3h",   "status": "critical"},
+    "jedi---j.p.-morgan-etf-data-intelligence": {"target": 99.9,  "current": 99.2,  "error_budget": 15, "trend": "down",   "burn_rate": "3.5x",  "breach_eta": "8h",   "status": "critical"},
+    "order-decision-engine":                    {"target": 99.9,  "current": 98.5,  "error_budget": 5,  "trend": "down",   "burn_rate": "8.2x",  "breach_eta": "2h",   "status": "critical"},
+    "awm-entitlements-aka-weave":               {"target": 99.9,  "current": 99.0,  "error_budget": 10, "trend": "down",   "burn_rate": "4.5x",  "breach_eta": "5h",   "status": "critical"},
+    "pam:-gwm-party-and-account-maintenance":   {"target": 99.9,  "current": 99.15, "error_budget": 14, "trend": "down",   "burn_rate": "3.8x",  "breach_eta": "7h",   "status": "critical"},
+    "murex":                                    {"target": 99.9,  "current": 99.3,  "error_budget": 18, "trend": "down",   "burn_rate": "3.1x",  "breach_eta": "12h",  "status": "critical"},
+    "omni-core-accounting-(omnitrust)":         {"target": 99.9,  "current": 98.8,  "error_budget": 7,  "trend": "down",   "burn_rate": "6.1x",  "breach_eta": "4h",   "status": "critical"},
+    # Warning apps
+    "am-pmt-routing-service":                   {"target": 99.0,  "current": 98.8,  "error_budget": 42, "trend": "stable", "burn_rate": "1.2x",  "breach_eta": "72h",  "status": "warning"},
+    "info-hub-and-data-oversight":              {"target": 99.5,  "current": 99.2,  "error_budget": 35, "trend": "down",   "burn_rate": "1.5x",  "breach_eta": "48h",  "status": "warning"},
+    "gm-solutions-bmt-research-hb-desktop":     {"target": 99.0,  "current": 98.6,  "error_budget": 30, "trend": "down",   "burn_rate": "2.0x",  "breach_eta": "24h",  "status": "warning"},
+    "ops-party":                                {"target": 99.0,  "current": 98.7,  "error_budget": 38, "trend": "stable", "burn_rate": "1.1x",  "breach_eta": None,   "status": "warning"},
+    "salerio":                                  {"target": 99.0,  "current": 98.5,  "error_budget": 28, "trend": "down",   "burn_rate": "1.8x",  "breach_eta": "36h",  "status": "warning"},
+    "onesentinel":                              {"target": 99.0,  "current": 98.4,  "error_budget": 25, "trend": "down",   "burn_rate": "2.2x",  "breach_eta": "18h",  "status": "warning"},
+    "acey-eagle-stari":                         {"target": 99.0,  "current": 98.9,  "error_budget": 45, "trend": "stable", "burn_rate": "0.9x",  "breach_eta": None,   "status": "warning"},
+    "meridian-data-services-platform":          {"target": 99.0,  "current": 98.7,  "error_budget": 32, "trend": "down",   "burn_rate": "1.6x",  "breach_eta": "40h",  "status": "warning"},
+    "ipb-payments":                             {"target": 99.0,  "current": 98.8,  "error_budget": 40, "trend": "stable", "burn_rate": "1.0x",  "breach_eta": None,   "status": "warning"},
+    "ipb-brokerage":                            {"target": 99.0,  "current": 98.6,  "error_budget": 33, "trend": "down",   "burn_rate": "1.7x",  "breach_eta": "38h",  "status": "warning"},
+    "global-security-transfer":                 {"target": 99.0,  "current": 98.5,  "error_budget": 29, "trend": "down",   "burn_rate": "1.9x",  "breach_eta": "30h",  "status": "warning"},
+    "wm-swift-middleware":                      {"target": 99.0,  "current": 98.4,  "error_budget": 26, "trend": "down",   "burn_rate": "2.1x",  "breach_eta": "20h",  "status": "warning"},
+    "pb-loan-origination-system":               {"target": 99.0,  "current": 98.7,  "error_budget": 35, "trend": "stable", "burn_rate": "1.3x",  "breach_eta": None,   "status": "warning"},
+    # Non-AWM critical/warning apps
+    "credit-card-processing-engine":            {"target": 99.99, "current": 99.82, "error_budget": 9,  "trend": "down",   "burn_rate": "5.0x",  "breach_eta": "4h",   "status": "critical"},
+    "consumer-lending-gateway":                 {"target": 99.9,  "current": 99.5,  "error_budget": 38, "trend": "down",   "burn_rate": "1.4x",  "breach_eta": "48h",  "status": "warning"},
+    "analytics-workbench":                      {"target": 99.0,  "current": 98.6,  "error_budget": 32, "trend": "stable", "burn_rate": "1.3x",  "breach_eta": None,   "status": "warning"},
+    "trade-execution-engine":                   {"target": 99.9,  "current": 99.4,  "error_budget": 28, "trend": "down",   "burn_rate": "2.0x",  "breach_eta": "24h",  "status": "warning"},
+    "corporate-treasury-portal":                {"target": 99.5,  "current": 99.1,  "error_budget": 35, "trend": "down",   "burn_rate": "1.5x",  "breach_eta": "36h",  "status": "warning"},
+    "real-time-payments-gateway":               {"target": 99.99, "current": 99.75, "error_budget": 6,  "trend": "down",   "burn_rate": "7.2x",  "breach_eta": "2h",   "status": "critical"},
+    "enterprise-monitoring-platform":           {"target": 99.9,  "current": 99.5,  "error_budget": 40, "trend": "stable", "burn_rate": "1.1x",  "breach_eta": None,   "status": "warning"},
+    "network-automation-suite":                 {"target": 99.9,  "current": 99.4,  "error_budget": 30, "trend": "down",   "burn_rate": "1.8x",  "breach_eta": "30h",  "status": "warning"},
+}
+
+# Frontend app names → slug mapping (built from the APPS array names)
+def _app_slug(name: str) -> str:
+    """Convert app name to a lookup slug (lowercase, spaces to hyphens)."""
+    return name.lower().replace(" ", "-")
+
+
+# Build component-to-platform lookup once
+_comp_platform_map = {}
+for _comp_id, _plat_id in COMPONENT_PLATFORM_EDGES:
+    _comp_platform_map.setdefault(_comp_id, []).append(_plat_id)
+
+
+@app.get("/api/applications/enriched")
+def get_enriched_applications():
+    """Return all apps enriched with components, deployments, SLO, and completeness."""
+    from collections import OrderedDict
+
+    # Mirror the APPS array from the frontend — generated from AWM portfolio spreadsheet
+    # Import app data from a shared JSON would be ideal, but for demo we duplicate
+    import json as _json, os as _os
+    _fe_path = _os.path.join(_os.path.dirname(__file__), "..", "frontend", "src", "data", "appData.js")
+    APPS_BACKEND = []
+    try:
+        with open(_fe_path, "r", encoding="utf-8") as _f:
+            _src = _f.read()
+        # Extract the APPS array via simple parsing: find first '[' after 'export const APPS'
+        _start = _src.index("export const APPS")
+        _arr_start = _src.index("[", _start)
+        _depth = 0
+        _arr_end = _arr_start
+        for _i in range(_arr_start, len(_src)):
+            if _src[_i] == "[":
+                _depth += 1
+            elif _src[_i] == "]":
+                _depth -= 1
+                if _depth == 0:
+                    _arr_end = _i + 1
+                    break
+        # Convert JS object array to JSON: add quotes around keys, handle trailing commas
+        import re as _re
+        _js_arr = _src[_arr_start:_arr_end]
+        # Remove single-line comments
+        _js_arr = _re.sub(r"//[^\n]*", "", _js_arr)
+        # Quote unquoted keys
+        _js_arr = _re.sub(r"(\s)(\w+)\s*:", r'\1"\2":', _js_arr)
+        # Remove trailing commas before ] or }
+        _js_arr = _re.sub(r",\s*([\]}])", r"\1", _js_arr)
+        # Convert JS single-quoted strings to double-quoted JSON strings
+        # Replace 'value' with "value" carefully (handle apostrophes in values)
+        _result = []
+        _in_str = False
+        _str_char = None
+        for _ch in _js_arr:
+            if not _in_str:
+                if _ch == "'":
+                    _result.append('"')
+                    _in_str = True
+                    _str_char = "'"
+                elif _ch == '"':
+                    _result.append('"')
+                    _in_str = True
+                    _str_char = '"'
+                else:
+                    _result.append(_ch)
+            else:
+                if _ch == _str_char:
+                    _result.append('"')
+                    _in_str = False
+                elif _ch == '"' and _str_char == "'":
+                    _result.append('\\"')
+                else:
+                    _result.append(_ch)
+        _js_arr = "".join(_result)
+        APPS_BACKEND = _json.loads(_js_arr)
+    except Exception:
+        APPS_BACKEND = []
+
+    results = []
+    for app in APPS_BACKEND:
+        slug = _app_slug(app["name"])
+
+        # Components from knowledge graph
+        comp_ids = APP_COMPONENT_MAPPING.get(slug, [])
+        components = []
+        for cid in comp_ids:
+            node = NODE_MAP.get(cid)
+            if node:
+                components.append({
+                    "id": cid,
+                    "label": node["label"],
+                    "status": node["status"],
+                    "incidents_30d": node["incidents_30d"],
+                })
+
+        # Deployments: nest components under their platform
+        _status_rank = {"critical": 0, "warning": 1, "healthy": 2}
+        plat_comp_map = {}  # plat_id → [component dicts]
+        plat_order = []     # preserve discovery order
+        for cid in comp_ids:
+            node = NODE_MAP.get(cid)
+            if not node:
+                continue
+            for plat_id in _comp_platform_map.get(cid, []):
+                if plat_id not in plat_comp_map:
+                    plat_comp_map[plat_id] = []
+                    plat_order.append(plat_id)
+                plat_comp_map[plat_id].append({
+                    "id": cid,
+                    "label": node["label"],
+                    "status": node["status"],
+                    "incidents_30d": node["incidents_30d"],
+                })
+        deployments = []
+        for plat_id in plat_order:
+            pn = PLATFORM_NODE_MAP.get(plat_id)
+            if not pn:
+                continue
+            dep_comps = plat_comp_map[plat_id]
+            # Sort: failing components first
+            dep_comps.sort(key=lambda c: _status_rank.get(c["status"], 9))
+            # Deployment status = worst of platform status and its component statuses
+            worst = pn["status"]
+            for c in dep_comps:
+                if _status_rank.get(c["status"], 9) < _status_rank.get(worst, 9):
+                    worst = c["status"]
+            deployments.append({
+                "id": plat_id,
+                "label": pn["label"],
+                "type": pn["type"],
+                "datacenter": pn["datacenter"],
+                "status": worst,
+                "components": dep_comps,
+            })
+        # Sort deployments: failing first
+        deployments.sort(key=lambda d: _status_rank.get(d["status"], 9))
+
+        # SLO data
+        slo = APP_SLO_DATA.get(slug, {
+            "target": 99.0, "current": 99.5, "error_budget": 80,
+            "trend": "stable", "burn_rate": "0.2x", "breach_eta": None, "status": "healthy",
+        })
+
+        # Completeness score
+        has_owner = bool(app.get("appOwner"))
+        has_sla = bool(app.get("sla"))
+        has_slo = slug in APP_SLO_DATA
+        has_rto = app.get("rto", "") not in ("", "NRR")
+        has_cpof = app.get("cpof") == "Yes"
+        has_blast_radius = len(comp_ids) > 0
+        checks = [has_owner, has_sla, has_slo, has_rto, has_cpof, has_blast_radius]
+        score = round(sum(checks) / len(checks) * 100)
+
+        completeness = {
+            "has_owner": has_owner,
+            "has_sla": has_sla,
+            "has_slo": has_slo,
+            "has_rto": has_rto,
+            "has_cpof": has_cpof,
+            "has_blast_radius": has_blast_radius,
+            "score": score,
+        }
+
+        results.append({
+            **app,
+            "id": slug,
+            "incidents_30d": app["incidents"],
+            "components": components,
+            "deployments": deployments,
+            "slo": slo,
+            "completeness": completeness,
+        })
+
+    return results
 
 
 # ── Announcements CRUD ────────────────────────────────────────────────────────

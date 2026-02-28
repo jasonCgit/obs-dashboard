@@ -10,7 +10,7 @@ import Applications    from './pages/Applications'
 import Favorites       from './pages/Favorites'
 import ViewCentralListing   from './view-central/ViewCentralListing'
 import ViewCentralDashboard from './view-central/ViewCentralDashboard'
-import ProductCatalog  from './pages/ProductCatalog'
+
 import CustomerJourney from './pages/CustomerJourney'
 import SloAgent        from './pages/SloAgent'
 import IncidentZero    from './pages/IncidentZero'
@@ -56,8 +56,7 @@ export default function App() {
           <Route path="/favorites"       element={<Favorites />} />
           <Route path="/view-central"    element={<ViewCentralListing />} />
           <Route path="/view-central/:id" element={<ViewCentralDashboard />} />
-          <Route path="/product-catalog" element={<ProductCatalog />} />
-          <Route path="/customer-journey"element={<CustomerJourney />} />
+<Route path="/customer-journey"element={<CustomerJourney />} />
           <Route path="/slo-agent"       element={<SloAgent />} />
           <Route path="/incident-zero"   element={<IncidentZero />} />
           <Route path="/announcements"   element={<Announcements />} />

@@ -152,25 +152,6 @@ const PAGE_PROMPTS = {
       ],
     },
   ],
-  '/product-catalog': [
-    {
-      category: 'Product Insights',
-      prompts: [
-        {
-          icon: 'AccountTree',
-          title: 'Dependency Map',
-          description: 'What is the blast radius if the Payment Gateway goes down?',
-          prompt: 'What is the blast radius if the Payment Gateway goes down?',
-        },
-        {
-          icon: 'Storage',
-          title: 'Capacity Planning',
-          description: 'Show me capacity utilization and scaling recommendations',
-          prompt: 'Show me capacity utilization and scaling recommendations',
-        },
-      ],
-    },
-  ],
 }
 
 export function getPromptsForPage(pathname) {

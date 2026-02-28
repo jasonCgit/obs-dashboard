@@ -1,51 +1,361 @@
 // Centralized application data — single source of truth for Applications page + global filter
+// Data sourced from AWM application portfolio spreadsheet
 export const APPS = [
-  { name: 'GWM GLOBAL COLLATERAL MANAGEMENT', seal: '90176', team: 'Collateral',  status: 'critical', sla: '99.9%',  incidents: 12, last: '15m ago',
-    lob: 'AWM', subLob: 'Global Private Bank', cto: 'Gitanjali Nistala', cbt: 'Aadi Thayyar', appOwner: 'Nathan Brooks', cpof: 'Yes', riskRanking: 'Critical', classification: 'In House', state: 'Operate', investmentStrategy: 'Invest', rto: '2' },
-  { name: 'PAYMENT GATEWAY API', seal: '90215', team: 'Payments', status: 'critical', sla: '99.99%', incidents: 8, last: '2h ago',
-    lob: 'CCB', subLob: '', cto: 'Sheetal Gandhi', cbt: 'Adrian Cave', appOwner: 'Diana Reeves', cpof: 'Yes', riskRanking: 'Critical', classification: 'In House', state: 'Operate', investmentStrategy: 'Invest', rto: '4' },
-  { name: 'MERIDIAN SERVICE-QUERY V1', seal: '90215', team: 'Trading', status: 'critical', sla: '99.5%', incidents: 7, last: '45m ago',
-    lob: 'CIB', subLob: 'Markets', cto: 'Joe Pedone', cbt: 'Alex Feinberg', appOwner: 'Marcus Chen', cpof: 'Yes', riskRanking: 'High', classification: 'In House', state: 'Operate', investmentStrategy: 'Invest', rto: '4' },
-  { name: 'IPBOL-DOC-DOMAIN', seal: '90176', team: 'IPBOL', status: 'critical', sla: '99.0%', incidents: 4, last: '1h ago',
-    lob: 'AWM', subLob: 'Global Private Bank', cto: 'Gitanjali Nistala', cbt: 'Abhishek Dubey', appOwner: 'Tara Okonkwo', cpof: 'Yes', riskRanking: 'High', classification: 'In House', state: 'Operate', investmentStrategy: 'Maintain', rto: '24' },
-  { name: 'MERIDIAN SERVICE-ORDER V1', seal: '90215', team: 'Trading', status: 'warning', sla: '99.5%', incidents: 3, last: '3h ago',
-    lob: 'CIB', subLob: 'Markets', cto: 'Joe Pedone', cbt: 'Alex Feinberg', appOwner: 'Marcus Chen', cpof: 'Yes', riskRanking: 'High', classification: 'In House', state: 'Operate', investmentStrategy: 'Invest', rto: '4' },
-  { name: 'IPBOL-ACCOUNT-SERVICES', seal: '90176', team: 'IPBOL', status: 'warning', sla: '99.0%', incidents: 2, last: '5h ago',
-    lob: 'AWM', subLob: 'Global Private Bank', cto: 'Vrinda Menon', cbt: 'Abhishek Dubey', appOwner: 'Tara Okonkwo', cpof: 'No', riskRanking: 'Medium', classification: 'Third Party Internal', state: 'Operate', investmentStrategy: 'Maintain', rto: '48' },
-  { name: 'IPBOL-INVESTMENTS-SERVICES', seal: '90176', team: 'IPBOL', status: 'warning', sla: '99.0%', incidents: 3, last: '4h ago',
-    lob: 'AWM', subLob: 'Asset Management', cto: 'Vrinda Menon', cbt: 'Amol Waikul', appOwner: 'Serena Whitfield', cpof: 'No', riskRanking: 'Medium', classification: 'Third Party Internal', state: 'Operate', investmentStrategy: 'Maintain', rto: '48' },
-  { name: 'POSTGRES-DB-REPLICA', seal: '88180', team: 'Database', status: 'warning', sla: '99.9%', incidents: 2, last: '6h ago',
-    lob: 'CT', subLob: '', cto: 'Stephen Clark', cbt: 'Ajay Mehta', appOwner: 'Kevin Gallagher', cpof: 'Yes', riskRanking: 'High', classification: 'In House', state: 'Operate', investmentStrategy: 'Invest', rto: '2' },
-  { name: 'DATA-PIPELINE-SERVICE', seal: '88180', team: 'Data', status: 'warning', sla: '99.0%', incidents: 3, last: '7h ago',
-    lob: 'CDAO', subLob: '', cto: 'Kamesh Karra', cbt: 'Angus Liu', appOwner: 'Rebecca Tan', cpof: 'No', riskRanking: 'Medium', classification: 'Third Party Internal', state: 'Operate', investmentStrategy: 'Maintain', rto: '24' },
-  { name: 'API-GATEWAY', seal: '88180', team: 'Platform', status: 'healthy', sla: '99.99%', incidents: 0, last: '—',
-    lob: 'CT', subLob: '', cto: 'Stephen Clark', cbt: 'Ajay Mehta', appOwner: 'Kevin Gallagher', cpof: 'Yes', riskRanking: 'High', classification: 'In House', state: 'Operate', investmentStrategy: 'Invest', rto: '4' },
-  { name: 'AUTH-SERVICE-V2', seal: '88180', team: 'Security', status: 'healthy', sla: '99.99%', incidents: 0, last: '—',
-    lob: 'CT', subLob: '', cto: 'Stephen Musacchia', cbt: 'Aju Pillai', appOwner: 'Hannah Morales', cpof: 'Yes', riskRanking: 'High', classification: 'In House', state: 'Operate', investmentStrategy: 'Invest', rto: '4' },
-  { name: 'REDIS-CACHE-CLUSTER', seal: '88180', team: 'Platform', status: 'healthy', sla: '99.9%', incidents: 1, last: '2d ago',
-    lob: 'CT', subLob: '', cto: 'Stephen Clark', cbt: 'Adam DAccordo', appOwner: 'Kevin Gallagher', cpof: 'No', riskRanking: 'Medium', classification: 'Third Party Internal', state: 'Operate', investmentStrategy: 'Maintain', rto: '24' },
-  { name: 'KAFKA-MESSAGE-QUEUE', seal: '88180', team: 'Platform', status: 'healthy', sla: '99.9%', incidents: 1, last: '1d ago',
-    lob: 'CT', subLob: '', cto: 'Stephen Musacchia', cbt: 'Adam DAccordo', appOwner: 'Leo Petrov', cpof: 'No', riskRanking: 'Medium', classification: 'Third Party Internal', state: 'Operate', investmentStrategy: 'Maintain', rto: '24' },
-  { name: 'SPRINGBOOT PROD SERVICE-ORDER', seal: '90215', team: 'Orders', status: 'healthy', sla: '99.0%', incidents: 0, last: '—',
-    lob: 'CIB', subLob: 'Global Banking', cto: 'Rafael Forte', cbt: 'Albert Naclerio', appOwner: 'Jordan Kessler', cpof: 'No', riskRanking: 'Low', classification: 'Third Party Internal', state: 'Operate', investmentStrategy: 'Maintain', rto: '72' },
-  { name: 'SPRINGBOOT PROD SERVICE-QUERY', seal: '90215', team: 'Orders', status: 'healthy', sla: '99.0%', incidents: 0, last: '—',
-    lob: 'CIB', subLob: 'Global Banking', cto: 'Rafael Forte', cbt: 'Albert Naclerio', appOwner: 'Jordan Kessler', cpof: 'No', riskRanking: 'Low', classification: 'Third Party Internal', state: 'Operate', investmentStrategy: 'Maintain', rto: '72' },
-  { name: 'ACTIVE-ADVISORY', seal: '90176', team: 'Advisory', status: 'healthy', sla: '99.0%', incidents: 1, last: '3d ago',
-    lob: 'AWM', subLob: 'AWM Shared', cto: 'Lakith Leelasena', cbt: 'Alison Hickey', appOwner: 'Nathan Brooks', cpof: 'No', riskRanking: 'Low', classification: 'Third Party External', state: 'Operate', investmentStrategy: 'Maintain', rto: '73' },
-  { name: 'IPBOL-CONTACT-SYNC', seal: '90176', team: 'IPBOL', status: 'healthy', sla: '99.0%', incidents: 0, last: '—',
-    lob: 'AWM', subLob: 'Global Private Bank', cto: 'Lakith Leelasena', cbt: 'Aadi Thayyar', appOwner: 'Tara Okonkwo', cpof: 'No', riskRanking: 'Low', classification: 'Third Party External', state: 'Operate', investmentStrategy: 'Divest', rto: 'NRR' },
-  { name: 'IPBOL-MANAGER-AUTH', seal: '90176', team: 'IPBOL', status: 'healthy', sla: '99.5%', incidents: 0, last: '—',
-    lob: 'AWM', subLob: 'Global Private Bank', cto: 'Gitanjali Nistala', cbt: 'Aadi Thayyar', appOwner: 'Tara Okonkwo', cpof: 'No', riskRanking: 'Low', classification: 'Third Party External', state: 'Operate', investmentStrategy: 'Divest', rto: 'NRR' },
-  { name: 'POSTGRES-DB-PRIMARY', seal: '88180', team: 'Database', status: 'critical', sla: '99.99%', incidents: 9, last: '30m ago',
-    lob: 'CT', subLob: '', cto: 'Stephen Clark', cbt: 'Ajay Mehta', appOwner: 'Kevin Gallagher', cpof: 'Yes', riskRanking: 'Critical', classification: 'In House', state: 'Operate', investmentStrategy: 'Invest', rto: '2' },
-  { name: 'EMAIL-NOTIFICATION-SERVICE', seal: '90215', team: 'Messaging', status: 'critical', sla: '99.5%', incidents: 5, last: '1h ago',
-    lob: 'EP', subLob: '', cto: 'Mark Napier', cbt: 'Alex Samsonov', appOwner: 'Diana Reeves', cpof: 'Yes', riskRanking: 'High', classification: 'In House', state: 'Operate', investmentStrategy: 'Maintain', rto: '24' },
-  { name: 'CIB-DIGITAL-ONBOARDING', seal: '90215', team: 'Digital', status: 'healthy', sla: '99.5%', incidents: 0, last: '—',
-    lob: 'CIB', subLob: 'Digital Platform and Services', cto: 'Rich Spencer', cbt: 'Alison Hickey', appOwner: 'Priya Nair', cpof: 'No', riskRanking: 'Not Rated', classification: 'Third Party Internal', state: 'Build', investmentStrategy: 'Invest', rto: '48' },
-  { name: 'CIB-PAYMENTS-GATEWAY', seal: '90215', team: 'Payments', status: 'warning', sla: '99.9%', incidents: 2, last: '3h ago',
-    lob: 'CIB', subLob: 'Payments', cto: 'Rod Thomas', cbt: 'Adrian Cave', appOwner: 'Hannah Morales', cpof: 'Yes', riskRanking: 'High', classification: 'In House', state: 'Operate', investmentStrategy: 'Invest', rto: '4' },
-  { name: 'IP-RISK-ANALYTICS', seal: '90176', team: 'Risk', status: 'healthy', sla: '99.0%', incidents: 0, last: '—',
-    lob: 'IP', subLob: '', cto: 'Michael Heizer', cbt: 'Angus Liu', appOwner: 'Sam Hendricks', cpof: 'No', riskRanking: 'Not Rated', classification: 'Third Party Internal', state: 'Plan', investmentStrategy: 'Maintain', rto: '73' },
+  // ── Asset Management (Product Line 964: Client) ──
+  { name: 'PANDA', seal: '35115', team: 'Client Data', status: 'healthy', sla: '99.9%', incidents: 1, last: '2d ago',
+    lob: 'AWM', subLob: 'Asset Management', cto: 'Gitanjali Nistala', cbt: 'Karthik Rajagopalan', appOwner: 'Debasish Majhi',
+    cpof: 'Yes', riskRanking: 'High', classification: 'In House', state: 'Operate', investmentStrategy: 'Invest', rto: '4',
+    productLine: 'Client', product: 'Client Data', deploymentTypes: ['gap', 'gkp'] },
+  { name: 'Morgan Money', seal: '16649', team: 'Client Data', status: 'critical', sla: '99.9%', incidents: 8, last: '25m ago',
+    lob: 'AWM', subLob: 'Asset Management', cto: 'Jon Glennie', cbt: 'Kalpesh Narkhede', appOwner: 'Dilip Bhanderi',
+    cpof: 'Yes', riskRanking: 'Critical', classification: 'In House', state: 'Operate', investmentStrategy: 'Invest', rto: '4',
+    productLine: 'Client', product: 'Morgan Money', deploymentTypes: ['gap', 'gkp', 'ecs'] },
+
+  // ── Asset Management (Product Line 528: Cross AM) ──
+  { name: 'Spectrum UI', seal: '90556', team: 'Spectrum Core', status: 'healthy', sla: '99.5%', incidents: 0, last: '—',
+    lob: 'AWM', subLob: 'Asset Management', cto: 'Sheetal Gandhi', cbt: 'Alex Feinberg', appOwner: 'Alex Feinberg',
+    cpof: 'Yes', riskRanking: 'High', classification: 'In House', state: 'Operate', investmentStrategy: 'Invest', rto: '4',
+    productLine: 'Cross AM', product: 'Spectrum Core', deploymentTypes: ['gap', 'gkp'] },
+
+  // ── Asset Management (Product Line 965: Global Liquidity Portfolio Management) ──
+  { name: 'Spectrum Trading Money Markets', seal: '106195', team: 'Liquidity Mgmt', status: 'healthy', sla: '99.5%', incidents: 0, last: '—',
+    lob: 'AWM', subLob: 'Asset Management', cto: 'Jon Glennie', cbt: 'Safina Siddiqui', appOwner: 'Safina Siddiqui',
+    cpof: 'Yes', riskRanking: 'High', classification: 'In House', state: 'Operate', investmentStrategy: 'Invest', rto: '4',
+    productLine: 'Global Liquidity Portfolio Management', product: 'Spectrum Trading Money Markets', deploymentTypes: ['gap'] },
+
+  // ── Asset Management (Product Line 365: Investor) ──
+  { name: 'Quantum', seal: '91001', team: 'JPMAIM Platform', status: 'critical', sla: '99.9%', incidents: 6, last: '45m ago',
+    lob: 'AWM', subLob: 'Asset Management', cto: 'Alec Hamby', cbt: 'Michael Hasing', appOwner: 'Michael Hasing',
+    cpof: 'Yes', riskRanking: 'Critical', classification: 'In House', state: 'Operate', investmentStrategy: 'Invest', rto: '4',
+    productLine: 'Investor', product: 'JPMAIM Platform', deploymentTypes: ['gap', 'gkp'] },
+  { name: 'Spectrum Portfolio Management (Equities)', seal: '90215', team: 'Portfolio Mgmt', status: 'healthy', sla: '99.5%', incidents: 1, last: '1d ago',
+    lob: 'AWM', subLob: 'Asset Management', cto: 'Lakith Leelasena', cbt: 'Aadi Thayyar', appOwner: 'Kai Shen',
+    cpof: 'Yes', riskRanking: 'High', classification: 'In House', state: 'Operate', investmentStrategy: 'Invest', rto: '4',
+    productLine: 'Investor', product: 'Portfolio Management', deploymentTypes: ['gap', 'gkp'] },
+  { name: 'AM PMT Routing Service', seal: '107517', team: 'Portfolio Mgmt', status: 'warning', sla: '99.0%', incidents: 3, last: '4h ago',
+    lob: 'AWM', subLob: 'Asset Management', cto: 'Lakith Leelasena', cbt: 'Ashvin Venkatraman', appOwner: 'Richard Song',
+    cpof: 'Yes', riskRanking: 'High', classification: 'In House', state: 'Operate', investmentStrategy: 'Invest', rto: '4',
+    productLine: 'Investor', product: 'Portfolio Management', deploymentTypes: ['gap'] },
+  { name: 'PRISM - IM', seal: '34210', team: 'Portfolio Mgmt', status: 'healthy', sla: '99.5%', incidents: 0, last: '—',
+    lob: 'AWM', subLob: 'Asset Management', cto: 'Lakith Leelasena', cbt: 'Josh Ludmer', appOwner: 'Ritu Vyas',
+    cpof: 'Yes', riskRanking: 'High', classification: 'In House', state: 'Operate', investmentStrategy: 'Invest', rto: '4',
+    productLine: 'Investor', product: 'Portfolio Management', deploymentTypes: ['gap', 'gkp'] },
+  { name: 'ES2', seal: '106127', team: 'Portfolio Mgmt', status: 'healthy', sla: '99.0%', incidents: 0, last: '—',
+    lob: 'AWM', subLob: 'Asset Management', cto: 'Lakith Leelasena', cbt: 'Josh Ludmer', appOwner: 'Smitha Rajasenan',
+    cpof: 'Yes', riskRanking: 'High', classification: 'In House', state: 'Operate', investmentStrategy: 'Invest', rto: '4',
+    productLine: 'Investor', product: 'Portfolio Management', deploymentTypes: ['gap'] },
+  { name: 'Info Hub and Data Oversight', seal: '25705', team: 'Portfolio Mgmt', status: 'warning', sla: '99.5%', incidents: 2, last: '3h ago',
+    lob: 'AWM', subLob: 'Asset Management', cto: 'Lakith Leelasena', cbt: 'Josh Ludmer', appOwner: 'Sushant Tadvalkar',
+    cpof: 'Yes', riskRanking: 'Critical', classification: 'In House', state: 'Operate', investmentStrategy: 'Invest', rto: '4',
+    productLine: 'Investor', product: 'Portfolio Management', deploymentTypes: ['gap', 'gkp'] },
+  { name: 'Spectrum Portfolio Management Multi-Asset', seal: '90645', team: 'Portfolio Mgmt', status: 'healthy', sla: '99.5%', incidents: 0, last: '—',
+    lob: 'AWM', subLob: 'Asset Management', cto: 'Lakith Leelasena', cbt: 'Kent Zheng', appOwner: 'Kelly Silva',
+    cpof: 'Yes', riskRanking: 'High', classification: 'In House', state: 'Operate', investmentStrategy: 'Invest', rto: '4',
+    productLine: 'Investor', product: 'Portfolio Management', deploymentTypes: ['gap', 'gkp'] },
+  { name: 'SPECTRA', seal: '85333', team: 'Portfolio Mgmt', status: 'healthy', sla: '99.5%', incidents: 1, last: '3d ago',
+    lob: 'AWM', subLob: 'Asset Management', cto: 'Lakith Leelasena', cbt: 'Kent Zheng', appOwner: 'Kiran Kadiyala',
+    cpof: 'Yes', riskRanking: 'High', classification: 'In House', state: 'Operate', investmentStrategy: 'Invest', rto: '4',
+    productLine: 'Investor', product: 'Portfolio Management', deploymentTypes: ['gap'] },
+  { name: 'JEDI - J.P. Morgan ETF Data Intelligence', seal: '85589', team: 'Portfolio Mgmt', status: 'critical', sla: '99.9%', incidents: 5, last: '1h ago',
+    lob: 'AWM', subLob: 'Asset Management', cto: 'Lakith Leelasena', cbt: 'Kent Zheng', appOwner: 'Kiran Kadiyala',
+    cpof: 'Yes', riskRanking: 'Critical', classification: 'In House', state: 'Operate', investmentStrategy: 'Invest', rto: '4',
+    productLine: 'Investor', product: 'Portfolio Management', deploymentTypes: ['gap', 'gkp', 'ecs'] },
+  { name: 'GM-Solutions-BMT-Research-HB-Desktop', seal: '86525', team: 'Portfolio Mgmt', status: 'warning', sla: '99.0%', incidents: 2, last: '5h ago',
+    lob: 'AWM', subLob: 'Asset Management', cto: 'Lakith Leelasena', cbt: 'Kent Zheng', appOwner: 'Saurabh Pawse',
+    cpof: 'Yes', riskRanking: 'High', classification: 'In House', state: 'Operate', investmentStrategy: 'Invest', rto: '4',
+    productLine: 'Investor', product: 'Portfolio Management', deploymentTypes: ['gap'] },
+  { name: 'Center Trading', seal: '87082', team: 'Trading', status: 'healthy', sla: '99.5%', incidents: 0, last: '—',
+    lob: 'AWM', subLob: 'Asset Management', cto: 'Lakith Leelasena', cbt: 'Ashvin Venkatraman', appOwner: 'Arat Sharda',
+    cpof: 'Yes', riskRanking: 'High', classification: 'In House', state: 'Operate', investmentStrategy: 'Invest', rto: '4',
+    productLine: 'Investor', product: 'Trading', deploymentTypes: ['gap', 'gkp'] },
+  { name: 'Spectrum Trading', seal: '35206', team: 'Trading', status: 'healthy', sla: '99.5%', incidents: 0, last: '—',
+    lob: 'AWM', subLob: 'Asset Management', cto: 'Lakith Leelasena', cbt: 'Ashvin Venkatraman', appOwner: 'Graeme Walker',
+    cpof: 'Yes', riskRanking: 'High', classification: 'In House', state: 'Operate', investmentStrategy: 'Invest', rto: '4',
+    productLine: 'Investor', product: 'Trading', deploymentTypes: ['gap', 'gkp'] },
+  { name: 'Order Decision Engine', seal: '81884', team: 'Trading', status: 'critical', sla: '99.9%', incidents: 7, last: '30m ago',
+    lob: 'AWM', subLob: 'Asset Management', cto: 'Lakith Leelasena', cbt: 'Ashvin Venkatraman', appOwner: 'Jonathan Hendie',
+    cpof: 'Yes', riskRanking: 'Critical', classification: 'In House', state: 'Operate', investmentStrategy: 'Maintain', rto: '4',
+    productLine: 'Investor', product: 'Trading', deploymentTypes: ['gap', 'gkp', 'ecs'] },
+
+  // ── Asset Management (Product Line 366: Operations) ──
+  { name: 'CMA', seal: '23419', team: 'Middle Office', status: 'healthy', sla: '99.0%', incidents: 0, last: '—',
+    lob: 'AWM', subLob: 'Asset Management', cto: 'Sheetal Gandhi', cbt: 'Alison Hickey', appOwner: 'Jigar Dattani',
+    cpof: 'Yes', riskRanking: 'High', classification: 'In House', state: 'Operate', investmentStrategy: 'Invest', rto: '4',
+    productLine: 'Operations', product: 'AM Middle Office', deploymentTypes: ['gap'] },
+  { name: 'Collateral Management', seal: '31894', team: 'Middle Office', status: 'healthy', sla: '99.0%', incidents: 1, last: '2d ago',
+    lob: 'AWM', subLob: 'Asset Management', cto: 'Sheetal Gandhi', cbt: 'Alison Hickey', appOwner: 'Andrew Love',
+    cpof: 'Yes', riskRanking: 'High', classification: 'In House', state: 'Operate', investmentStrategy: 'Maintain', rto: '4',
+    productLine: 'Operations', product: 'AM Middle Office', deploymentTypes: ['gap'] },
+  { name: 'Ops Party', seal: '16367', team: 'Transaction Mgmt', status: 'warning', sla: '99.0%', incidents: 2, last: '6h ago',
+    lob: 'AWM', subLob: 'Asset Management', cto: 'Sheetal Gandhi', cbt: 'Alison Hickey', appOwner: 'Andrew Love',
+    cpof: 'Yes', riskRanking: 'High', classification: 'In House', state: 'Operate', investmentStrategy: 'Invest', rto: '4',
+    productLine: 'Operations', product: 'AM Transaction Management', deploymentTypes: ['gap'] },
+  { name: 'Salerio', seal: '79946', team: 'Transaction Mgmt', status: 'warning', sla: '99.0%', incidents: 2, last: '5h ago',
+    lob: 'AWM', subLob: 'Asset Management', cto: 'Sheetal Gandhi', cbt: 'Alison Hickey', appOwner: 'Anoop Soni',
+    cpof: 'Yes', riskRanking: 'High', classification: 'In House', state: 'Operate', investmentStrategy: 'Maintain', rto: '4',
+    productLine: 'Operations', product: 'AM Transaction Management', deploymentTypes: ['gap', 'gkp'] },
+  { name: 'TPR Netting', seal: '31572', team: 'Transaction Mgmt', status: 'healthy', sla: '99.0%', incidents: 0, last: '—',
+    lob: 'AWM', subLob: 'Asset Management', cto: 'Sheetal Gandhi', cbt: 'Alison Hickey', appOwner: 'Libin Baby Malayildan',
+    cpof: 'Yes', riskRanking: 'High', classification: 'In House', state: 'Operate', investmentStrategy: 'Maintain', rto: '4',
+    productLine: 'Operations', product: 'AM Transaction Management', deploymentTypes: ['gap'] },
+  { name: 'Custody Messaging', seal: '20082', team: 'Transaction Mgmt', status: 'healthy', sla: '99.0%', incidents: 0, last: '—',
+    lob: 'AWM', subLob: 'Asset Management', cto: 'Sheetal Gandhi', cbt: 'Alison Hickey', appOwner: 'Pradeep Uderani',
+    cpof: 'Yes', riskRanking: 'High', classification: 'In House', state: 'Operate', investmentStrategy: 'Invest', rto: '4',
+    productLine: 'Operations', product: 'AM Transaction Management', deploymentTypes: ['gap'] },
+  { name: 'OneSentinel', seal: '89614', team: 'Guidelines', status: 'warning', sla: '99.0%', incidents: 3, last: '3h ago',
+    lob: 'AWM', subLob: 'Asset Management', cto: 'Sheetal Gandhi', cbt: 'Pradeep Uderani', appOwner: 'Pradeep Uderani',
+    cpof: 'Yes', riskRanking: 'Critical', classification: 'In House', state: 'Operate', investmentStrategy: 'Invest', rto: '4',
+    productLine: 'Operations', product: 'Guidelines', deploymentTypes: ['gap', 'gkp'] },
+  { name: 'Acey-Eagle STARI', seal: '25557', team: 'Investment Acctg', status: 'warning', sla: '99.0%', incidents: 2, last: '7h ago',
+    lob: 'AWM', subLob: 'Asset Management', cto: 'Enrique Smith', cbt: 'Richard Tyburski', appOwner: 'Priya Sharma',
+    cpof: 'Yes', riskRanking: 'High', classification: 'In House', state: 'Operate', investmentStrategy: 'Invest', rto: '4',
+    productLine: 'Operations', product: 'Investment Accounting - Position Service', deploymentTypes: ['gap'] },
+  { name: 'Spectrum Book of Records', seal: '105111', team: 'Investment Acctg', status: 'healthy', sla: '99.0%', incidents: 0, last: '—',
+    lob: 'AWM', subLob: 'Asset Management', cto: 'Enrique Smith', cbt: 'Richard Tyburski', appOwner: 'Priya Sharma',
+    cpof: 'Yes', riskRanking: 'High', classification: 'In House', state: 'Operate', investmentStrategy: 'Invest', rto: '4',
+    productLine: 'Operations', product: 'Investment Accounting - Position Service', deploymentTypes: ['gap', 'gkp'] },
+  { name: 'PODS - Positions ODS', seal: '36176', team: 'Investment Acctg', status: 'healthy', sla: '99.0%', incidents: 0, last: '—',
+    lob: 'AWM', subLob: 'Asset Management', cto: 'Enrique Smith', cbt: 'Thatha Desigan Thirumalai Sangapuram', appOwner: 'Ravi Shankar',
+    cpof: 'Yes', riskRanking: 'High', classification: 'In House', state: 'Operate', investmentStrategy: 'Invest', rto: '4',
+    productLine: 'Operations', product: 'Investment Accounting - Position Service', deploymentTypes: ['gap'] },
+
+  // ── AWM Shared (Product Lines 1004, 1005) ──
+  { name: 'CD: Lite - Asset Data Distribution', seal: '33528', team: 'Ref Data', status: 'healthy', sla: '99.5%', incidents: 0, last: '—',
+    lob: 'AWM', subLob: 'AWM Shared', cto: 'Michael Heizer', cbt: 'Nidhi Verma', appOwner: 'Kavita Kumari Gupta',
+    cpof: 'Yes', riskRanking: 'High', classification: 'In House', state: 'Operate', investmentStrategy: 'Invest', rto: '4',
+    productLine: 'AWM Chief Data Office', product: 'Securities Reference Data', deploymentTypes: ['gap', 'gkp'] },
+  { name: 'AWM Entitlements aka WEAVE', seal: '102987', team: 'Tech Shared Svc', status: 'critical', sla: '99.9%', incidents: 9, last: '15m ago',
+    lob: 'AWM', subLob: 'AWM Shared', cto: 'Joe Pedone', cbt: 'Daniel Bieler', appOwner: 'Chad Thomas',
+    cpof: 'Yes', riskRanking: 'Critical', classification: 'In House', state: 'Operate', investmentStrategy: 'Invest', rto: '4',
+    productLine: 'Tech Shared Services', product: 'A&E - AWM Entitlements and Visibility', deploymentTypes: ['gap', 'gkp', 'ecs'] },
+
+  // ── Global Private Bank (Product Line 367: Advisor, Client, and Servicing) ──
+  { name: 'Connect OS', seal: '68180', team: 'Connect Platform', status: 'healthy', sla: '99.9%', incidents: 0, last: '—',
+    lob: 'AWM', subLob: 'Global Private Bank', cto: 'Rod Thomas', cbt: 'Arun Tummalapalli', appOwner: 'Albina Patel',
+    cpof: 'Yes', riskRanking: 'High', classification: 'In House', state: 'Operate', investmentStrategy: 'Invest', rto: '4',
+    productLine: 'Advisor, Client, and Servicing', product: 'Connect Platform', deploymentTypes: ['gap', 'gkp'] },
+  { name: 'Meridian Batch Platform', seal: '84540', team: 'Party & Account', status: 'healthy', sla: '99.5%', incidents: 1, last: '1d ago',
+    lob: 'AWM', subLob: 'Global Private Bank', cto: 'Rod Thomas', cbt: 'Arun Tummalapalli', appOwner: 'Joe Peluso III',
+    cpof: 'Yes', riskRanking: 'High', classification: 'In House', state: 'Operate', investmentStrategy: 'Invest', rto: '4',
+    productLine: 'Advisor, Client, and Servicing', product: 'Global Party and Account Data', deploymentTypes: ['gap'] },
+  { name: 'Meridian Data Services Platform', seal: '106003', team: 'Party & Account', status: 'warning', sla: '99.0%', incidents: 2, last: '4h ago',
+    lob: 'AWM', subLob: 'Global Private Bank', cto: 'Rod Thomas', cbt: 'Kshipra Sahajpal', appOwner: 'Ravindranath Gnanaiah',
+    cpof: 'Yes', riskRanking: 'High', classification: 'In House', state: 'Operate', investmentStrategy: 'Invest', rto: '4',
+    productLine: 'Advisor, Client, and Servicing', product: 'Global Party and Account Data', deploymentTypes: ['gap', 'gkp'] },
+  { name: 'PAM: GWM Party and Account Maintenance', seal: '85003', team: 'Party & Account', status: 'critical', sla: '99.9%', incidents: 6, last: '40m ago',
+    lob: 'AWM', subLob: 'Global Private Bank', cto: 'Rod Thomas', cbt: 'Kshipra Sahajpal', appOwner: 'Ravindranath Gnanaiah',
+    cpof: 'Yes', riskRanking: 'Critical', classification: 'In House', state: 'Operate', investmentStrategy: 'Invest', rto: '4',
+    productLine: 'Advisor, Client, and Servicing', product: 'Global Party and Account Management', deploymentTypes: ['gap', 'gkp'] },
+  { name: 'RDIO', seal: '83278', team: 'Portfolio Holdings', status: 'healthy', sla: '99.0%', incidents: 0, last: '—',
+    lob: 'AWM', subLob: 'Global Private Bank', cto: 'Rod Thomas', cbt: 'Eddie Hsu', appOwner: 'Varghese George',
+    cpof: 'Yes', riskRanking: 'High', classification: 'In House', state: 'Operate', investmentStrategy: 'Invest', rto: '4',
+    productLine: 'Advisor, Client, and Servicing', product: 'Global Portfolio Holdings', deploymentTypes: ['gap'] },
+  { name: 'Service Connect', seal: '89749', team: 'Service Desktop', status: 'healthy', sla: '99.5%', incidents: 0, last: '—',
+    lob: 'AWM', subLob: 'Global Private Bank', cto: 'Stephen Musacchia', cbt: 'Pranit Pan', appOwner: 'Naveen Kolhapalli',
+    cpof: 'Yes', riskRanking: 'High', classification: 'In House', state: 'Operate', investmentStrategy: 'Invest', rto: '4',
+    productLine: 'Advisor, Client, and Servicing', product: 'Global Service Desktop & Coach', deploymentTypes: ['gap', 'gkp'] },
+  { name: 'Client Service Case Management', seal: '88652', team: 'Service Desktop', status: 'healthy', sla: '99.5%', incidents: 0, last: '—',
+    lob: 'AWM', subLob: 'Global Private Bank', cto: 'Stephen Musacchia', cbt: 'Pranit Pan', appOwner: 'Vinit Patel',
+    cpof: 'Yes', riskRanking: 'High', classification: 'In House', state: 'Operate', investmentStrategy: 'Invest', rto: '4',
+    productLine: 'Advisor, Client, and Servicing', product: 'Global Service Desktop & Coach', deploymentTypes: ['gap'] },
+  { name: 'IPB Payments', seal: '110787', team: 'IPB Banking', status: 'warning', sla: '99.0%', incidents: 2, last: '6h ago',
+    lob: 'AWM', subLob: 'Global Private Bank', cto: 'Mark Napier', cbt: 'Jyoti', appOwner: 'Shilak Chatterjee',
+    cpof: 'Yes', riskRanking: 'High', classification: 'In House', state: 'Operate', investmentStrategy: 'Invest', rto: '4',
+    productLine: 'Advisor, Client, and Servicing', product: 'IPB Banking & Payments', deploymentTypes: ['gap'] },
+  { name: 'IPB Brokerage', seal: '110143', team: 'IPB Execute', status: 'warning', sla: '99.0%', incidents: 3, last: '3h ago',
+    lob: 'AWM', subLob: 'Global Private Bank', cto: 'Mark Napier', cbt: 'John Langley', appOwner: 'Pratibha Dolli',
+    cpof: 'Yes', riskRanking: 'High', classification: 'Third Party Internal', state: 'Operate', investmentStrategy: 'Invest', rto: '4',
+    productLine: 'Advisor, Client, and Servicing', product: 'IPB Execute (Brokerage)', deploymentTypes: ['gkp'] },
+  { name: 'Murex', seal: '22703', team: 'IPB Execute', status: 'critical', sla: '99.9%', incidents: 4, last: '2h ago',
+    lob: 'AWM', subLob: 'Global Private Bank', cto: 'Mark Napier', cbt: 'John Langley', appOwner: 'Ankit Srivastav',
+    cpof: 'Yes', riskRanking: 'Critical', classification: 'In House', state: 'Operate', investmentStrategy: 'Invest', rto: '2',
+    productLine: 'Advisor, Client, and Servicing', product: 'IPB Execute (Brokerage)', deploymentTypes: ['gap', 'gkp'] },
+  { name: 'Payment Connect', seal: '85928', team: 'PBA Payments', status: 'healthy', sla: '99.5%', incidents: 0, last: '—',
+    lob: 'AWM', subLob: 'Global Private Bank', cto: 'Stephen Musacchia', cbt: 'Pranit Pan', appOwner: 'Sunil Kumar',
+    cpof: 'Yes', riskRanking: 'High', classification: 'In House', state: 'Operate', investmentStrategy: 'Invest', rto: '4',
+    productLine: 'Advisor, Client, and Servicing', product: 'PBA Payments', deploymentTypes: ['gap'] },
+  { name: 'Brokerage Connect Trading', seal: '90500', team: 'US Brokerage', status: 'healthy', sla: '99.5%', incidents: 1, last: '2d ago',
+    lob: 'AWM', subLob: 'Global Private Bank', cto: 'Rod Thomas', cbt: 'Navi Sirisena', appOwner: 'Doug Anestad',
+    cpof: 'Yes', riskRanking: 'High', classification: 'In House', state: 'Operate', investmentStrategy: 'Invest', rto: '4',
+    productLine: 'Advisor, Client, and Servicing', product: 'US Brokerage Advisor & Client Experience', deploymentTypes: ['gap', 'gkp'] },
+  { name: 'Global Security Transfer', seal: '102419', team: 'Asset Transfers', status: 'warning', sla: '99.0%', incidents: 2, last: '5h ago',
+    lob: 'AWM', subLob: 'Global Private Bank', cto: 'Stephen Musacchia', cbt: 'Pranit Pan', appOwner: 'Biju Nangelimalli',
+    cpof: 'Yes', riskRanking: 'High', classification: 'In House', state: 'Operate', investmentStrategy: 'Invest', rto: '4',
+    productLine: 'Advisor, Client, and Servicing', product: 'Asset Transfers', deploymentTypes: ['gap'] },
+
+  // ── Global Private Bank (Product Line 368: Operations, Utilities, and Core Data) ──
+  { name: 'IBM Content Manager OnDemand', seal: '18506', team: 'Content', status: 'healthy', sla: '99.0%', incidents: 0, last: '—',
+    lob: 'AWM', subLob: 'Global Private Bank', cto: 'Mark Napier', cbt: 'Marcus Rose', appOwner: 'Kunal Jayakar',
+    cpof: 'Yes', riskRanking: 'High', classification: 'In House', state: 'Operate', investmentStrategy: 'Maintain', rto: '4',
+    productLine: 'Operations, Utilities, and Core Data', product: 'Content Capabilities', deploymentTypes: ['gap'] },
+  { name: 'OLYMPIC', seal: '10340', team: 'IPB Core Banking', status: 'healthy', sla: '99.0%', incidents: 0, last: '—',
+    lob: 'AWM', subLob: 'Global Private Bank', cto: 'Mark Napier', cbt: 'Marcus Rose', appOwner: 'Marcus Rose',
+    cpof: 'Yes', riskRanking: 'High', classification: 'In House', state: 'Operate', investmentStrategy: 'Invest', rto: '4',
+    productLine: 'Operations, Utilities, and Core Data', product: 'IPB Accounting: IPB Core Banking-Olympic', deploymentTypes: ['gap', 'gkp'] },
+  { name: 'WM Swift Middleware', seal: '84065', team: 'IPB Core Banking', status: 'warning', sla: '99.0%', incidents: 3, last: '4h ago',
+    lob: 'AWM', subLob: 'Global Private Bank', cto: 'Rod Thomas', cbt: 'Navi Sirisena', appOwner: 'Mikhavlo Kramarenko',
+    cpof: 'Yes', riskRanking: 'High', classification: 'In House', state: 'Operate', investmentStrategy: 'Invest', rto: '4',
+    productLine: 'Operations, Utilities, and Core Data', product: 'IPB Accounting: IPB Core Banking-Olympic', deploymentTypes: ['gap'] },
+  { name: 'Global Funds Maintenance', seal: '83756', team: 'Mutual Funds', status: 'healthy', sla: '99.0%', incidents: 0, last: '—',
+    lob: 'AWM', subLob: 'Global Private Bank', cto: 'Rod Thomas', cbt: 'Navi Sirisena', appOwner: 'Saurabh Shankar',
+    cpof: 'Yes', riskRanking: 'High', classification: 'In House', state: 'Operate', investmentStrategy: 'Invest', rto: '4',
+    productLine: 'Operations, Utilities, and Core Data', product: 'Mutual Funds and Money Markets', deploymentTypes: ['gap'] },
+  { name: 'PBIS', seal: '10720', team: 'Core Accounting', status: 'healthy', sla: '99.0%', incidents: 1, last: '3d ago',
+    lob: 'AWM', subLob: 'Global Private Bank', cto: 'Stephen Musacchia', cbt: 'James Lee', appOwner: 'Ted Devvoody',
+    cpof: 'Yes', riskRanking: 'High', classification: 'In House', state: 'Operate', investmentStrategy: 'Invest', rto: '4',
+    productLine: 'Operations, Utilities, and Core Data', product: 'USPB Core Accounting and Statements', deploymentTypes: ['gap'] },
+  { name: 'OMNI Core Accounting (OMNITRUST)', seal: '17175', team: 'Core Accounting', status: 'critical', sla: '99.9%', incidents: 5, last: '1h ago',
+    lob: 'AWM', subLob: 'Global Private Bank', cto: 'Stephen Musacchia', cbt: 'Ricky Amin', appOwner: 'Ted Devvoody',
+    cpof: 'Yes', riskRanking: 'Critical', classification: 'In House', state: 'Operate', investmentStrategy: 'Invest', rto: '4',
+    productLine: 'Operations, Utilities, and Core Data', product: 'USPB Core Accounting and Statements', deploymentTypes: ['gap', 'gkp'] },
+  { name: 'WM Task Management', seal: '85233', team: 'Work Orchestration', status: 'healthy', sla: '99.0%', incidents: 0, last: '—',
+    lob: 'AWM', subLob: 'Global Private Bank', cto: 'Stephen Musacchia', cbt: 'Ricky Amin', appOwner: 'Meghal Parikh',
+    cpof: 'Yes', riskRanking: 'High', classification: 'In House', state: 'Operate', investmentStrategy: 'Maintain', rto: '4',
+    productLine: 'Operations, Utilities, and Core Data', product: 'Work Orchestration and Automation', deploymentTypes: ['gap'] },
+
+  // ── Global Private Bank (Product Line 369: Solutions) ──
+  { name: 'ROME - CORE', seal: '80453', team: 'Cross Asset Trading', status: 'healthy', sla: '99.5%', incidents: 0, last: '—',
+    lob: 'AWM', subLob: 'Global Private Bank', cto: 'Rod Thomas', cbt: 'Navi Sirisena', appOwner: 'Indy Ahluwalia',
+    cpof: 'Yes', riskRanking: 'High', classification: 'In House', state: 'Operate', investmentStrategy: 'Maintain', rto: '4',
+    productLine: 'Solutions', product: 'Global Cross Asset Trading (Flow)', deploymentTypes: ['gap', 'gkp'] },
+  { name: 'GWM Global Collateral Management', seal: '90083', team: 'Lending', status: 'healthy', sla: '99.5%', incidents: 1, last: '1d ago',
+    lob: 'AWM', subLob: 'Global Private Bank', cto: 'Stephen Musacchia', cbt: 'Indy Ahluwalia', appOwner: 'Nilanjana Mukherjee',
+    cpof: 'Yes', riskRanking: 'High', classification: 'In House', state: 'Operate', investmentStrategy: 'Invest', rto: '4',
+    productLine: 'Solutions', product: 'Lending', deploymentTypes: ['gap'] },
+  { name: 'PB Loan Origination System', seal: '34387', team: 'Mortgages', status: 'warning', sla: '99.0%', incidents: 2, last: '8h ago',
+    lob: 'AWM', subLob: 'Global Private Bank', cto: 'Vrinda Menon', cbt: 'Albert Naclerio', appOwner: 'Scott Johnson',
+    cpof: 'Yes', riskRanking: 'High', classification: 'Third Party Internal', state: 'Operate', investmentStrategy: 'Maintain', rto: '4',
+    productLine: 'Solutions', product: 'Mortgages', deploymentTypes: ['gkp'] },
+  { name: 'GSTP 2.0', seal: '110850', team: 'Portfolio Impl', status: 'healthy', sla: '99.0%', incidents: 0, last: '—',
+    lob: 'AWM', subLob: 'Global Private Bank', cto: 'Kamesh Karra', cbt: 'Elavasaran Shanmugam', appOwner: 'Rishesh B Prabhakar',
+    cpof: 'Yes', riskRanking: 'High', classification: 'In House', state: 'Operate', investmentStrategy: 'Invest', rto: '4',
+    productLine: 'Solutions', product: 'Portfolio Implementation', deploymentTypes: ['gap', 'gkp'] },
+  { name: 'Discretionary Investments - Charles River', seal: '103290', team: 'Portfolio Impl', status: 'healthy', sla: '99.0%', incidents: 0, last: '—',
+    lob: 'AWM', subLob: 'Global Private Bank', cto: 'Kamesh Karra', cbt: 'Shawn Allavadhi', appOwner: 'John Parker',
+    cpof: 'Yes', riskRanking: 'High', classification: 'In House', state: 'Operate', investmentStrategy: 'Invest', rto: '4',
+    productLine: 'Solutions', product: 'Portfolio Implementation', deploymentTypes: ['gap'] },
+  { name: 'DNV Trading Middleware', seal: '84412', team: 'Portfolio Impl', status: 'healthy', sla: '99.0%', incidents: 0, last: '—',
+    lob: 'AWM', subLob: 'Global Private Bank', cto: 'Rod Thomas', cbt: 'Navi Sirisena', appOwner: 'Alan Donnelly',
+    cpof: 'Yes', riskRanking: 'High', classification: 'In House', state: 'Operate', investmentStrategy: 'Maintain', rto: '4',
+    productLine: 'Solutions', product: 'Portfolio Implementation', deploymentTypes: ['gap', 'gkp'] },
+  { name: 'WM Hibiscus', seal: '86626', team: 'PM Toolkit', status: 'healthy', sla: '99.0%', incidents: 0, last: '—',
+    lob: 'AWM', subLob: 'Global Private Bank', cto: 'Rafael Forte', cbt: 'Tony Wu', appOwner: 'Kelu Gu',
+    cpof: 'Yes', riskRanking: 'High', classification: 'In House', state: 'Operate', investmentStrategy: 'Invest', rto: '4',
+    productLine: 'Solutions', product: 'Portfolio Manager Toolkit & Due Diligence', deploymentTypes: ['gap'] },
+
+  // ── CCB (Consumer & Community Banking) ──
+  { name: 'Chase Mobile Banking Platform', seal: '45210', team: 'Mobile Engineering', status: 'healthy', sla: '99.99%', incidents: 1, last: '2d ago',
+    lob: 'CCB', subLob: '', cto: 'Michael Torres', cbt: 'Sarah Kim', appOwner: 'David Martinez',
+    cpof: 'Yes', riskRanking: 'Critical', classification: 'In House', state: 'Operate', investmentStrategy: 'Invest', rto: '1',
+    productLine: 'Digital Banking', product: 'Mobile Banking', deploymentTypes: ['gkp', 'ecs'] },
+  { name: 'Consumer Lending Gateway', seal: '45320', team: 'Lending Platform', status: 'warning', sla: '99.9%', incidents: 3, last: '3h ago',
+    lob: 'CCB', subLob: '', cto: 'Michael Torres', cbt: 'Sarah Kim', appOwner: 'Jennifer Walsh',
+    cpof: 'Yes', riskRanking: 'High', classification: 'In House', state: 'Operate', investmentStrategy: 'Invest', rto: '4',
+    productLine: 'Consumer Lending', product: 'Lending Platform', deploymentTypes: ['gap', 'gkp'] },
+  { name: 'Retail Branch Operations', seal: '45115', team: 'Branch Tech', status: 'healthy', sla: '99.5%', incidents: 0, last: '—',
+    lob: 'CCB', subLob: '', cto: 'Michael Torres', cbt: 'Robert Nguyen', appOwner: 'Amanda Foster',
+    cpof: 'Yes', riskRanking: 'High', classification: 'In House', state: 'Operate', investmentStrategy: 'Maintain', rto: '4',
+    productLine: 'Branch Services', product: 'Branch Operations', deploymentTypes: ['gap'] },
+  { name: 'Credit Card Processing Engine', seal: '45440', team: 'Cards Platform', status: 'critical', sla: '99.99%', incidents: 5, last: '1h ago',
+    lob: 'CCB', subLob: '', cto: 'Michael Torres', cbt: 'Robert Nguyen', appOwner: 'Carlos Mendez',
+    cpof: 'Yes', riskRanking: 'Critical', classification: 'In House', state: 'Operate', investmentStrategy: 'Invest', rto: '1',
+    productLine: 'Cards & Payments', product: 'Card Processing', deploymentTypes: ['gap', 'gkp', 'ecs'] },
+
+  // ── CDAO (Chief Data & Analytics Office) ──
+  { name: 'Enterprise Data Lake', seal: '52100', team: 'Data Platform', status: 'healthy', sla: '99.5%', incidents: 0, last: '—',
+    lob: 'CDAO', subLob: '', cto: 'David Chen', cbt: 'Priya Patel', appOwner: 'Wei Zhang',
+    cpof: 'Yes', riskRanking: 'High', classification: 'In House', state: 'Operate', investmentStrategy: 'Invest', rto: '4',
+    productLine: 'Data Infrastructure', product: 'Data Lake', deploymentTypes: ['gkp', 'eks'] },
+  { name: 'Analytics Workbench', seal: '52215', team: 'Analytics Eng', status: 'warning', sla: '99.0%', incidents: 2, last: '5h ago',
+    lob: 'CDAO', subLob: '', cto: 'David Chen', cbt: 'Priya Patel', appOwner: 'Maria Gonzalez',
+    cpof: 'Yes', riskRanking: 'High', classification: 'In House', state: 'Operate', investmentStrategy: 'Invest', rto: '8',
+    productLine: 'Analytics', product: 'Self-Service Analytics', deploymentTypes: ['gkp'] },
+  { name: 'Data Quality Hub', seal: '52330', team: 'Data Governance', status: 'healthy', sla: '99.0%', incidents: 0, last: '—',
+    lob: 'CDAO', subLob: '', cto: 'David Chen', cbt: 'Nadia Hussain', appOwner: 'Timothy Brooks',
+    cpof: 'Yes', riskRanking: 'Medium', classification: 'In House', state: 'Operate', investmentStrategy: 'Invest', rto: '8',
+    productLine: 'Data Governance', product: 'Data Quality', deploymentTypes: ['gap', 'gkp'] },
+
+  // ── CIB — Markets ──
+  { name: 'Trade Execution Engine', seal: '60100', team: 'Electronic Trading', status: 'warning', sla: '99.9%', incidents: 3, last: '2h ago',
+    lob: 'CIB', subLob: 'Markets', cto: 'Joe Pedone', cbt: 'Marcus Wong', appOwner: 'Brian Callahan',
+    cpof: 'Yes', riskRanking: 'Critical', classification: 'In House', state: 'Operate', investmentStrategy: 'Invest', rto: '1',
+    productLine: 'Electronic Trading', product: 'Trade Execution', deploymentTypes: ['gap', 'gkp', 'ecs'] },
+  { name: 'FX Trading Platform', seal: '60215', team: 'FX Technology', status: 'healthy', sla: '99.9%', incidents: 1, last: '1d ago',
+    lob: 'CIB', subLob: 'Markets', cto: 'Joe Pedone', cbt: 'Marcus Wong', appOwner: 'Yuki Tanaka',
+    cpof: 'Yes', riskRanking: 'Critical', classification: 'In House', state: 'Operate', investmentStrategy: 'Invest', rto: '1',
+    productLine: 'FX & Rates', product: 'FX Trading', deploymentTypes: ['gap', 'gkp'] },
+
+  // ── CIB — Global Banking ──
+  { name: 'Loan Syndication Platform', seal: '61100', team: 'Syndicated Lending', status: 'healthy', sla: '99.5%', incidents: 0, last: '—',
+    lob: 'CIB', subLob: 'Global Banking', cto: 'Jennifer Liu', cbt: 'Robert Patel', appOwner: 'Michelle Chen',
+    cpof: 'Yes', riskRanking: 'High', classification: 'In House', state: 'Operate', investmentStrategy: 'Invest', rto: '4',
+    productLine: 'Lending', product: 'Syndicated Lending', deploymentTypes: ['gap', 'gkp'] },
+  { name: 'Corporate Treasury Portal', seal: '61220', team: 'Treasury Tech', status: 'warning', sla: '99.5%', incidents: 2, last: '4h ago',
+    lob: 'CIB', subLob: 'Global Banking', cto: 'Jennifer Liu', cbt: 'Robert Patel', appOwner: 'Stephen Hart',
+    cpof: 'Yes', riskRanking: 'High', classification: 'In House', state: 'Operate', investmentStrategy: 'Invest', rto: '4',
+    productLine: 'Treasury Services', product: 'Corporate Treasury', deploymentTypes: ['gap'] },
+
+  // ── CIB — Payments ──
+  { name: 'Real-Time Payments Gateway', seal: '62100', team: 'Payments Core', status: 'critical', sla: '99.99%', incidents: 6, last: '20m ago',
+    lob: 'CIB', subLob: 'Payments', cto: 'Joe Pedone', cbt: 'Alex Rivera', appOwner: 'Raj Krishnan',
+    cpof: 'Yes', riskRanking: 'Critical', classification: 'In House', state: 'Operate', investmentStrategy: 'Invest', rto: '1',
+    productLine: 'Payment Processing', product: 'Real-Time Payments', deploymentTypes: ['gap', 'gkp', 'ecs'] },
+  { name: 'Cross-Border Payments Engine', seal: '62215', team: 'International Pmts', status: 'healthy', sla: '99.9%', incidents: 1, last: '2d ago',
+    lob: 'CIB', subLob: 'Payments', cto: 'Joe Pedone', cbt: 'Alex Rivera', appOwner: 'Elena Popova',
+    cpof: 'Yes', riskRanking: 'High', classification: 'In House', state: 'Operate', investmentStrategy: 'Invest', rto: '2',
+    productLine: 'Payment Processing', product: 'Cross-Border Payments', deploymentTypes: ['gap', 'gkp'] },
+
+  // ── CIB — Digital Platform and Services ──
+  { name: 'CIB Digital Onboarding', seal: '63100', team: 'Digital Platform', status: 'healthy', sla: '99.5%', incidents: 0, last: '—',
+    lob: 'CIB', subLob: 'Digital Platform and Services', cto: 'Jennifer Liu', cbt: 'Samantha Park', appOwner: 'Kevin Byrne',
+    cpof: 'Yes', riskRanking: 'High', classification: 'In House', state: 'Operate', investmentStrategy: 'Invest', rto: '4',
+    productLine: 'Client Onboarding', product: 'Digital Onboarding', deploymentTypes: ['gkp', 'ecs'] },
+  { name: 'API Developer Portal', seal: '63220', team: 'API Platform', status: 'healthy', sla: '99.5%', incidents: 0, last: '—',
+    lob: 'CIB', subLob: 'Digital Platform and Services', cto: 'Jennifer Liu', cbt: 'Samantha Park', appOwner: 'Nathan Ross',
+    cpof: 'Yes', riskRanking: 'Medium', classification: 'In House', state: 'Operate', investmentStrategy: 'Invest', rto: '8',
+    productLine: 'Developer Services', product: 'API Portal', deploymentTypes: ['gkp', 'ecs'] },
+
+  // ── CT (Corporate Technology) ──
+  { name: 'Identity Access Management', seal: '70100', team: 'IAM Engineering', status: 'healthy', sla: '99.99%', incidents: 0, last: '—',
+    lob: 'CT', subLob: '', cto: 'Thomas Anderson', cbt: 'Nicole Chen', appOwner: 'Patricia Williams',
+    cpof: 'Yes', riskRanking: 'Critical', classification: 'In House', state: 'Operate', investmentStrategy: 'Invest', rto: '1',
+    productLine: 'Security', product: 'Identity & Access', deploymentTypes: ['gap', 'gkp'] },
+  { name: 'Enterprise Monitoring Platform', seal: '70215', team: 'Observability', status: 'warning', sla: '99.9%', incidents: 2, last: '6h ago',
+    lob: 'CT', subLob: '', cto: 'Thomas Anderson', cbt: 'Nicole Chen', appOwner: 'Ryan Cooper',
+    cpof: 'Yes', riskRanking: 'High', classification: 'In House', state: 'Operate', investmentStrategy: 'Invest', rto: '2',
+    productLine: 'Observability', product: 'Monitoring', deploymentTypes: ['gkp', 'eks'] },
+  { name: 'Cloud Infrastructure Manager', seal: '70330', team: 'Cloud Eng', status: 'healthy', sla: '99.9%', incidents: 1, last: '3d ago',
+    lob: 'CT', subLob: '', cto: 'Thomas Anderson', cbt: 'Derek Johnson', appOwner: 'Lisa Huang',
+    cpof: 'Yes', riskRanking: 'High', classification: 'In House', state: 'Operate', investmentStrategy: 'Invest', rto: '2',
+    productLine: 'Cloud Platform', product: 'Infrastructure Management', deploymentTypes: ['gkp', 'eks'] },
+  { name: 'Service Mesh Gateway', seal: '70440', team: 'Network Eng', status: 'healthy', sla: '99.9%', incidents: 0, last: '—',
+    lob: 'CT', subLob: '', cto: 'Thomas Anderson', cbt: 'Derek Johnson', appOwner: 'Ahmed Hassan',
+    cpof: 'Yes', riskRanking: 'High', classification: 'In House', state: 'Operate', investmentStrategy: 'Invest', rto: '2',
+    productLine: 'Network Services', product: 'Service Mesh', deploymentTypes: ['gkp'] },
+
+  // ── EP (Employee Platform) ──
+  { name: 'HR Self-Service Portal', seal: '75100', team: 'HR Technology', status: 'healthy', sla: '99.5%', incidents: 0, last: '—',
+    lob: 'EP', subLob: '', cto: 'Lisa Zhang', cbt: 'James Williams', appOwner: 'Sandra Miller',
+    cpof: 'No', riskRanking: 'Medium', classification: 'Third Party Internal', state: 'Operate', investmentStrategy: 'Maintain', rto: '8',
+    productLine: 'HR Services', product: 'Employee Self-Service', deploymentTypes: ['gap'] },
+  { name: 'Learning Management System', seal: '75215', team: 'L&D Technology', status: 'healthy', sla: '99.0%', incidents: 0, last: '—',
+    lob: 'EP', subLob: '', cto: 'Lisa Zhang', cbt: 'James Williams', appOwner: 'Christine Park',
+    cpof: 'No', riskRanking: 'Low', classification: 'Third Party Internal', state: 'Operate', investmentStrategy: 'Maintain', rto: '24',
+    productLine: 'Learning & Development', product: 'LMS', deploymentTypes: ['gap'] },
+
+  // ── IP (Infrastructure Platforms) ──
+  { name: 'Container Orchestration Platform', seal: '80100', team: 'Container Eng', status: 'healthy', sla: '99.99%', incidents: 0, last: '—',
+    lob: 'IP', subLob: '', cto: 'Kumar Raghavan', cbt: 'Patrick Murphy', appOwner: 'Diana Rodriguez',
+    cpof: 'Yes', riskRanking: 'Critical', classification: 'In House', state: 'Operate', investmentStrategy: 'Invest', rto: '1',
+    productLine: 'Container Platform', product: 'Orchestration', deploymentTypes: ['gkp', 'eks'] },
+  { name: 'Network Automation Suite', seal: '80215', team: 'Network Automation', status: 'warning', sla: '99.9%', incidents: 2, last: '4h ago',
+    lob: 'IP', subLob: '', cto: 'Kumar Raghavan', cbt: 'Patrick Murphy', appOwner: 'Marcus Taylor',
+    cpof: 'Yes', riskRanking: 'High', classification: 'In House', state: 'Operate', investmentStrategy: 'Invest', rto: '2',
+    productLine: 'Network Services', product: 'Network Automation', deploymentTypes: ['gap', 'gkp'] },
+  { name: 'DNS & Load Balancer Service', seal: '80330', team: 'Traffic Eng', status: 'healthy', sla: '99.99%', incidents: 1, last: '5d ago',
+    lob: 'IP', subLob: '', cto: 'Kumar Raghavan', cbt: 'Rachel Kim', appOwner: 'Frank Morrison',
+    cpof: 'Yes', riskRanking: 'Critical', classification: 'In House', state: 'Operate', investmentStrategy: 'Invest', rto: '1',
+    productLine: 'Network Services', product: 'DNS & Load Balancing', deploymentTypes: ['gap', 'gkp'] },
 ]
 
 export const SUB_LOB_MAP = {
@@ -53,46 +363,84 @@ export const SUB_LOB_MAP = {
   CIB: ['Digital Platform and Services', 'Global Banking', 'Markets', 'Payments'],
 }
 
-export const FILTER_FIELDS = [
-  { key: 'seal',               label: 'App' },
-  { key: 'lob',                label: 'LOB' },
-  { key: 'subLob',             label: 'Sub LOB' },
-  { key: 'cto',                label: 'CTO' },
-  { key: 'cbt',                label: 'CBT' },
-  { key: 'appOwner',           label: 'App Owner' },
-  { key: 'cpof',               label: 'CPOF' },
-  { key: 'riskRanking',        label: 'Risk Ranking' },
-  { key: 'classification',     label: 'Classification' },
-  { key: 'state',              label: 'State' },
-  { key: 'investmentStrategy', label: 'Investment Strategy' },
-  { key: 'rto',                label: 'RTO' },
+// Filter fields organized into conceptual groups
+export const FILTER_GROUPS = [
+  { label: 'Business', keys: [
+    { key: 'lob',         label: 'LOB' },
+    { key: 'subLob',      label: 'Sub LOB' },
+  ]},
+  { label: 'People', keys: [
+    { key: 'cto',      label: 'CTO' },
+    { key: 'cbt',      label: 'CBT' },
+    { key: 'appOwner', label: 'App Owner' },
+  ]},
+  { label: 'Application', keys: [
+    { key: 'seal',               label: 'Application' },
+    { key: 'cpof',               label: 'CPOF' },
+    { key: 'riskRanking',        label: 'Risk Ranking' },
+    { key: 'classification',     label: 'Classification' },
+    { key: 'state',              label: 'State' },
+    { key: 'investmentStrategy', label: 'Investment Strategy' },
+    { key: 'rto',                label: 'RTO' },
+  ]},
+  { label: 'Infrastructure', keys: [
+    { key: 'deploymentTypes', label: 'Deployment' },
+  ]},
 ]
 
-export const SEAL_DISPLAY = {
-  '90176': 'Advisor Connect - 90176',
-  '90215': 'Spectrum Portfolio Mgmt - 90215',
-  '88180': 'Connect OS - 88180',
+// Flat list for backward compat (ScopeBar iteration, etc.)
+export const FILTER_FIELDS = FILTER_GROUPS.flatMap(g => g.keys)
+
+// Auto-generate SEAL display from APPS
+export const SEAL_DISPLAY = Object.fromEntries(
+  APPS.map(a => [a.seal, `${a.name} - ${a.seal}`])
+)
+
+// Deployment type display labels
+export const DEPLOY_TYPE_DISPLAY = {
+  gap: 'GAP',
+  gkp: 'GKP',
+  ecs: 'ECS',
+  eks: 'EKS',
 }
 
-export function getFilterOptions(fieldKey, activeFilters = {}) {
+/**
+ * Get available filter options for a given field.
+ * @param {string} fieldKey — the field to get options for
+ * @param {Array} candidateApps — apps matching all OTHER active filters (for cascading)
+ * @param {Object} activeFilters — current active filters (for subLob → LOB dependency)
+ */
+export function getFilterOptions(fieldKey, candidateApps = APPS, activeFilters = {}) {
   if (fieldKey === 'subLob') {
     const selectedLobs = activeFilters.lob || []
     const lobsWithSubs = selectedLobs.length > 0
       ? selectedLobs.filter(l => SUB_LOB_MAP[l])
       : Object.keys(SUB_LOB_MAP)
-    return lobsWithSubs.flatMap(l => SUB_LOB_MAP[l]).sort()
+    const validSubs = new Set(lobsWithSubs.flatMap(l => SUB_LOB_MAP[l]))
+    return [...new Set(candidateApps.map(a => a.subLob).filter(v => v && validSubs.has(v)))].sort()
   }
   if (fieldKey === 'cpof') return ['Yes', 'No']
   if (fieldKey === 'seal') {
-    return [...new Set(APPS.map(a => a[fieldKey]).filter(Boolean))]
+    return [...new Set(candidateApps.map(a => a.seal).filter(Boolean))]
       .sort()
       .map(s => SEAL_DISPLAY[s] || s)
   }
-  return [...new Set(APPS.map(a => a[fieldKey]).filter(Boolean))].sort()
+  if (fieldKey === 'deploymentTypes') {
+    return [...new Set(candidateApps.flatMap(a => a.deploymentTypes || []))]
+      .sort()
+      .map(t => DEPLOY_TYPE_DISPLAY[t] || t.toUpperCase())
+  }
+  return [...new Set(candidateApps.map(a => a[fieldKey]).filter(Boolean))].sort()
 }
 
 // Extract raw SEAL value from display format
 export function parseSealDisplay(display) {
   const match = display.match(/- (\d+)$/)
   return match ? match[1] : display
+}
+
+// Reverse-map deployment display label to raw value
+export function parseDeployDisplay(display) {
+  const reverse = Object.fromEntries(Object.entries(DEPLOY_TYPE_DISPLAY).map(([k, v]) => [v, k]))
+  return reverse[display] || display.toLowerCase()
 }

@@ -1,7 +1,8 @@
 import { useRef, useEffect } from 'react'
 import {
-  Popover, Box, Typography, InputBase, IconButton, Chip,
-  Autocomplete, TextField, Checkbox,
+  Popper, Box, Typography, IconButton, Chip,
+  Autocomplete, TextField, Checkbox, Paper,
+  ClickAwayListener,
 } from '@mui/material'
 import SearchIcon from '@mui/icons-material/Search'
 import CloseIcon from '@mui/icons-material/Close'
@@ -9,30 +10,24 @@ import TuneIcon from '@mui/icons-material/Tune'
 import CheckBoxOutlineBlankIcon from '@mui/icons-material/CheckBoxOutlineBlank'
 import CheckBoxIcon from '@mui/icons-material/CheckBox'
 import { useFilters } from '../FilterContext'
-import { FILTER_FIELDS, getFilterOptions, SUB_LOB_MAP } from '../data/appData'
+import { FILTER_GROUPS, FILTER_FIELDS, APPS, getFilterOptions, SUB_LOB_MAP } from '../data/appData'
 
-const fBody  = { fontSize: 'clamp(0.72rem, 0.95vw, 0.82rem)' }
-const fSmall = { fontSize: 'clamp(0.58rem, 0.78vw, 0.68rem)' }
-const fTiny  = { fontSize: 'clamp(0.55rem, 0.72vw, 0.64rem)' }
+const fBody  = { fontSize: 'clamp(0.8rem, 1vw, 0.9rem)' }
+const fSmall = { fontSize: 'clamp(0.7rem, 0.9vw, 0.8rem)' }
+const fTiny  = { fontSize: 'clamp(0.65rem, 0.82vw, 0.74rem)' }
 
 const checkIcon     = <CheckBoxIcon sx={{ fontSize: 16 }} />
 const uncheckIcon   = <CheckBoxOutlineBlankIcon sx={{ fontSize: 16 }} />
 
-// Filters that have short values — fit 3 per row
-const COMPACT_KEYS = new Set(['lob', 'cpof', 'state', 'rto', 'riskRanking'])
-
-// Organize filters into labeled groups for visual clarity
-const FILTER_GROUPS = [
-  { label: 'Taxonomy',          keys: ['lob', 'subLob', 'seal', 'state', 'classification', 'investmentStrategy'] },
-  { label: 'People',            keys: ['cto', 'cbt', 'appOwner'] },
-  { label: 'Risk & Compliance', keys: ['cpof', 'riskRanking', 'rto'] },
-]
+// Fields that span full width (single column)
+const FULL_WIDTH_KEYS = new Set(['seal', 'appOwner', 'deploymentTypes'])
 
 export default function SearchFilterPopover({ anchorEl, open, onClose }) {
   const {
     searchText, setSearchText,
     activeFilters, setFilterValues, clearFilter, clearAllFilters,
     filteredApps, totalApps, activeFilterCount,
+    getCandidateApps, searchSuggestions,
   } = useFilters()
 
   const inputRef = useRef(null)
@@ -52,96 +47,140 @@ export default function SearchFilterPopover({ anchorEl, open, onClose }) {
 
   const hasAnyFilter = activeFilterCount > 0 || searchText.length > 0
 
-  const renderFilterField = (key) => {
-    const field = FILTER_FIELDS.find(f => f.key === key)
-    if (!field) return null
-    const { label } = field
-
+  const renderFilterField = ({ key, label }) => {
     const subLobDisabled = key === 'subLob' &&
       !(activeFilters.lob || []).some(l => SUB_LOB_MAP[l])
 
-    const selectedCount = (activeFilters[key] || []).length
+    const selected = activeFilters[key] || []
+    const selectedCount = selected.length
+
+    // Dependency-aware: get options from apps matching all OTHER filters
+    const candidateApps = getCandidateApps(key)
+    const options = getFilterOptions(key, candidateApps, activeFilters)
+
+    // Show narrowing indicator
+    const fullOptions = getFilterOptions(key, APPS, {})
+    const isNarrowed = options.length < fullOptions.length
+    const displayLabel = subLobDisabled
+      ? 'Sub LOB (select AWM / CIB)'
+      : isNarrowed
+        ? `${label} (${options.length} of ${fullOptions.length})`
+        : label
 
     return (
-      <Autocomplete
-        key={key}
-        multiple
-        size="small"
-        disabled={subLobDisabled}
-        options={getFilterOptions(key, activeFilters)}
-        value={activeFilters[key] || []}
-        onChange={(_, newVal) => setFilterValues(key, newVal)}
-        disableCloseOnSelect
-        limitTags={1}
-        renderOption={(props, option, { selected }) => {
-          const { key: liKey, ...rest } = props
-          return (
-            <li key={liKey} {...rest} style={{ ...rest.style, padding: '1px 8px', minHeight: 26 }}>
-              <Checkbox
-                icon={uncheckIcon}
-                checkedIcon={checkIcon}
-                checked={selected}
-                sx={{ p: 0, mr: 0.75 }}
-                size="small"
-              />
-              <Typography noWrap sx={{ ...fTiny, lineHeight: 1.2 }}>{option}</Typography>
-            </li>
-          )
-        }}
-        ListboxProps={{
-          sx: {
-            maxHeight: 180,
-            '& .MuiAutocomplete-option': { py: 0.15, minHeight: 26 },
-          },
-        }}
-        renderInput={(params) => (
-          <TextField {...params}
-            label={subLobDisabled ? 'Sub LOB (select AWM / CIB)' : (
-              selectedCount > 0 ? `${label} (${selectedCount})` : label
-            )}
-            variant="outlined" size="small"
-            sx={{
-              '& .MuiInputLabel-root': { ...fSmall, transform: 'translate(10px, 6px) scale(1)' },
-              '& .MuiInputLabel-shrunk': { transform: 'translate(14px, -6px) scale(0.85)' },
-              '& .MuiInputBase-root': {
-                ...fSmall, borderRadius: 1.5, minHeight: 32, py: '2px !important',
-              },
-              '& .MuiOutlinedInput-notchedOutline': { borderRadius: 1.5 },
-            }}
-          />
+      <Box key={key}>
+        <Autocomplete
+          multiple
+          size="small"
+          disabled={subLobDisabled}
+          options={options}
+          value={selected}
+          onChange={(_, newVal) => setFilterValues(key, newVal)}
+          disableCloseOnSelect
+          renderOption={(props, option, { selected: sel }) => {
+            const { key: liKey, ...rest } = props
+            return (
+              <li key={liKey} {...rest} style={{ ...rest.style, padding: '2px 10px', minHeight: 28 }}>
+                <Checkbox
+                  icon={uncheckIcon}
+                  checkedIcon={checkIcon}
+                  checked={sel}
+                  sx={{ p: 0, mr: 0.75 }}
+                  size="small"
+                />
+                <Typography noWrap sx={{ ...fSmall, lineHeight: 1.3 }}>{option}</Typography>
+              </li>
+            )
+          }}
+          ListboxProps={{
+            sx: {
+              maxHeight: 200,
+              '& .MuiAutocomplete-option': { py: 0.25, minHeight: 28 },
+            },
+          }}
+          renderInput={(params) => (
+            <TextField {...params}
+              label={displayLabel}
+              variant="outlined" size="small"
+              InputLabelProps={{ ...params.InputLabelProps, shrink: true }}
+              sx={{
+                '& .MuiInputLabel-root': {
+                  ...fSmall,
+                  transform: 'translate(14px, -6px) scale(0.85)',
+                },
+                '& .MuiInputBase-root': {
+                  ...fSmall, borderRadius: 1.5, minHeight: 40, py: '5px !important',
+                },
+                '& .MuiOutlinedInput-notchedOutline': { borderRadius: 1.5 },
+              }}
+            />
+          )}
+          renderTags={(tagValue, getTagProps) =>
+            tagValue.map((option, index) => {
+              const { key: tagKey, ...tagRest } = getTagProps({ index })
+              return (
+                <Chip
+                  key={tagKey}
+                  {...tagRest}
+                  label={option}
+                  size="small"
+                  sx={{
+                    height: 24, ...fTiny, borderRadius: 0.75, maxWidth: 160,
+                    bgcolor: (t) => t.palette.mode === 'dark' ? 'rgba(96,165,250,0.15)' : 'rgba(21,101,192,0.08)',
+                    border: '1px solid',
+                    borderColor: (t) => t.palette.mode === 'dark' ? 'rgba(96,165,250,0.25)' : 'rgba(21,101,192,0.2)',
+                    '& .MuiChip-deleteIcon': { fontSize: 12 },
+                  }}
+                />
+              )
+            })
+          }
+          sx={{
+            '& .MuiAutocomplete-inputRoot': { flexWrap: 'wrap', gap: '3px' },
+          }}
+        />
+        {/* Selected count badge below field when many are selected */}
+        {selectedCount > 2 && (
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mt: 0.25, ml: 0.5 }}>
+            <Typography sx={{ ...fTiny, color: 'primary.main', fontWeight: 600 }}>
+              {selectedCount} selected
+            </Typography>
+            <Typography
+              onClick={() => clearFilter(key)}
+              sx={{ ...fTiny, color: 'text.disabled', cursor: 'pointer', '&:hover': { color: 'error.main' } }}
+            >
+              clear
+            </Typography>
+          </Box>
         )}
-        sx={{
-          '& .MuiChip-root': { height: 18, ...fTiny, borderRadius: 0.75, maxWidth: 90 },
-          '& .MuiAutocomplete-tag': { maxWidth: 90, my: 0 },
-          '& .MuiAutocomplete-inputRoot': { flexWrap: 'nowrap', overflow: 'hidden' },
-        }}
-      />
+      </Box>
     )
   }
 
+  if (!open || !anchorEl) return null
+
   return (
-    <Popover
+    <Popper
       open={open}
       anchorEl={anchorEl}
-      onClose={onClose}
-      anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-      transformOrigin={{ vertical: 'top', horizontal: 'right' }}
-      slotProps={{ paper: { elevation: 8 } }}
-      PaperProps={{
-        sx: {
-          width: 640,
-          maxHeight: 620,
-          bgcolor: 'background.paper',
-          border: '1px solid',
-          borderColor: 'divider',
-          borderRadius: 3,
-          mt: 1,
-          overflow: 'hidden',
-          display: 'flex',
-          flexDirection: 'column',
-        },
-      }}
+      placement="bottom-end"
+      style={{ zIndex: 1300 }}
     >
+      <ClickAwayListener onClickAway={onClose}>
+      <Paper elevation={8} sx={{
+        width: 1008,
+        minWidth: 1008,
+        minHeight: 600,
+        maxHeight: '85vh',
+        bgcolor: 'background.paper',
+        border: '1px solid',
+        borderColor: 'divider',
+        borderRadius: 3,
+        mt: 1,
+        overflow: 'hidden',
+        display: 'flex',
+        flexDirection: 'column',
+      }}>
       {/* Header */}
       <Box sx={{
         px: 2.5, pt: 2, pb: 1.5,
@@ -175,34 +214,86 @@ export default function SearchFilterPopover({ anchorEl, open, onClose }) {
           </IconButton>
         </Box>
 
-        {/* Search input */}
-        <Box sx={{
-          display: 'flex', alignItems: 'center', gap: 1,
-          px: 1.5, py: 0.5,
-          borderRadius: 2,
-          bgcolor: 'background.paper',
-          border: '1px solid',
-          borderColor: (t) => t.palette.mode === 'dark' ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.12)',
-          '&:focus-within': {
-            borderColor: 'primary.main',
-            boxShadow: (t) => `0 0 0 2px ${t.palette.mode === 'dark' ? 'rgba(96,165,250,0.2)' : 'rgba(21,101,192,0.15)'}`,
-          },
-          transition: 'border-color 0.15s, box-shadow 0.15s',
-        }}>
-          <SearchIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
-          <InputBase
-            inputRef={inputRef}
-            placeholder="Search by name, SEAL, team, owner, CTO..."
-            value={searchText}
-            onChange={(e) => setSearchText(e.target.value)}
-            sx={{ flex: 1, ...fBody }}
-          />
-          {searchText && (
-            <IconButton size="small" onClick={() => setSearchText('')} sx={{ p: 0.25 }}>
-              <CloseIcon sx={{ fontSize: 14 }} />
-            </IconButton>
+        {/* Type-ahead search */}
+        <Autocomplete
+          freeSolo
+          options={searchSuggestions}
+          getOptionLabel={(opt) => typeof opt === 'string' ? opt : opt.value}
+          inputValue={searchText}
+          onInputChange={(_, v, reason) => {
+            if (reason !== 'reset') setSearchText(v)
+          }}
+          onChange={(_, val) => {
+            if (val && typeof val === 'object' && val.value) {
+              if (val.filterKey) {
+                // Add as a filter value (use filterValue which may differ from display value)
+                const fv = val.filterValue || val.value
+                const current = activeFilters[val.filterKey] || []
+                if (!current.includes(fv)) {
+                  setFilterValues(val.filterKey, [...current, fv])
+                }
+                setSearchText('')
+              } else {
+                // No filter key (e.g. Team) — use as search text
+                setSearchText(val.value)
+              }
+            }
+          }}
+          filterOptions={(x) => x}
+          PaperComponent={(props) => (
+            <Paper {...props} sx={{ ...props.sx, mt: 0.5, border: '1px solid', borderColor: 'divider', borderRadius: 2 }} />
           )}
-        </Box>
+          renderOption={(props, opt) => {
+            const { key: liKey, ...rest } = props
+            return (
+              <li key={liKey} {...rest} style={{ ...rest.style, padding: '4px 12px', display: 'flex', gap: 8, alignItems: 'center' }}>
+                <Typography sx={{ ...fTiny, color: 'text.disabled', minWidth: 40 }}>{opt.field}</Typography>
+                <Typography sx={{ ...fSmall, fontWeight: 600 }} noWrap>{opt.value}</Typography>
+              </li>
+            )
+          }}
+          ListboxProps={{ sx: { maxHeight: 200, '& .MuiAutocomplete-option': { minHeight: 28 } } }}
+          renderInput={(params) => (
+            <TextField
+              {...params}
+              inputRef={inputRef}
+              placeholder="Search by name, SEAL, team, owner, CTO, CBT, product..."
+              variant="outlined"
+              size="small"
+              InputProps={{
+                ...params.InputProps,
+                startAdornment: (
+                  <>
+                    <SearchIcon sx={{ fontSize: 16, color: 'text.secondary', mr: 0.5 }} />
+                    {params.InputProps.startAdornment}
+                  </>
+                ),
+                endAdornment: (
+                  <>
+                    {searchText && (
+                      <IconButton size="small" onClick={() => setSearchText('')} sx={{ p: 0.25 }}>
+                        <CloseIcon sx={{ fontSize: 14 }} />
+                      </IconButton>
+                    )}
+                  </>
+                ),
+              }}
+              sx={{
+                '& .MuiInputBase-root': {
+                  ...fBody, borderRadius: 2, bgcolor: 'background.paper',
+                  border: '1px solid',
+                  borderColor: (t) => t.palette.mode === 'dark' ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.12)',
+                  '&:focus-within': {
+                    borderColor: 'primary.main',
+                    boxShadow: (t) => `0 0 0 2px ${t.palette.mode === 'dark' ? 'rgba(96,165,250,0.2)' : 'rgba(21,101,192,0.15)'}`,
+                  },
+                },
+                '& .MuiOutlinedInput-notchedOutline': { border: 'none' },
+              }}
+            />
+          )}
+          sx={{ width: '100%' }}
+        />
       </Box>
 
       {/* Active filter chips */}
@@ -244,11 +335,11 @@ export default function SearchFilterPopover({ anchorEl, open, onClose }) {
       )}
 
       {/* Filter groups */}
-      <Box sx={{ flex: 1, overflow: 'auto', px: 2.5, py: 1.25 }}>
+      <Box sx={{ flex: 1, overflow: 'auto', px: 2.5, py: 1.5 }}>
         {FILTER_GROUPS.map((group) => (
-          <Box key={group.label} sx={{ mb: 1.5, '&:last-child': { mb: 0 } }}>
+          <Box key={group.label} sx={{ mb: 2, '&:last-child': { mb: 0 } }}>
             {/* Group label */}
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 0.75 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 1 }}>
               <TuneIcon sx={{ fontSize: 12, color: 'text.disabled' }} />
               <Typography fontWeight={700} color="text.secondary"
                 sx={{ textTransform: 'uppercase', letterSpacing: 0.8, ...fTiny }}>
@@ -257,17 +348,17 @@ export default function SearchFilterPopover({ anchorEl, open, onClose }) {
               <Box sx={{ flex: 1, height: '1px', bgcolor: 'divider', ml: 0.5 }} />
             </Box>
 
-            {/* Filters in this group — 3 cols for compact, 2 cols for wide */}
+            {/* Filters — 2 columns, full-width for certain fields */}
             <Box sx={{
               display: 'grid',
-              gridTemplateColumns: 'repeat(3, 1fr)',
-              gap: 1,
+              gridTemplateColumns: 'repeat(2, 1fr)',
+              gap: 1.25,
             }}>
-              {group.keys.map((key) => {
-                const isWide = !COMPACT_KEYS.has(key)
+              {group.keys.map((fieldDef) => {
+                const isFullWidth = FULL_WIDTH_KEYS.has(fieldDef.key)
                 return (
-                  <Box key={key} sx={{ gridColumn: isWide ? 'span 2' : 'span 1' }}>
-                    {renderFilterField(key)}
+                  <Box key={fieldDef.key} sx={{ gridColumn: isFullWidth ? 'span 2' : 'span 1' }}>
+                    {renderFilterField(fieldDef)}
                   </Box>
                 )
               })}
@@ -295,6 +386,8 @@ export default function SearchFilterPopover({ anchorEl, open, onClose }) {
           </Typography>
         )}
       </Box>
-    </Popover>
+    </Paper>
+    </ClickAwayListener>
+    </Popper>
   )
 }

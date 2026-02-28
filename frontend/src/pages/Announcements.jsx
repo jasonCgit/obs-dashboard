@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useMemo, useRef, lazy, Suspense } from 'react'
+import { useTheme } from '@mui/material/styles'
 import {
   Container, Typography, Box, Card, CardContent, Chip, Divider,
   ToggleButtonGroup, ToggleButton, TextField, InputAdornment,
@@ -184,6 +185,8 @@ function SectionHeader({ children }) {
 }
 
 export default function Announcements() {
+  const theme = useTheme()
+  const isDark = theme.palette.mode === 'dark'
   const [data, setData]             = useState([])
   const [filter, setFilter]         = useState('all')
   const [search, setSearch]         = useState('')
@@ -632,18 +635,24 @@ export default function Announcements() {
                   <Box sx={{
                     '& .quill': { borderRadius: 1 },
                     '& .ql-toolbar': {
-                      borderColor: 'rgba(255,255,255,0.15)', borderRadius: '4px 4px 0 0',
-                      '& .ql-stroke': { stroke: 'rgba(255,255,255,0.55)' },
-                      '& .ql-fill': { fill: 'rgba(255,255,255,0.55)' },
-                      '& .ql-picker-label': { color: 'rgba(255,255,255,0.55)' },
-                      '& .ql-picker-options': { bgcolor: '#1e1e1e', border: '1px solid rgba(255,255,255,0.15)' },
+                      borderColor: isDark ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.23)',
+                      borderRadius: '4px 4px 0 0',
+                      '& .ql-stroke': { stroke: isDark ? 'rgba(255,255,255,0.55)' : 'rgba(0,0,0,0.6)' },
+                      '& .ql-fill': { fill: isDark ? 'rgba(255,255,255,0.55)' : 'rgba(0,0,0,0.6)' },
+                      '& .ql-picker-label': { color: isDark ? 'rgba(255,255,255,0.55)' : 'rgba(0,0,0,0.6)' },
+                      '& .ql-picker-options': {
+                        bgcolor: isDark ? '#1e1e1e' : '#ffffff',
+                        border: isDark ? '1px solid rgba(255,255,255,0.15)' : '1px solid rgba(0,0,0,0.2)',
+                      },
                     },
                     '& .ql-container': {
-                      borderColor: 'rgba(255,255,255,0.15)', borderRadius: '0 0 4px 4px',
-                      minHeight: 180, fontSize: '0.85rem', color: 'rgba(255,255,255,0.87)',
+                      borderColor: isDark ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.23)',
+                      borderRadius: '0 0 4px 4px',
+                      minHeight: 180, fontSize: '0.85rem',
+                      color: isDark ? 'rgba(255,255,255,0.87)' : 'rgba(0,0,0,0.87)',
                     },
                     '& .ql-editor': { minHeight: 180 },
-                    '& .ql-editor.ql-blank::before': { color: 'rgba(255,255,255,0.35)' },
+                    '& .ql-editor.ql-blank::before': { color: isDark ? 'rgba(255,255,255,0.35)' : 'rgba(0,0,0,0.4)' },
                   }}>
                     <Suspense fallback={<Box sx={{ p: 2, color: 'text.secondary', fontSize: '0.82rem' }}>Loading editor...</Box>}>
                       <ReactQuill theme="snow" value={form.email_body} onChange={v => f('email_body', v)}
@@ -753,15 +762,15 @@ export default function Announcements() {
                   <Typography variant="caption" sx={{ fontSize: '0.72rem', color: 'text.secondary', mb: 0.5, display: 'block', fontWeight: 600 }}>
                     Please select user interface(s) with WEAVE function
                   </Typography>
-                  <TableContainer component={Paper} variant="outlined" sx={{ maxHeight: 240 }}>
+                  <TableContainer component={Paper} variant="outlined" sx={{ maxHeight: 240, bgcolor: 'background.default' }}>
                     <Table size="small" stickyHeader>
                       <TableHead>
                         <TableRow>
-                          <TableCell padding="checkbox" />
-                          <TableCell sx={{ fontSize: '0.72rem', fontWeight: 700 }}>User Interface Title</TableCell>
-                          <TableCell sx={{ fontSize: '0.72rem', fontWeight: 700 }}>User Interface Name</TableCell>
-                          <TableCell sx={{ fontSize: '0.72rem', fontWeight: 700 }}>WEAVE Function</TableCell>
-                          <TableCell sx={{ fontSize: '0.72rem', fontWeight: 700 }}>SEAL ID</TableCell>
+                          <TableCell padding="checkbox" sx={{ bgcolor: 'background.default' }} />
+                          <TableCell sx={{ fontSize: '0.72rem', fontWeight: 700, bgcolor: 'background.default' }}>User Interface Title</TableCell>
+                          <TableCell sx={{ fontSize: '0.72rem', fontWeight: 700, bgcolor: 'background.default' }}>User Interface Name</TableCell>
+                          <TableCell sx={{ fontSize: '0.72rem', fontWeight: 700, bgcolor: 'background.default' }}>WEAVE Function</TableCell>
+                          <TableCell sx={{ fontSize: '0.72rem', fontWeight: 700, bgcolor: 'background.default' }}>SEAL ID</TableCell>
                         </TableRow>
                       </TableHead>
                       <TableBody>
@@ -940,7 +949,7 @@ function AnnouncementCard({ a, onEdit, onToggle, onDelete }) {
           <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap', mb: 0.75 }}>
             {a.impacted_apps.map(app => (
               <Chip key={app} label={app} size="small" variant="outlined"
-                sx={{ height: 18, fontSize: '0.62rem', borderColor: 'rgba(255,255,255,0.15)' }} />
+                sx={{ height: 18, fontSize: '0.62rem', borderColor: (t) => t.palette.mode === 'dark' ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.23)' }} />
             ))}
           </Box>
         )}

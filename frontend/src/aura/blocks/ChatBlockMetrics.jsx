@@ -80,9 +80,9 @@ export default function ChatBlockMetrics({ data }) {
             key={i}
             sx={{
               py: 1, px: 1.25, borderRadius: 1.5,
-              bgcolor: t => t.palette.mode === 'dark' ? `${m.color}18` : `${m.color}0a`,
+              bgcolor: t => t.palette.mode === 'dark' ? `${m.color}18` : `${m.color}14`,
               border: '1px solid',
-              borderColor: t => t.palette.mode === 'dark' ? `${m.color}40` : `${m.color}22`,
+              borderColor: t => t.palette.mode === 'dark' ? `${m.color}40` : `${m.color}35`,
             }}
           >
             <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -120,7 +120,7 @@ export default function ChatBlockMetrics({ data }) {
               </Box>
               {Icon && (
                 <Box sx={{
-                  bgcolor: t => t.palette.mode === 'dark' ? `${m.color}22` : `${m.color}12`,
+                  bgcolor: t => t.palette.mode === 'dark' ? `${m.color}22` : `${m.color}1a`,
                   borderRadius: '50%', p: 0.75, display: 'flex', flexShrink: 0,
                 }}>
                   <Icon sx={{ color: m.color, fontSize: 16 }} />

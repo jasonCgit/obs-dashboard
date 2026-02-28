@@ -7,7 +7,6 @@ import CloseIcon          from '@mui/icons-material/Close'
 import AutoAwesomeIcon    from '@mui/icons-material/AutoAwesome'
 import HomeIcon           from '@mui/icons-material/Home'
 import ViewQuiltIcon      from '@mui/icons-material/ViewQuilt'
-import InventoryIcon      from '@mui/icons-material/Inventory'
 import AppsIcon           from '@mui/icons-material/Apps'
 import AccountTreeIcon    from '@mui/icons-material/AccountTree'
 import RouteIcon          from '@mui/icons-material/Route'
@@ -71,13 +70,6 @@ const FEATURES = [
     title: 'Applications',
     gif: 'applications.gif',
     desc: 'Full application registry with health status, SLA targets, team ownership, and 30-day incident history.',
-  },
-  {
-    icon: InventoryIcon,
-    color: '#fb923c',
-    title: 'Product Catalog',
-    gif: 'product-catalog.gif',
-    desc: 'Business products at a glance — health status, service counts, and direct links to observability views.',
   },
   {
     icon: RouteIcon,

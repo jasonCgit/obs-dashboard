@@ -17,9 +17,9 @@ export default function ChatBlockStatusList({ data }) {
             sx={{
               borderRadius: 1.5,
               border: '1px solid',
-              borderColor: t => t.palette.mode === 'dark' ? `${color}50` : `${color}30`,
+              borderColor: t => t.palette.mode === 'dark' ? `${color}50` : `${color}40`,
               borderLeft: `3px solid ${color}`,
-              bgcolor: t => t.palette.mode === 'dark' ? `${color}14` : `${color}06`,
+              bgcolor: t => t.palette.mode === 'dark' ? `${color}14` : `${color}10`,
               px: 1.25, py: 0.75,
             }}
           >
@@ -31,7 +31,7 @@ export default function ChatBlockStatusList({ data }) {
                 label={item.status.toUpperCase()}
                 size="small"
                 sx={{
-                  bgcolor: t => t.palette.mode === 'dark' ? `${color}30` : `${color}18`,
+                  bgcolor: t => t.palette.mode === 'dark' ? `${color}30` : `${color}22`,
                   color,
                   fontWeight: 700, ...fSmall, height: 18,
                 }}

@@ -34,9 +34,9 @@ export default function CriticalApps({ data }) {
               <Box key={app.id} sx={{
                 borderRadius: 2,
                 border: '1px solid',
-                borderColor: `${statusColor}30`,
+                borderColor: (t) => `${statusColor}${t.palette.mode === 'dark' ? '30' : '40'}`,
                 borderLeft: `3px solid ${statusColor}`,
-                bgcolor: `${statusColor}06`,
+                bgcolor: (t) => `${statusColor}${t.palette.mode === 'dark' ? '06' : '0d'}`,
                 p: 1.5,
               }}>
                 {/* Title + status badge */}
