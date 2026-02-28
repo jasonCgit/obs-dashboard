@@ -18,6 +18,7 @@ import ShieldIcon         from '@mui/icons-material/Shield'
 import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings'
 import TuneIcon           from '@mui/icons-material/Tune'
 import TabIcon            from '@mui/icons-material/Tab'
+import AutoAwesomeIcon    from '@mui/icons-material/AutoAwesome'
 import MenuBookIcon       from '@mui/icons-material/MenuBook'
 import SupportAgentIcon   from '@mui/icons-material/SupportAgent'
 import FeedbackIcon       from '@mui/icons-material/Feedback'
@@ -67,7 +68,7 @@ const FEATURES = [
     color: '#34d399',
     title: 'Blast Radius — Dependency Graphs',
     gif: 'blast-radius.gif',
-    desc: 'Interactive service dependency maps for Advisor Connect, Spectrum Equities, and Connect OS with executive summary, root cause analysis, business processes, and dagre-powered layouts.',
+    desc: 'Multi-layer dependency visualization with toggleable platform, data center, and health indicator layers — SEAL-scoped component graphs with status-colored edges, dagre layout, and interactive node details.',
   },
   {
     icon: RouteIcon,
@@ -125,11 +126,18 @@ const FEATURES = [
     gif: 'tabs-and-theme.gif',
     desc: 'Browser-style tab management — add, close, drag-to-reorder with persistent order. Full dark/light theme toggle across all components.',
   },
+  {
+    icon: AutoAwesomeIcon,
+    color: '#f59e0b',
+    title: 'Aura AI Chat',
+    gif: 'aura-chat.gif',
+    desc: 'AI-powered chat assistant with suggested prompts, rich block responses (metrics, charts, tables, recommendations), and context-aware observability insights.',
+  },
 ]
 
 const METRICS = [
   { value: '34+',  label: 'Services Monitored' },
-  { value: '14',   label: 'Observability Views' },
+  { value: '15',   label: 'Observability Views' },
   { value: '<30s', label: 'Mean Time to Detect' },
   { value: '90d',  label: 'Incident History' },
 ]

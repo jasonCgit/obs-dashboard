@@ -72,6 +72,18 @@ export default function ScopeBar() {
     return () => document.removeEventListener('mousedown', handler)
   }, [hidden, revealed])
 
+  // When filters change while bar is hidden (e.g. tenant switch), temporarily reveal
+  const prevFilterCountRef = useRef(activeFilterCount)
+  useEffect(() => {
+    if (activeFilterCount !== prevFilterCountRef.current) {
+      prevFilterCountRef.current = activeFilterCount
+      if (hidden && activeFilterCount > 0) {
+        setRevealed(true)
+        startAutoHide()
+      }
+    }
+  }, [activeFilterCount, hidden, startAutoHide])
+
   // Clean up timer on unmount
   useEffect(() => () => clearTimeout(hideTimerRef.current), [])
 

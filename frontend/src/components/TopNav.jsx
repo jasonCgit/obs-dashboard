@@ -30,7 +30,9 @@ import ShieldIcon from '@mui/icons-material/Shield'
 import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings'
 import InventoryIcon from '@mui/icons-material/Inventory'
 import SpeedIcon from '@mui/icons-material/Speed'
+import DragIndicatorIcon from '@mui/icons-material/DragIndicator'
 import ViewQuiltIcon from '@mui/icons-material/ViewQuilt'
+import LayersIcon from '@mui/icons-material/Layers'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useAppTheme } from '../ThemeContext'
 import { useFilters } from '../FilterContext'
@@ -46,7 +48,7 @@ const ALL_TABS = [
   { label: 'Home',              path: '/',                Icon: HomeIcon,        desc: 'Dashboard overview' },
   { label: 'Announcements',     path: '/announcements',   Icon: CampaignIcon,    desc: 'Manage communications' },
   { label: 'Applications',      path: '/applications',    Icon: AppsIcon,        desc: 'Manage app inventory & health' },
-  { label: 'Blast Radius',      path: '/graph',           Icon: AccountTreeIcon, desc: 'Dependency graphs' },
+  { label: 'Blast Radius',      path: '/graph-layers',    Icon: LayersIcon,      desc: 'Multi-layer dependency visualization' },
   { label: 'Customer Journeys', path: '/customer-journey', Icon: RouteIcon,      desc: 'End-to-end user experience' },
   { label: 'Favorites',         path: '/favorites',       Icon: StarIcon,        desc: 'Pinned View Centrals' },
   { label: 'Incident Zero',    path: '/incident-zero',   Icon: ShieldIcon,      desc: 'Proactive pre-incident management' },
@@ -298,24 +300,38 @@ export default function TopNav() {
                   transition: 'border-color 0.15s, opacity 0.15s',
                   cursor: isHome ? 'default' : 'grab',
                   '&:active': { cursor: isHome ? 'default' : 'grabbing' },
+                  ...(active && {
+                    bgcolor: 'rgba(96,165,250,0.15)',
+                    borderRadius: 1,
+                    borderBottom: '2px solid #60a5fa',
+                  }),
+                  '& .drag-handle': { opacity: 0 },
+                  '&:hover .drag-handle': { opacity: 0.5 },
                 }}
               >
+                {!isHome && (
+                  <DragIndicatorIcon className="drag-handle" sx={{
+                    fontSize: 12, color: 'rgba(255,255,255,0.5)',
+                    transition: 'opacity 0.15s', ml: 0.25, mr: -0.5,
+                    cursor: 'grab',
+                  }} />
+                )}
                 <Button
                   size="small"
                   onClick={() => tab.path && navigate(tab.path)}
                   sx={{
-                    color: active ? 'white' : 'rgba(255,255,255,0.65)',
+                    color: active ? '#93c5fd' : 'rgba(255,255,255,0.65)',
                     textTransform: 'none',
                     fontSize: '0.8rem',
                     px: isHome ? 1 : 0.75,
                     pr: isHome ? 1 : 2.5,
                     minWidth: 'auto',
                     fontWeight: active ? 600 : 400,
-                    '&:hover': { color: 'white', bgcolor: 'rgba(255,255,255,0.1)' },
+                    '&:hover': { color: active ? '#bfdbfe' : 'white', bgcolor: 'rgba(255,255,255,0.1)' },
                     pointerEvents: 'auto',
                   }}
                 >
-                  {tab.Icon && <tab.Icon sx={{ fontSize: 14, mr: 0.5, opacity: 0.7 }} />}
+                  {tab.Icon && <tab.Icon sx={{ fontSize: 14, mr: 0.5, opacity: active ? 0.9 : 0.7 }} />}
                   {tab.label}
                 </Button>
 
@@ -349,11 +365,15 @@ export default function TopNav() {
                 onClick={(e) => setAnchorEl(e.currentTarget)}
                 sx={{
                   ml: 0.5,
-                  color: 'rgba(255,255,255,0.4)',
-                  '&:hover': { color: 'white', bgcolor: 'rgba(255,255,255,0.1)' },
+                  color: '#60a5fa',
+                  border: '1.5px dashed rgba(96,165,250,0.5)',
+                  borderRadius: 1,
+                  width: 28,
+                  height: 28,
+                  '&:hover': { color: '#93c5fd', bgcolor: 'rgba(96,165,250,0.15)', borderColor: '#60a5fa' },
                 }}
               >
-                <AddIcon sx={{ fontSize: 18 }} />
+                <AddIcon sx={{ fontSize: 20, fontWeight: 'bold' }} />
               </IconButton>
             </Tooltip>
           )}
@@ -408,9 +428,11 @@ export default function TopNav() {
                         sx={{
                           py: 1, px: 1.5, gap: 1.5,
                           borderRadius: 1, mx: 0.5,
+                          transition: 'background-color 0.15s',
                           '&:hover': {
-                            bgcolor: isDark ? 'rgba(255,255,255,0.06)' : 'action.hover',
-                            '& .tab-icon': { color: 'primary.main' },
+                            bgcolor: 'rgba(96,165,250,0.1)',
+                            '& .tab-icon': { color: '#60a5fa', bgcolor: 'rgba(96,165,250,0.15)' },
+                            '& .tab-label': { color: '#60a5fa' },
                           },
                         }}
                       >
@@ -418,13 +440,13 @@ export default function TopNav() {
                           width: 32, height: 32, borderRadius: 1,
                           display: 'flex', alignItems: 'center', justifyContent: 'center',
                           bgcolor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.04)',
-                          color: 'text.secondary', transition: 'color 0.15s',
+                          color: 'text.secondary', transition: 'color 0.15s, background-color 0.15s',
                           flexShrink: 0,
                         }}>
                           {TabIcon && <TabIcon sx={{ fontSize: 17 }} />}
                         </Box>
                         <Box sx={{ minWidth: 0 }}>
-                          <Typography sx={{ fontSize: '0.82rem', fontWeight: 600, lineHeight: 1.3, color: 'text.primary' }}>
+                          <Typography className="tab-label" sx={{ fontSize: '0.82rem', fontWeight: 600, lineHeight: 1.3, color: 'text.primary', transition: 'color 0.15s' }}>
                             {tab.label}
                           </Typography>
                           {tab.desc && (

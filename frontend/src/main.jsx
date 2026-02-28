@@ -5,6 +5,7 @@ import { AppThemeProvider } from './ThemeContext'
 import { TenantProvider } from './tenant/TenantContext'
 import { FilterProvider } from './FilterContext'
 import { RefreshProvider } from './RefreshContext'
+import { AuraChatProvider } from './aura/AuraChatContext'
 import App from './App'
 import 'react-grid-layout/css/styles.css'
 import 'react-resizable/css/styles.css'
@@ -16,7 +17,9 @@ ReactDOM.createRoot(document.getElementById('root')).render(
         <TenantProvider>
         <FilterProvider>
           <RefreshProvider>
-            <App />
+            <AuraChatProvider>
+              <App />
+            </AuraChatProvider>
           </RefreshProvider>
         </FilterProvider>
         </TenantProvider>

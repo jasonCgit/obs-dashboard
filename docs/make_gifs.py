@@ -146,18 +146,20 @@ def gif_applications(page):
     save_gif(frames, "applications.gif", fps=4)
 
 
-# ── GIF 6 — Blast Radius (Dependency Graphs) ────────────────────────────────
+# ── GIF 6 — Blast Radius Layers (Multi-layer Dependency Graphs) ──────────────
 
 def gif_blast_radius(page):
     print("Capturing blast-radius.gif ...")
     frames = []
-    page.goto(f"{BASE_URL}/graph", wait_until="networkidle")
-    page.wait_for_timeout(800)
+    page.goto(f"{BASE_URL}/graph-layers", wait_until="networkidle")
+    page.wait_for_timeout(1000)
+
+    # Show initial state — Components layer only
     for _ in range(4):
         frames.append(shot(page))
         page.wait_for_timeout(200)
 
-    # Switch between scenarios via the dropdown
+    # Switch between SEALs via the dropdown
     try:
         select = page.locator(".MuiSelect-select").first
         select.click()
@@ -175,52 +177,77 @@ def gif_blast_radius(page):
                 select.click()
                 page.wait_for_timeout(400)
     except Exception:
-        for _ in range(6):
+        for _ in range(4):
             frames.append(shot(page))
             page.wait_for_timeout(200)
 
-    # Click on nodes to show edge highlighting
+    # Toggle Platform layer ON
     try:
-        # Click root node — highlights all its connected edges
-        root_node = page.locator(".react-flow__node").first
-        root_node.click()
-        page.wait_for_timeout(800)
+        page.locator("text=Platform").first.click()
+        page.wait_for_timeout(1000)
+        for _ in range(4):
+            frames.append(shot(page))
+            page.wait_for_timeout(200)
+    except Exception:
+        pass
+
+    # Toggle Data Centers layer ON (requires Platform)
+    try:
+        page.locator("text=Data Centers").first.click()
+        page.wait_for_timeout(1000)
+        for _ in range(4):
+            frames.append(shot(page))
+            page.wait_for_timeout(200)
+    except Exception:
+        pass
+
+    # Toggle Health Indicators layer ON
+    try:
+        page.locator("text=Health Indicators").first.click()
+        page.wait_for_timeout(1000)
         for _ in range(5):
             frames.append(shot(page))
             page.wait_for_timeout(200)
+    except Exception:
+        pass
 
-        # Click a dependency node — shifts highlights to its edges
-        dep_nodes = page.locator(".react-flow__node").all()
-        if len(dep_nodes) > 2:
-            dep_nodes[2].click()
+    # Click on nodes to show edge highlighting and sidebar details
+    try:
+        nodes = page.locator(".react-flow__node").all()
+        if len(nodes) > 0:
+            nodes[0].click()
             page.wait_for_timeout(800)
-            for _ in range(5):
+            for _ in range(4):
                 frames.append(shot(page))
                 page.wait_for_timeout(200)
 
-        # Click another node deeper in the graph
-        if len(dep_nodes) > 5:
-            dep_nodes[5].click()
+        if len(nodes) > 3:
+            nodes[3].click()
             page.wait_for_timeout(800)
-            for _ in range(5):
+            for _ in range(4):
                 frames.append(shot(page))
                 page.wait_for_timeout(200)
 
-        # Click an edge directly (force=True needed for SVG path interception)
-        edge_paths = page.locator(".react-flow__edge").all()
-        if len(edge_paths) > 1:
-            edge_paths[1].click(force=True)
-            page.wait_for_timeout(800)
-            for _ in range(5):
-                frames.append(shot(page))
-                page.wait_for_timeout(200)
-
-        # Click background to clear all highlights
+        # Click background to clear
         page.locator(".react-flow__pane").click(force=True)
         page.wait_for_timeout(500)
         for _ in range(3):
             frames.append(shot(page))
             page.wait_for_timeout(200)
+    except Exception:
+        pass
+
+    # Toggle layers back off to show toggle interaction
+    try:
+        page.locator("text=Health Indicators").first.click()
+        page.wait_for_timeout(600)
+        frames.append(shot(page))
+        page.locator("text=Data Centers").first.click()
+        page.wait_for_timeout(600)
+        frames.append(shot(page))
+        page.locator("text=Platform").first.click()
+        page.wait_for_timeout(600)
+        frames.append(shot(page))
     except Exception:
         pass
 
@@ -590,6 +617,61 @@ def gif_search_filter(page):
     save_gif(frames, "search-filter.gif", fps=4)
 
 
+# ── GIF 15 — Aura AI Chat ─────────────────────────────────────────────────────
+
+def gif_aura_chat(page):
+    print("Capturing aura-chat.gif ...")
+    frames = []
+    page.goto(BASE_URL, wait_until="networkidle")
+    page.wait_for_timeout(600)
+
+    # Show the page with the FAB visible
+    for _ in range(3):
+        frames.append(shot(page))
+        page.wait_for_timeout(200)
+
+    # Click the Aura FAB to open chat panel
+    try:
+        fab = page.locator("button.MuiFab-root").first
+        fab.click()
+        page.wait_for_timeout(800)
+        for _ in range(4):
+            frames.append(shot(page))
+            page.wait_for_timeout(200)
+
+        # Click a suggested prompt if available
+        prompts = page.locator("[class*='prompt'], [class*='suggestion']").all()
+        if not prompts:
+            # Try clicking chip-like buttons in the chat panel
+            prompts = page.locator(".MuiChip-root").all()
+        if len(prompts) > 0:
+            prompts[0].click()
+            page.wait_for_timeout(2000)
+            for _ in range(5):
+                frames.append(shot(page))
+                page.wait_for_timeout(300)
+
+        # Scroll chat messages if any
+        chat_container = page.locator("[class*='messages'], [class*='Messages']").first
+        if chat_container.is_visible(timeout=500):
+            chat_container.evaluate("el => el.scrollTop = el.scrollHeight")
+            page.wait_for_timeout(400)
+            for _ in range(4):
+                frames.append(shot(page))
+                page.wait_for_timeout(200)
+
+        # Close the chat panel
+        fab.click()
+        page.wait_for_timeout(400)
+        for _ in range(2):
+            frames.append(shot(page))
+            page.wait_for_timeout(200)
+    except Exception:
+        pass
+
+    save_gif(frames, "aura-chat.gif", fps=4)
+
+
 # ── main ─────────────────────────────────────────────────────────────────────
 
 def main():
@@ -611,6 +693,7 @@ def main():
         gif_incident_zero(page)
         gif_admin(page)
         gif_search_filter(page)
+        gif_aura_chat(page)
 
         browser.close()
 

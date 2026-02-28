@@ -43,10 +43,10 @@ A real-time observability platform purpose-built for AWM engineering — combini
 
 ---
 
-### Blast Radius — Dependency Graphs
-> Interactive service dependency maps for Advisor Connect, Spectrum Equities, and Connect OS with executive summary, root cause analysis, business processes, and dagre-powered layouts.
+### Blast Radius — Multi-Layer Dependency Graphs
+> Multi-layer dependency visualization with toggleable platform, data center, and health indicator layers — SEAL-scoped component graphs with status-colored edges, dagre layout, and interactive node details.
 
-<img src="docs/gifs/blast-radius.gif" alt="Blast Radius" width="100%">
+<img src="docs/gifs/blast-radius.gif" alt="Blast Radius Layers" width="100%">
 
 ---
 
@@ -106,6 +106,13 @@ A real-time observability platform purpose-built for AWM engineering — combini
 
 ---
 
+### Aura AI Chat
+> AI-powered chat assistant with suggested prompts, rich block responses (metrics, charts, tables, recommendations), and context-aware observability insights accessible from a floating action button.
+
+<img src="docs/gifs/aura-chat.gif" alt="Aura AI Chat" width="100%">
+
+---
+
 ## Architecture
 
 | Layer    | Stack                        | Port  |
@@ -126,7 +133,7 @@ The frontend proxies all `/api/*` requests to the backend via Vite's dev server 
 | **View Central** | Custom Dashboards | Create, configure, and monitor product-scoped dashboards with drag-and-drop widget grids and notifications |
 | **Product Catalog** | 6 Products | Per-product health, service counts, linked views (Advisor Connect, Spectrum, Connect OS, GWM, Client Case, IPBOL) |
 | **Applications** | Registry | 20+ apps with status, SLA, team ownership, incident history, search & filter |
-| **Blast Radius** | Dependency Graphs | 3 interactive scenarios with executive summary, root cause, business processes, dagre layout |
+| **Blast Radius** | Multi-Layer Graphs | SEAL-scoped component graphs with toggleable platform, data center, and health indicator layers |
 | **Customer Journeys** | Path Health | Trade Execution, Client Login, Document Delivery with step-by-step latency |
 | **SLO Agent** | AI Agent | Breach prediction, error budget tracking, auto-remediation actions |
 | **Announcements** | CRUD Management | Create, edit, close/reopen, delete, search, type filters, pinning, auto-refresh |
@@ -138,6 +145,7 @@ Additional features:
 - **Search & Filter** — Global search with grouped multi-select filters and persistent scope bar
 - **Multi-Tenant Branding** — Custom portal instances with logo upload, title/subtitle, powered-by text, and default scope filters
 - **Draggable Tabs & Dark / Light Mode** — Browser-style tab reordering with drag-and-drop + full theme toggle (see demo above)
+- **Aura AI Chat** — AI-powered chat assistant with suggested prompts, rich block responses, and context-aware observability insights
 - **Brochure Modal** — Click any feature card in the brochure to preview a full-size animated GIF demo
 
 ---
@@ -214,10 +222,14 @@ obs-dashboard/
 ├── frontend/
 │   ├── src/
 │   │   ├── components/  # TopNav, ScopeBar, ViewCard, CriticalApps, DependencyFlow,
+│   │   │                #   LayeredDependencyFlow, layerNodeTypes,
 │   │   │                #   IncidentTrends, BrochureModal, ActiveIncidentsPanel,
 │   │   │                #   FrequentIncidents, RecentActivities, AIHealthPanel,
-│   │   │                #   SearchFilterPopover
-│   │   ├── pages/       # Dashboard, GraphExplorer, Applications, Favorites,
+│   │   │                #   SearchFilterPopover, WarningApps, SummaryCards
+│   │   ├── aura/        # AuraChatFab, AuraChatPanel, AuraChatContext,
+│   │   │                #   AuraChatMessages, AuraChatInput, mockPrompts,
+│   │   │                #   blocks/ (text, metrics, charts, tables, recommendations)
+│   │   ├── pages/       # Dashboard, GraphLayers, Applications, Favorites,
 │   │   │                #   ProductCatalog, CustomerJourney, SloAgent,
 │   │   │                #   IncidentZero, Announcements, Links, Admin
 │   │   ├── view-central/ # ViewCentralListing, ViewCentralDashboard,
@@ -231,7 +243,7 @@ obs-dashboard/
 │   └── vite.config.js   # Dev server — proxy to :8080, serves GIFs from docs/
 └── docs/
     ├── make_gifs.py     # Playwright script to regenerate all GIFs
-    └── gifs/            # 14 demo GIFs (720p, animated)
+    └── gifs/            # 15 demo GIFs (1440p, animated)
 ```
 
 ---
@@ -256,6 +268,8 @@ obs-dashboard/
 | GET    | `/api/graph/nodes`                 | All service nodes                    |
 | GET    | `/api/graph/dependencies/{id}`     | Downstream dependencies for service  |
 | GET    | `/api/graph/blast-radius/{id}`     | Upstream impact for service          |
+| GET    | `/api/graph/layer-seals`           | Available SEALs for layer graphs     |
+| GET    | `/api/graph/layers/{seal_id}`      | Multi-layer graph data for a SEAL    |
 
 Interactive API docs: http://localhost:8080/docs
 

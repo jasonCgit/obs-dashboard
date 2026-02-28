@@ -5,7 +5,7 @@ import Typography from '@mui/material/Typography'
 import TopNav          from './components/TopNav'
 import ScopeBar        from './components/ScopeBar'
 import Dashboard       from './pages/Dashboard'
-import GraphExplorer   from './pages/GraphExplorer'
+import GraphLayers     from './pages/GraphLayers'
 import Applications    from './pages/Applications'
 import Favorites       from './pages/Favorites'
 import ViewCentralListing   from './view-central/ViewCentralListing'
@@ -17,6 +17,7 @@ import IncidentZero    from './pages/IncidentZero'
 import Announcements   from './pages/Announcements'
 import Links           from './pages/Links'
 import Admin           from './pages/Admin'
+import AuraChatFab     from './aura/AuraChatFab'
 
 class ErrorBoundary extends Component {
   constructor(props) {
@@ -49,7 +50,8 @@ export default function App() {
         <ScopeBar />
         <Routes>
           <Route path="/"                element={<Dashboard />} />
-          <Route path="/graph"           element={<GraphExplorer />} />
+          <Route path="/graph-layers"    element={<GraphLayers />} />
+          <Route path="/graph"           element={<Navigate to="/graph-layers" replace />} />
           <Route path="/applications"    element={<Applications />} />
           <Route path="/favorites"       element={<Favorites />} />
           <Route path="/view-central"    element={<ViewCentralListing />} />
@@ -64,6 +66,7 @@ export default function App() {
           <Route path="/views"           element={<Navigate to="/view-central" replace />} />
           <Route path="*"                element={<Navigate to="/" replace />} />
         </Routes>
+        <AuraChatFab />
       </Box>
     </ErrorBoundary>
   )

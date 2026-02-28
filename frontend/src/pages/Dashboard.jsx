@@ -3,6 +3,7 @@ import { Container, Grid, Box, Stack, CircularProgress, Alert } from '@mui/mater
 import SummaryCards          from '../components/SummaryCards'
 import AIHealthPanel         from '../components/AIHealthPanel'
 import CriticalApps          from '../components/CriticalApps'
+import WarningApps           from '../components/WarningApps'
 import RegionalStatus        from '../components/RegionalStatus'
 import ActiveIncidentsPanel  from '../components/ActiveIncidentsPanel'
 import IncidentTrends        from '../components/IncidentTrends'
@@ -14,6 +15,7 @@ export default function Dashboard() {
   const [aiData,           setAiData]           = useState(null)
   const [regional,         setRegional]         = useState(null)
   const [critApps,         setCritApps]         = useState(null)
+  const [warnApps,         setWarnApps]         = useState(null)
   const [trends,           setTrends]           = useState(null)
   const [activeIncidents,  setActiveIncidents]  = useState(null)
   const [loading,          setLoading]          = useState(true)
@@ -25,6 +27,7 @@ export default function Dashboard() {
     ['/api/ai-analysis',        setAiData],
     ['/api/regional-status',    setRegional],
     ['/api/critical-apps',      setCritApps],
+    ['/api/warning-apps',       setWarnApps],
     ['/api/incident-trends',    setTrends],
     ['/api/active-incidents',   setActiveIncidents],
   ]
@@ -77,6 +80,7 @@ export default function Dashboard() {
           <Stack spacing={1}>
             <AIHealthPanel data={aiData} />
             <CriticalApps  data={critApps} />
+            <WarningApps   data={warnApps} />
           </Stack>
         </Grid>
         {/* Right column */}
