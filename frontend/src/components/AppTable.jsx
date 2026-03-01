@@ -334,7 +334,7 @@ const AppTable = forwardRef(function AppTable({ apps, teams = [], onAppTeamsChan
                         )}
                         <Typography
                           variant="caption"
-                          sx={{ fontSize: '0.82rem', fontWeight: 700, textAlign: 'left', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0, color: 'text.primary' }}
+                          sx={{ fontSize: '0.82rem', fontWeight: 700, textAlign: 'left', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0, color: '#1976d2' }}
                         >
                           {row.name} — {row.seal}
                         </Typography>
@@ -379,15 +379,23 @@ const AppTable = forwardRef(function AppTable({ apps, teams = [], onAppTeamsChan
                     </TableCell>
                     {/* Open P1/P2 */}
                     <TableCell style={cAlign} sx={cellSx}>
-                      <Typography
-                        variant="caption"
-                        sx={{
-                          fontSize: '0.78rem', fontWeight: 700,
-                          color: (row.incidents_30d ?? 0) > 2 ? '#f44336' : (row.incidents_30d ?? 0) > 0 ? '#ff9800' : 'text.disabled',
-                        }}
-                      >
-                        {row.incidents_30d ?? 0}
-                      </Typography>
+                      {(row.incidents_30d ?? 0) > 0 ? (
+                        <Link
+                          href="#"
+                          onClick={e => e.preventDefault()}
+                          underline="hover"
+                          sx={{
+                            fontSize: '0.78rem', fontWeight: 700,
+                            color: (row.incidents_30d ?? 0) > 2 ? '#f44336' : '#ff9800',
+                          }}
+                        >
+                          {row.incidents_30d}
+                        </Link>
+                      ) : (
+                        <Typography variant="caption" sx={{ fontSize: '0.78rem', fontWeight: 700, color: 'text.disabled' }}>
+                          0
+                        </Typography>
+                      )}
                     </TableCell>
                     {/* Last Incident */}
                     <TableCell style={cAlign} sx={cellSx}>
@@ -459,7 +467,7 @@ const AppTable = forwardRef(function AppTable({ apps, teams = [], onAppTeamsChan
                                 sx={{
                                   fontSize: '0.74rem', fontWeight: 600, textAlign: 'left',
                                   overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-                                  minWidth: 0, color: 'text.primary',
+                                  minWidth: 0, color: 'text.secondary',
                                 }}
                               >
                                 {d.label}
@@ -502,12 +510,21 @@ const AppTable = forwardRef(function AppTable({ apps, teams = [], onAppTeamsChan
                           </TableCell>
                           {/* Open P1/P2 */}
                           <TableCell style={cAlign} sx={cellSx}>
-                            <Typography variant="caption" sx={{
-                              fontSize: '0.66rem', fontWeight: 600,
-                              color: depIncidents > 0 ? (depIncidents > 2 ? '#f44336' : '#ff9800') : 'text.disabled',
-                            }}>
-                              {depIncidents > 0 ? depIncidents : '—'}
-                            </Typography>
+                            {depIncidents > 0 ? (
+                              <Link
+                                href="#"
+                                onClick={e => e.preventDefault()}
+                                underline="hover"
+                                sx={{
+                                  fontSize: '0.66rem', fontWeight: 600,
+                                  color: depIncidents > 2 ? '#f44336' : '#ff9800',
+                                }}
+                              >
+                                {depIncidents}
+                              </Link>
+                            ) : (
+                              <Typography variant="caption" sx={{ fontSize: '0.66rem', fontWeight: 600, color: 'text.disabled' }}>—</Typography>
+                            )}
                           </TableCell>
                           {/* Last Incident */}
                           <TableCell style={cAlign} sx={cellSx}>
@@ -558,7 +575,7 @@ const AppTable = forwardRef(function AppTable({ apps, teams = [], onAppTeamsChan
                                     fontSize: '0.66rem',
                                     overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
                                     fontWeight: isBad ? 600 : 400,
-                                    color: isBad ? 'text.primary' : 'text.secondary',
+                                    color: '#fff',
                                     minWidth: 0,
                                   }}>
                                     {c.label}
@@ -591,12 +608,21 @@ const AppTable = forwardRef(function AppTable({ apps, teams = [], onAppTeamsChan
                               </TableCell>
                               {/* Open P1/P2 */}
                               <TableCell style={cAlign} sx={{ ...cellSx, borderBottom: compBorder }}>
-                                <Typography variant="caption" sx={{
-                                  fontSize: '0.66rem', fontWeight: 600,
-                                  color: c.incidents_30d > 0 ? (c.incidents_30d > 2 ? '#f44336' : '#ff9800') : 'text.disabled',
-                                }}>
-                                  {c.incidents_30d > 0 ? c.incidents_30d : '—'}
-                                </Typography>
+                                {c.incidents_30d > 0 ? (
+                                  <Link
+                                    href="#"
+                                    onClick={e => e.preventDefault()}
+                                    underline="hover"
+                                    sx={{
+                                      fontSize: '0.66rem', fontWeight: 600,
+                                      color: c.incidents_30d > 2 ? '#f44336' : '#ff9800',
+                                    }}
+                                  >
+                                    {c.incidents_30d}
+                                  </Link>
+                                ) : (
+                                  <Typography variant="caption" sx={{ fontSize: '0.66rem', fontWeight: 600, color: 'text.disabled' }}>—</Typography>
+                                )}
                               </TableCell>
                               {/* Last Incident */}
                               <TableCell style={cAlign} sx={{ ...cellSx, borderBottom: compBorder }}>
