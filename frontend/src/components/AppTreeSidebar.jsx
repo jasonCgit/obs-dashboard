@@ -1,24 +1,29 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useCallback } from 'react'
 import {
   Box, Typography, ToggleButtonGroup, ToggleButton,
-  Collapse, IconButton,
+  Collapse, IconButton, Tooltip,
 } from '@mui/material'
 import ChevronRightIcon from '@mui/icons-material/ChevronRight'
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
+import UnfoldLessIcon from '@mui/icons-material/UnfoldLess'
+import UnfoldMoreIcon from '@mui/icons-material/UnfoldMore'
 import FiberManualRecordIcon from '@mui/icons-material/FiberManualRecord'
 
-const STATUS_RANK = { critical: 0, warning: 1, healthy: 2 }
-const STATUS_COLOR = { critical: '#f44336', warning: '#ff9800', healthy: '#4caf50' }
+const STATUS_RANK = { critical: 0, warning: 1, healthy: 2, no_data: 3 }
+const STATUS_COLOR = { critical: '#f44336', warning: '#ff9800', healthy: '#4caf50', no_data: '#78909c' }
 
 function derivedStatus(app) {
   const deployments = app.deployments || []
-  if (deployments.length === 0) return app.status || 'healthy'
+  if (deployments.length === 0) return 'no_data'
   const appExcl = new Set(app.excluded_indicators || [])
-  let worst = 'healthy'
+  let worst = 'no_data'
+  let hasRag = false
   for (const d of deployments) {
     const depExcl = new Set([...appExcl, ...(d.excluded_indicators || [])])
     for (const c of (d.components || [])) {
       if (depExcl.has(c.indicator_type)) continue
+      if (c.status === 'no_data') continue
+      if (!hasRag) { worst = 'healthy'; hasRag = true }
       if ((STATUS_RANK[c.status] ?? 2) < (STATUS_RANK[worst] ?? 2)) worst = c.status
     }
   }
@@ -26,9 +31,12 @@ function derivedStatus(app) {
 }
 
 function worstStatus(apps) {
-  let worst = 'healthy'
+  let worst = 'no_data'
+  let hasRag = false
   for (const a of apps) {
     const s = derivedStatus(a)
+    if (s === 'no_data') continue
+    if (!hasRag) { worst = 'healthy'; hasRag = true }
     if (STATUS_RANK[s] < STATUS_RANK[worst]) worst = s
   }
   return worst
@@ -42,10 +50,12 @@ function buildBusinessTree(apps) {
     const lob = app.lob || '(No LOB)'
     const sub = app.subLob || '(General)'
     const pl = app.productLine || '(No Product Line)'
+    const prod = app.product || '(No Product)'
     tree[lob] ??= {}
     tree[lob][sub] ??= {}
-    tree[lob][sub][pl] ??= []
-    tree[lob][sub][pl].push(app)
+    tree[lob][sub][pl] ??= {}
+    tree[lob][sub][pl][prod] ??= []
+    tree[lob][sub][pl][prod].push(app)
   })
   return tree
 }
@@ -80,8 +90,8 @@ function isAncestorOf(nodePath, selectedPath) {
   return nodeParts.every((p, i) => p === selParts[i])
 }
 
-function TreeNode({ label, apps, depth, children, selectedPath, onSelect, path }) {
-  const [open, setOpen] = useState(() => depth < 2 || isAncestorOf(path, selectedPath))
+function TreeNode({ label, apps, depth, children, selectedPath, onSelect, path, allExpanded }) {
+  const [open, setOpen] = useState(() => allExpanded ? true : depth === 0)
   const isLeafBranch = !children // has apps directly
   const status = worstStatus(apps)
   const isSelected = selectedPath === path
@@ -137,14 +147,18 @@ function TreeNode({ label, apps, depth, children, selectedPath, onSelect, path }
 
 /* ── Main sidebar ── */
 
-export default function AppTreeSidebar({ apps, onSelect, selectedPath, statusFilter = 'all', onStatusFilter, treeMode: mode, onTreeModeChange: setMode, width = 260 }) {
+export default function AppTreeSidebar({ apps, onSelect, selectedPath, statusFilter = 'all', onStatusFilter, treeMode: mode, onTreeModeChange: setMode, width = 300 }) {
 
   const businessTree = useMemo(() => buildBusinessTree(apps), [apps])
   const techTree = useMemo(() => buildTechTree(apps), [apps])
 
   const tree = mode === 'business' ? businessTree : techTree
-  const l3Label = mode === 'business' ? 'productLine' : 'cto'
-  const l4Label = mode === 'business' ? 'product' : 'cbt'
+  const [allExpanded, setAllExpanded] = useState(null)
+  const [treeVersion, setTreeVersion] = useState(0)
+  const toggleExpandAll = useCallback(() => {
+    setAllExpanded(v => v === true ? false : true)
+    setTreeVersion(v => v + 1)
+  }, [])
 
   return (
     <Box sx={{
@@ -155,55 +169,66 @@ export default function AppTreeSidebar({ apps, onSelect, selectedPath, statusFil
     }}>
       {/* Header */}
       <Box sx={{ px: 1.5, pt: 1.5, pb: 1 }}>
-        <ToggleButtonGroup
-          value={mode}
-          exclusive
-          onChange={(_, v) => v && setMode(v)}
-          size="small"
-          fullWidth
-        >
-          <ToggleButton value="business" sx={{ textTransform: 'none', fontSize: '0.7rem', py: 0.4 }}>
-            Business
-          </ToggleButton>
-          <ToggleButton value="technology" sx={{ textTransform: 'none', fontSize: '0.7rem', py: 0.4 }}>
-            Technology
-          </ToggleButton>
-        </ToggleButtonGroup>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+          <ToggleButtonGroup
+            value={mode}
+            exclusive
+            onChange={(_, v) => v && setMode(v)}
+            size="small"
+            sx={{ flex: 1 }}
+          >
+            <ToggleButton value="business" sx={{ textTransform: 'none', fontSize: '0.7rem', py: 0.4, flex: 1 }}>
+              Business
+            </ToggleButton>
+            <ToggleButton value="technology" sx={{ textTransform: 'none', fontSize: '0.7rem', py: 0.4, flex: 1 }}>
+              Technology
+            </ToggleButton>
+          </ToggleButtonGroup>
+          <Tooltip title={allExpanded === true ? 'Collapse All' : 'Expand All'} arrow>
+            <IconButton size="small" onClick={toggleExpandAll} sx={{ p: 0.5 }}>
+              {allExpanded === true ? <UnfoldLessIcon sx={{ fontSize: 18 }} /> : <UnfoldMoreIcon sx={{ fontSize: 18 }} />}
+            </IconButton>
+          </Tooltip>
+        </Box>
       </Box>
 
       {/* Tree */}
       <Box sx={{ flex: 1, overflow: 'auto', pb: 1 }}>
         {/* "All" root node */}
         <TreeNode
+          key={treeVersion}
           label="All Applications"
           apps={apps}
           depth={0}
           selectedPath={selectedPath}
           onSelect={onSelect}
           path="all"
+          allExpanded={allExpanded}
         >
-          {Object.keys(tree).sort().map(lob => {
+          {Object.keys(tree).sort().map((lob, li) => {
             const lobApps = collectApps(tree[lob])
             return (
               <TreeNode key={lob} label={lob} apps={lobApps} depth={1}
-                selectedPath={selectedPath} onSelect={onSelect} path={`lob:${lob}`}
+                selectedPath={selectedPath} onSelect={onSelect} path={`lob:${lob}`} allExpanded={allExpanded}
               >
-                {Object.keys(tree[lob]).sort().map(sub => {
+                {Object.keys(tree[lob]).sort().map((sub, si) => {
                   const subApps = collectApps(tree[lob][sub])
                   const skipSub = sub === '(General)' && Object.keys(tree[lob]).length === 1
 
-                  const l3Content = Object.keys(tree[lob][sub]).sort().map(l3 => {
+                  const l3Keys = Object.keys(tree[lob][sub]).sort()
+                  const l3Content = l3Keys.map((l3, l3i) => {
                     const l3Apps = collectApps(tree[lob][sub][l3])
                     const l3Children = Array.isArray(tree[lob][sub][l3]) ? null : tree[lob][sub][l3]
+                    const l4Keys = l3Children ? Object.keys(l3Children).sort() : []
                     return (
                       <TreeNode key={l3} label={l3} apps={l3Apps} depth={skipSub ? 2 : 3}
-                        selectedPath={selectedPath} onSelect={onSelect} path={`l3:${lob}/${sub}/${l3}`}
+                        selectedPath={selectedPath} onSelect={onSelect} path={`l3:${lob}/${sub}/${l3}`} allExpanded={allExpanded}
                       >
-                        {l3Children && Object.keys(l3Children).sort().map(l4 => {
+                        {l3Children && l4Keys.map((l4, l4i) => {
                           const l4Apps = collectApps(l3Children[l4])
                           return (
                             <TreeNode key={l4} label={l4} apps={l4Apps} depth={skipSub ? 3 : 4}
-                              selectedPath={selectedPath} onSelect={onSelect} path={`l4:${lob}/${sub}/${l3}/${l4}`}
+                              selectedPath={selectedPath} onSelect={onSelect} path={`l4:${lob}/${sub}/${l3}/${l4}`} allExpanded={allExpanded}
                             />
                           )
                         })}
@@ -215,7 +240,7 @@ export default function AppTreeSidebar({ apps, onSelect, selectedPath, statusFil
 
                   return (
                     <TreeNode key={sub} label={sub} apps={subApps} depth={2}
-                      selectedPath={selectedPath} onSelect={onSelect} path={`sub:${lob}/${sub}`}
+                      selectedPath={selectedPath} onSelect={onSelect} path={`sub:${lob}/${sub}`} allExpanded={allExpanded}
                     >
                       {l3Content}
                     </TreeNode>

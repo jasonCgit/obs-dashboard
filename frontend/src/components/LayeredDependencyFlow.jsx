@@ -16,7 +16,7 @@ import dagre from '@dagrejs/dagre'
 import { layerNodeTypes, layerEdgeTypes } from './layerNodeTypes'
 
 // ── Color helpers ────────────────────────────────────────────────────────────
-const STATUS_EDGE_COLOR = { healthy: '#4caf50', warning: '#ff9800', critical: '#f44336' }
+const STATUS_EDGE_COLOR = { healthy: '#4caf50', warning: '#ff9800', critical: '#f44336', no_data: '#78909c' }
 const HEALTH_EDGE_COLOR = { green: '#4caf50', amber: '#ff9800', red: '#f44336' }
 
 // Fallback layer colors (used when node has no status)
@@ -152,18 +152,18 @@ function clampToZoneBounds(items, nodeWidth, upColX, downColX) {
 function buildLayeredGraph(apiData, activeLayers) {
   if (!apiData) return { nodes: [], edges: [] }
 
-  const VERTICAL_GAP = 150
+  const VERTICAL_GAP = 80
 
   // ── Phase 1: Dagre for component nodes only ──
   const g = new dagre.graphlib.Graph()
   g.setDefaultEdgeLabel(() => ({}))
   g.setGraph({
     rankdir: 'LR',
-    nodesep: 100,
-    edgesep: 45,
-    ranksep: 250,
-    marginx: 50,
-    marginy: 30,
+    nodesep: 25,
+    edgesep: 15,
+    ranksep: 90,
+    marginx: 30,
+    marginy: 20,
     ranker: 'network-simplex',
   })
 
@@ -214,7 +214,7 @@ function buildLayeredGraph(apiData, activeLayers) {
     const avgCompY = compYs.reduce((s, y) => s + y, 0) / compYs.length
 
     const separationGap = 280
-    const verticalSpacing = 130
+    const verticalSpacing = 80
 
     const upstreamExt = extNodes.filter(n => n.cross_direction === 'upstream')
     const downstreamExt = extNodes.filter(n => n.cross_direction !== 'upstream')
@@ -328,7 +328,7 @@ function buildLayeredGraph(apiData, activeLayers) {
 
     // Position groups above the component row, stacking rows upward
     const maxGroupH = groupItems.length > 0 ? Math.max(...groupItems.map(g => g.h)) : 50
-    const ROW_GAP = 16
+    const ROW_GAP = 10
     const indBaseY = minCompTop - VERTICAL_GAP
 
     groupItems.forEach(({ compId, indicators, x, h, row }) => {
@@ -456,7 +456,7 @@ function buildLayeredGraph(apiData, activeLayers) {
         if (parents.length === 1) {
           const parentX = compPos[parents[0]]?.x
           if (parentX != null && parentX >= snapLeft && parentX <= snapRight) {
-            const gap = NODE_DIMS.platform.w + 80
+            const gap = NODE_DIMS.platform.w + 40
             const prevMax = i > 0 ? platItems[i - 1].x + gap : -Infinity
             const nextMin = i < platItems.length - 1 ? platItems[i + 1].x - gap : Infinity
             if (parentX >= prevMax && parentX <= nextMin) item.x = parentX
@@ -527,7 +527,7 @@ function buildLayeredGraph(apiData, activeLayers) {
         if (parents.length === 1) {
           const parentX = platformPos[parents[0]]?.x
           if (parentX != null && parentX >= snapLeft && parentX <= snapRight) {
-            const gap = NODE_DIMS.datacenter.w + 70
+            const gap = NODE_DIMS.datacenter.w + 35
             const prevMax = i > 0 ? dcItems[i - 1].x + gap : -Infinity
             const nextMin = i < dcItems.length - 1 ? dcItems[i + 1].x - gap : Infinity
             if (parentX >= prevMax && parentX <= nextMin) item.x = parentX
@@ -628,8 +628,14 @@ function LayeredDependencyFlowInner({ apiData, activeLayers, onNodeSelect }) {
     setNodes(rfNodes)
     setEdges(rfEdges)
     setHighlightedEdges(new Set())
-    // Auto-fit after React commits new nodes to DOM (needs short delay for measurement)
-    const timer = setTimeout(() => fitView({ padding: 0.15, duration: 300 }), 80)
+    // If only component layer is active, zoom to fit components; otherwise fit everything
+    const hasExtraLayers = activeLayers.platform || activeLayers.datacenter || activeLayers.indicator
+    const fitOpts = { padding: 0.15, duration: 300 }
+    if (!hasExtraLayers) {
+      const compNodeIds = rfNodes.filter(n => n.type === 'service').map(n => n.id)
+      fitOpts.nodes = compNodeIds.map(id => ({ id }))
+    }
+    const timer = setTimeout(() => fitView(fitOpts), 80)
     return () => clearTimeout(timer)
   }, [apiData, activeLayers, setNodes, setEdges, fitView])
 

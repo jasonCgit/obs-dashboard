@@ -13,8 +13,8 @@ import OpenInNewIcon from '@mui/icons-material/OpenInNew'
 import { useNavigate } from 'react-router-dom'
 import ContactModal from './ContactModal'
 
-const STATUS_COLOR = { critical: '#f44336', warning: '#ff9800', healthy: '#4caf50' }
-const STATUS_LABEL = { critical: 'Critical', warning: 'Warning', healthy: 'Healthy' }
+const STATUS_COLOR = { critical: '#f44336', warning: '#ff9800', healthy: '#4caf50', no_data: '#78909c' }
+const STATUS_LABEL = { critical: 'Critical', warning: 'Warning', healthy: 'Healthy', no_data: 'No Health Data' }
 
 /* ── Draggable + resizable paper ── */
 function DraggablePaper(props) {

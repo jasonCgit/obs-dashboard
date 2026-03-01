@@ -254,19 +254,144 @@ def gif_applications(page):
     print("Capturing applications.gif ...")
     frames = []
     page.goto(f"{BASE_URL}/applications", wait_until="networkidle")
-    page.wait_for_timeout(600)
-    for _ in range(4):
+    page.wait_for_timeout(800)
+
+    # ── Show default cards view with tree sidebar ──
+    for _ in range(5):
         frames.append(shot(page))
-        page.wait_for_timeout(150)
-    for label in ["Critical", "Warning", "Healthy", "All"]:
+        page.wait_for_timeout(200)
+
+    # ── Tree sidebar: click a LOB node to filter ──
+    try:
+        tree_nodes = page.locator('[class*="MuiCollapse"] [class*="MuiBox-root"]').all()
+        # Click first LOB node in the tree (depth=1, after "All Applications")
+        lob_nodes = page.locator('text=Spectrum').first
+        if lob_nodes.is_visible(timeout=500):
+            lob_nodes.click()
+            page.wait_for_timeout(600)
+            for _ in range(4):
+                frames.append(shot(page))
+                page.wait_for_timeout(200)
+    except Exception:
+        pass
+
+    # ── Click back to All Applications ──
+    try:
+        page.locator('text=All Applications').first.click()
+        page.wait_for_timeout(500)
+        for _ in range(3):
+            frames.append(shot(page))
+            page.wait_for_timeout(200)
+    except Exception:
+        pass
+
+    # ── Switch tree to Business view ──
+    try:
+        page.get_by_role("button", name="Business").click()
+        page.wait_for_timeout(500)
+        for _ in range(4):
+            frames.append(shot(page))
+            page.wait_for_timeout(200)
+    except Exception:
+        pass
+
+    # ── Expand all tree nodes ──
+    try:
+        expand_btn = page.locator('[data-testid="UnfoldMoreIcon"]').first
+        if expand_btn.is_visible(timeout=500):
+            expand_btn.click()
+            page.wait_for_timeout(600)
+            for _ in range(4):
+                frames.append(shot(page))
+                page.wait_for_timeout(200)
+    except Exception:
+        pass
+
+    # ── Collapse all tree nodes ──
+    try:
+        collapse_btn = page.locator('[data-testid="UnfoldLessIcon"]').first
+        if collapse_btn.is_visible(timeout=500):
+            collapse_btn.click()
+            page.wait_for_timeout(500)
+            for _ in range(3):
+                frames.append(shot(page))
+                page.wait_for_timeout(200)
+    except Exception:
+        pass
+
+    # ── Switch back to Technology view ──
+    try:
+        page.get_by_role("button", name="Technology").click()
+        page.wait_for_timeout(500)
+        for _ in range(3):
+            frames.append(shot(page))
+            page.wait_for_timeout(200)
+    except Exception:
+        pass
+
+    # ── Status filter buttons ──
+    for label in ["Critical", "Warning", "All"]:
         try:
             page.get_by_role("button", name=label).click()
             page.wait_for_timeout(400)
             for _ in range(3):
                 frames.append(shot(page))
-                page.wait_for_timeout(120)
+                page.wait_for_timeout(150)
         except Exception:
             pass
+
+    # ── Search filter ──
+    try:
+        search = page.locator('input[placeholder*="Filter"]').first
+        if search.is_visible(timeout=500):
+            search.click()
+            search.fill("Auth")
+            page.wait_for_timeout(500)
+            for _ in range(4):
+                frames.append(shot(page))
+                page.wait_for_timeout(200)
+            search.fill("")
+            page.wait_for_timeout(400)
+    except Exception:
+        pass
+
+    # ── Expand all cards ──
+    try:
+        # The expand/collapse button for cards view is the UnfoldMore icon in the header
+        expand_cards = page.locator('[data-testid="UnfoldMoreIcon"]').last
+        if expand_cards.is_visible(timeout=500):
+            expand_cards.click()
+            page.wait_for_timeout(500)
+            for _ in range(4):
+                frames.append(shot(page))
+                page.wait_for_timeout(200)
+    except Exception:
+        pass
+
+    # ── Switch to table view ──
+    try:
+        table_btn = page.locator('[data-testid="ViewListIcon"]').first
+        if table_btn.is_visible(timeout=500):
+            table_btn.click()
+            page.wait_for_timeout(600)
+            for _ in range(5):
+                frames.append(shot(page))
+                page.wait_for_timeout(200)
+    except Exception:
+        pass
+
+    # ── Switch back to cards view ──
+    try:
+        cards_btn = page.locator('[data-testid="GridViewIcon"]').first
+        if cards_btn.is_visible(timeout=500):
+            cards_btn.click()
+            page.wait_for_timeout(500)
+            for _ in range(3):
+                frames.append(shot(page))
+                page.wait_for_timeout(200)
+    except Exception:
+        pass
+
     save_gif(frames, "applications.gif", fps=4)
 
 

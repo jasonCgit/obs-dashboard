@@ -14,8 +14,9 @@ import AppDetailModal from './AppDetailModal'
 import DeploymentDetailModal from './DeploymentDetailModal'
 import ContactModal from './ContactModal'
 
-const STATUS_COLOR = { critical: '#f44336', warning: '#ff9800', healthy: '#4caf50' }
-const STATUS_RANK = { critical: 0, warning: 1, healthy: 2 }
+const STATUS_COLOR = { critical: '#f44336', warning: '#ff9800', healthy: '#4caf50', no_data: '#78909c' }
+const STATUS_RANK = { critical: 0, warning: 1, healthy: 2, no_data: 3 }
+const STATUS_LABEL = { critical: 'critical', warning: 'warning', healthy: 'healthy', no_data: 'No health data' }
 
 /* ── Deployment sub-card ── */
 
@@ -48,7 +49,7 @@ function DeploymentCard({ deployment, app, teams, onSetContactApp, onSetDetailDe
           </Typography>
           <Box sx={{ flex: 1 }} />
           <Chip
-            label={d.status}
+            label={STATUS_LABEL[d.status] || d.status}
             size="small"
             sx={{
               height: 16, fontSize: '0.48rem', fontWeight: 700,
@@ -149,15 +150,23 @@ export default function AppCard({ app, teams = [], onAppTeamsChanged, onAppExclu
   const strictestRto = deployRtos.length > 0 ? Math.min(...deployRtos) : null
   const displayRto = strictestRto ?? rto
 
-  // Derive status from deployments/components
-  let derivedStatus = status
+  // Derive status from deployments/components (skip no_data for worst-of)
+  let derivedStatus = 'no_data'
   if (deployments.length > 0) {
+    let hasRag = false
     for (const d of deployments) {
-      if ((STATUS_RANK[d.status] ?? 2) < (STATUS_RANK[derivedStatus] ?? 2)) derivedStatus = d.status
+      if (d.status && d.status !== 'no_data') {
+        if (!hasRag) { derivedStatus = 'healthy'; hasRag = true }
+        if ((STATUS_RANK[d.status] ?? 2) < (STATUS_RANK[derivedStatus] ?? 2)) derivedStatus = d.status
+      }
       for (const c of (d.components || [])) {
+        if (c.status === 'no_data') continue
+        if (!hasRag) { derivedStatus = 'healthy'; hasRag = true }
         if ((STATUS_RANK[c.status] ?? 2) < (STATUS_RANK[derivedStatus] ?? 2)) derivedStatus = c.status
       }
     }
+  } else {
+    derivedStatus = 'no_data'
   }
 
   // Derive SLO
@@ -185,7 +194,7 @@ export default function AppCard({ app, teams = [], onAppTeamsChanged, onAppExclu
           </Typography>
           <Box sx={{ flex: 1 }} />
           <Chip
-            label={derivedStatus}
+            label={STATUS_LABEL[derivedStatus] || derivedStatus}
             size="small"
             sx={{
               height: 20, fontSize: '0.6rem', fontWeight: 700,

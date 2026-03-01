@@ -31,7 +31,7 @@ const FEATURES = [
   },
   {
     icon: AutoAwesomeIcon,
-    color: '#f59e0b',
+    color: '#1565C0',
     title: 'AURA AI Assistant',
     gif: 'aura-chat.gif',
     desc: 'AI-Powered Observability Insights — smart prompts, rich visual responses, and context-aware platform analysis.',
@@ -41,7 +41,14 @@ const FEATURES = [
     color: '#34d399',
     title: 'Blast Radius',
     gif: 'blast-radius.gif',
-    desc: 'Assess severity of business impacts — trace upstream and downstream impact across components, platforms, and data centers.',
+    desc: 'Assess severity of business impacts — trace upstream and downstream impacts across applications, deployments, components, platforms, and data centers.',
+  },
+  {
+    icon: AppsIcon,
+    color: '#4ade80',
+    title: 'Applications',
+    gif: 'applications.gif',
+    desc: 'Hierarchical application views with business and technology tree navigation, card and table layouts, status filtering, search, and expand/collapse — monitor health at every level of your org.',
   },
   {
     icon: ShieldIcon,
@@ -63,13 +70,6 @@ const FEATURES = [
     title: 'View Central',
     gif: 'view-central.gif',
     desc: 'Customizable dashboards for your team — drag-and-drop widgets, real-time notifications, and personalized views.',
-  },
-  {
-    icon: AppsIcon,
-    color: '#4ade80',
-    title: 'Applications',
-    gif: 'applications.gif',
-    desc: 'Full application registry with health status, SLA targets, team ownership, and 30-day incident history.',
   },
   {
     icon: RouteIcon,

@@ -5,12 +5,12 @@ import { Handle, Position, getSmoothStepPath } from '@xyflow/react'
 
 // ── Color maps ──────────────────────────────────────────────────────────────
 // RAG status only used for text color, NOT for node borders/backgrounds
-const STATUS_TEXT = { healthy: '#4caf50', warning: '#ff9800', critical: '#f44336' }
+const STATUS_TEXT = { healthy: '#4caf50', warning: '#ff9800', critical: '#f44336', no_data: '#78909c' }
 
 // Component layer color (dusty steel blue — primary layer)
 const COMP_BORDER = '#1565C0'
-const COMP_BG_DARK  = 'rgba(92,140,194,0.14)'
-const COMP_BG_LIGHT = 'rgba(92,140,194,0.18)'
+const COMP_BG_DARK  = 'rgba(92,140,194,0.25)'
+const COMP_BG_LIGHT = 'rgba(92,140,194,0.30)'
 
 // ── Component layer: Service node ───────────────────────────────────────────
 export const ServiceNode = memo(({ data, selected }) => {
@@ -49,7 +49,7 @@ export const ServiceNode = memo(({ data, selected }) => {
           {data.status}
         </Typography>
       </Box>
-      <Typography sx={{ fontSize: '0.76rem', color: isDark ? 'white' : '#0f172a',
+      <Typography sx={{ fontSize: '0.76rem', color: isDark ? '#fff' : '#000',
         wordBreak: 'break-word', lineHeight: 1.3 }}>
         {data.label}
       </Typography>
@@ -65,7 +65,7 @@ export const PlatformNode = memo(({ data }) => {
   const typeLabel = data.type?.toUpperCase() || 'PLATFORM'
   return (
     <Box sx={{
-      bgcolor: isDark ? 'rgba(194,123,160,0.16)' : 'rgba(194,123,160,0.18)',
+      bgcolor: isDark ? 'rgba(194,123,160,0.28)' : 'rgba(194,123,160,0.30)',
       border: '2px solid #C27BA0',
       borderRadius: 1.5,
       px: 1.5, py: 1,
@@ -95,7 +95,7 @@ export const PlatformNode = memo(({ data }) => {
         </Typography>
       </Box>
       <Typography sx={{ fontSize: '0.72rem', fontWeight: 600,
-        color: isDark ? '#e2e8f0' : '#0f172a', lineHeight: 1.3 }}>
+        color: isDark ? '#fff' : '#000', lineHeight: 1.3 }}>
         {typeLabel}: {data.label}
       </Typography>
     </Box>
@@ -112,7 +112,7 @@ export const DataCenterNode = memo(({ data }) => {
   const regionLabel = data.region || 'DC'
   return (
     <Box sx={{
-      bgcolor: isDark ? 'rgba(93,165,160,0.16)' : 'rgba(93,165,160,0.18)',
+      bgcolor: isDark ? 'rgba(93,165,160,0.28)' : 'rgba(93,165,160,0.30)',
       border: `2px solid ${DC_BORDER}`,
       borderRadius: 1.5,
       px: 1.5, py: 1,
@@ -140,7 +140,7 @@ export const DataCenterNode = memo(({ data }) => {
         </Typography>
       </Box>
       <Typography sx={{ fontSize: '0.72rem', fontWeight: 600,
-        color: isDark ? '#e2e8f0' : '#0f172a', lineHeight: 1.3 }}>
+        color: isDark ? '#fff' : '#000', lineHeight: 1.3 }}>
         {regionLabel}: {data.label}
       </Typography>
     </Box>
@@ -149,8 +149,8 @@ export const DataCenterNode = memo(({ data }) => {
 
 // ── Indicator layer node (Process Groups, Services, Synthetics) ─────────────
 const IND_BORDER = '#94a3b8'
-const IND_BG_DARK  = 'rgba(148,163,184,0.14)'
-const IND_BG_LIGHT = 'rgba(148,163,184,0.18)'
+const IND_BG_DARK  = 'rgba(148,163,184,0.25)'
+const IND_BG_LIGHT = 'rgba(148,163,184,0.30)'
 
 const INDICATOR_TYPE_LABELS = {
   process_group: 'PROCESS GROUP',
@@ -161,8 +161,8 @@ const INDICATOR_TYPE_LABELS = {
   'Synthetic': 'SYNTHETIC',
 }
 
-const HEALTH_STATUS_TEXT = { green: '#4caf50', amber: '#ff9800', red: '#f44336' }
-const HEALTH_STATUS_LABEL = { green: 'healthy', amber: 'warning', red: 'critical' }
+const HEALTH_STATUS_TEXT = { green: '#4caf50', amber: '#ff9800', red: '#f44336', no_data: '#78909c' }
+const HEALTH_STATUS_LABEL = { green: 'healthy', amber: 'warning', red: 'critical', no_data: 'no health data' }
 
 export const IndicatorNode = memo(({ data }) => {
   const theme = useTheme()
@@ -206,7 +206,7 @@ export const IndicatorNode = memo(({ data }) => {
         </Typography>
       </Box>
       <Typography sx={{ fontSize: '0.72rem', fontWeight: 600,
-        color: '#94a3b8', lineHeight: 1.3, wordBreak: 'break-word' }}>
+        color: isDark ? '#fff' : '#000', lineHeight: 1.3, wordBreak: 'break-word' }}>
         {`${typeLabel}: ${data.label}`}
       </Typography>
     </Box>
@@ -215,8 +215,8 @@ export const IndicatorNode = memo(({ data }) => {
 
 // ── External (cross-application) node ────────────────────────────────────────
 const EXT_BORDER = '#78716c'
-const EXT_BG_DARK  = 'rgba(120,113,108,0.12)'
-const EXT_BG_LIGHT = 'rgba(120,113,108,0.14)'
+const EXT_BG_DARK  = 'rgba(120,113,108,0.22)'
+const EXT_BG_LIGHT = 'rgba(120,113,108,0.26)'
 
 export const ExternalNode = memo(({ data }) => {
   const statusColor = STATUS_TEXT[data.status] || '#94a3b8'
@@ -254,7 +254,7 @@ export const ExternalNode = memo(({ data }) => {
           {data.status}
         </Typography>
       </Box>
-      <Typography sx={{ fontSize: '0.72rem', color: isDark ? '#a8a29e' : '#57534e',
+      <Typography sx={{ fontSize: '0.72rem', color: isDark ? '#fff' : '#000',
         wordBreak: 'break-word', lineHeight: 1.3 }}>
         {data.label}
       </Typography>
@@ -435,7 +435,7 @@ export const IndicatorGroupNode = memo(({ data }) => {
             </Typography>
             <Typography noWrap sx={{
               fontSize: '0.56rem', fontWeight: 500,
-              color: isDark ? '#94a3b8' : '#64748b', lineHeight: 1.2,
+              color: isDark ? '#fff' : '#000', lineHeight: 1.2,
             }}>
               {typeLabel}: {ind.label}
             </Typography>

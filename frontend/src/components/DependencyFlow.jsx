@@ -20,6 +20,7 @@ const STATUS = {
   healthy:  { border: '#4caf50', text: '#4caf50', bgDark: 'rgba(76,175,80,0.12)',  bgLight: 'rgba(76,175,80,0.16)' },
   warning:  { border: '#ff9800', text: '#ff9800', bgDark: 'rgba(255,152,0,0.12)',  bgLight: 'rgba(255,152,0,0.16)' },
   critical: { border: '#f44336', text: '#f44336', bgDark: 'rgba(244,67,54,0.12)',  bgLight: 'rgba(244,67,54,0.16)' },
+  no_data:  { border: '#78909c', text: '#78909c', bgDark: 'rgba(120,144,156,0.12)', bgLight: 'rgba(120,144,156,0.16)' },
 }
 const defaultStatus = { border: '#64748b', text: '#64748b', bgDark: 'rgba(100,116,139,0.12)', bgLight: 'rgba(100,116,139,0.16)' }
 

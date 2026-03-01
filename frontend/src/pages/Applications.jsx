@@ -243,7 +243,7 @@ export default function Applications() {
           onStatusFilter={setStatusFilter}
           treeMode={treeMode}
           onTreeModeChange={setTreeMode}
-          width={260}
+          width={320}
         />
 
         {/* Table panel */}

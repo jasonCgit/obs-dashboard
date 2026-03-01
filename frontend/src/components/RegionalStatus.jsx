@@ -12,6 +12,7 @@ const STATUS_CFG = {
   healthy:  { Icon: CheckCircleIcon, color: '#4caf50', label: 'Healthy' },
   critical: { Icon: ErrorIcon,       color: '#f44336', label: 'Critical' },
   warning:  { Icon: WarningAmberIcon,color: '#ff9800', label: 'Warning' },
+  no_data:  { Icon: CheckCircleIcon, color: '#78909c', label: 'No Health Data' },
 }
 
 export default function RegionalStatus({ data }) {

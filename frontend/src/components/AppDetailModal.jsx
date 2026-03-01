@@ -13,7 +13,7 @@ import ChatBubbleOutlineIcon from '@mui/icons-material/ChatBubbleOutline'
 import { useNavigate } from 'react-router-dom'
 import ContactModal from './ContactModal'
 
-const STATUS_COLOR = { critical: '#f44336', warning: '#ff9800', healthy: '#4caf50' }
+const STATUS_COLOR = { critical: '#f44336', warning: '#ff9800', healthy: '#4caf50', no_data: '#78909c' }
 
 /* ── Draggable + resizable paper ── */
 

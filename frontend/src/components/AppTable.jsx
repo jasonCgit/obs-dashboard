@@ -18,8 +18,9 @@ import AppDetailModal from './AppDetailModal'
 import DeploymentDetailModal from './DeploymentDetailModal'
 import ContactModal from './ContactModal'
 
-const STATUS_COLOR = { critical: '#f44336', warning: '#ff9800', healthy: '#4caf50' }
-const STATUS_RANK = { critical: 0, warning: 1, healthy: 2 }
+const STATUS_COLOR = { critical: '#f44336', warning: '#ff9800', healthy: '#4caf50', no_data: '#78909c' }
+const STATUS_RANK = { critical: 0, warning: 1, healthy: 2, no_data: 3 }
+const STATUS_LABEL = { critical: 'critical', warning: 'warning', healthy: 'healthy', no_data: 'No health data' }
 
 // Derive a deterministic relative time from id + incident count
 function deriveLastIncident(id, incidents, status) {
@@ -59,18 +60,21 @@ function deriveAppData(app) {
   const deployRtos = deployments.filter(d => d.rto != null).map(d => d.rto)
   const strictestRto = deployRtos.length > 0 ? Math.min(...deployRtos) : null
   const displayRto = strictestRto ?? app.rto
-  // Derive status purely from non-excluded components
-  let derivedStatus = 'healthy'
+  // Derive status purely from non-excluded components (skip no_data for worst-of)
+  let derivedStatus = 'no_data'
   if (deployments.length > 0) {
+    let hasRag = false
     for (const d of deployments) {
       const depExcl = new Set([...appExcl, ...(d.excluded_indicators || [])])
       for (const c of (d.components || [])) {
         if (depExcl.has(c.indicator_type)) continue
+        if (c.status === 'no_data') continue
+        if (!hasRag) { derivedStatus = 'healthy'; hasRag = true }
         if ((STATUS_RANK[c.status] ?? 2) < (STATUS_RANK[derivedStatus] ?? 2)) derivedStatus = c.status
       }
     }
   } else {
-    derivedStatus = app.status
+    derivedStatus = 'no_data'
   }
   // Derive SLO from deployments (min)
   const depSlos = deployments.map(d => d.slo).filter(v => v != null)
@@ -185,9 +189,12 @@ const AppTable = forwardRef(function AppTable({ apps, teams = [], onAppTeamsChan
             if (depExcl.has(c.indicator_type)) return allowed.has('healthy')
             return allowed.has(c.status || 'healthy')
           })
-          let depStatus = 'healthy'
+          let depStatus = 'no_data'
+          let depHasRag = false
           for (const c of (d.components || [])) {
             if (depExcl.has(c.indicator_type)) continue
+            if (c.status === 'no_data') continue
+            if (!depHasRag) { depStatus = 'healthy'; depHasRag = true }
             if ((STATUS_RANK[c.status] ?? 2) < (STATUS_RANK[depStatus] ?? 2)) depStatus = c.status
           }
           if (allowed.has(depStatus) || filteredComps.length > 0) {
@@ -260,6 +267,7 @@ const AppTable = forwardRef(function AppTable({ apps, teams = [], onAppTeamsChan
                 { key: 'critical', label: 'Critical', active: statusFilter.includes('critical'), color: '#f44336' },
                 { key: 'warning', label: 'Warning', active: statusFilter.includes('warning'), color: '#ff9800' },
                 { key: 'healthy', label: 'Healthy', active: statusFilter.includes('healthy'), color: '#4caf50' },
+                { key: 'no_data', label: 'No Data', active: statusFilter.includes('no_data'), color: '#78909c' },
               ].map(({ key, label, active, color }) => (
                 <Button
                   key={key}
@@ -351,7 +359,7 @@ const AppTable = forwardRef(function AppTable({ apps, teams = [], onAppTeamsChan
                           {row.name} — {row.seal}
                         </Typography>
                         <Chip
-                          label={row.derivedStatus}
+                          label={STATUS_LABEL[row.derivedStatus] || row.derivedStatus}
                           size="small"
                           sx={{
                             height: 20, fontSize: '0.6rem', fontWeight: 700,
@@ -485,7 +493,7 @@ const AppTable = forwardRef(function AppTable({ apps, teams = [], onAppTeamsChan
                                 {d.label}
                               </Typography>
                               <Chip
-                                label={d.status}
+                                label={STATUS_LABEL[d.status] || d.status}
                                 size="small"
                                 sx={{
                                   height: 18, fontSize: '0.52rem', fontWeight: 700,
@@ -593,7 +601,7 @@ const AppTable = forwardRef(function AppTable({ apps, teams = [], onAppTeamsChan
                                     {c.label}
                                   </Typography>
                                   <Chip
-                                    label={c.status}
+                                    label={STATUS_LABEL[c.status] || c.status}
                                     size="small"
                                     sx={{
                                       height: 16, fontSize: '0.48rem', fontWeight: 700,

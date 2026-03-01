@@ -1166,6 +1166,9 @@ INDICATOR_NODES = [
 # Precompute adjacency maps once at startup
 NODE_MAP = {n["id"]: n for n in NODES}
 
+# Components that have at least one health indicator — others get "no_data"
+COMPONENTS_WITH_INDICATORS: set[str] = {ind["component"] for ind in INDICATOR_NODES}
+
 forward_adj: dict[str, list[str]] = {n["id"]: [] for n in NODES}
 reverse_adj: dict[str, list[str]] = {n["id"]: [] for n in NODES}
 
@@ -1775,23 +1778,33 @@ def get_enriched_applications():
 
         # ── Dependency-propagated effective status ──
         # Each component's effective status = worst of (own status, all transitive dependency statuses)
-        _status_rank = {"critical": 0, "warning": 1, "healthy": 2}
+        _status_rank = {"critical": 0, "warning": 1, "healthy": 2, "no_data": 3}
 
         def _effective_status(cid):
             node = NODE_MAP.get(cid)
             if not node:
-                return "healthy"
+                return "no_data"
+            # Components without health indicators → no_data
+            if cid not in COMPONENTS_WITH_INDICATORS:
+                return "no_data"
             own = node["status"]
             dep_ids = bfs(cid, forward_adj)
             worst = own
             for did in dep_ids:
                 dn = NODE_MAP.get(did)
-                if dn and _status_rank.get(dn["status"], 9) < _status_rank.get(worst, 9):
-                    worst = dn["status"]
+                if not dn:
+                    continue
+                dep_status = dn["status"] if did in COMPONENTS_WITH_INDICATORS else "no_data"
+                if dep_status == "no_data":
+                    continue
+                if _status_rank.get(dep_status, 9) < _status_rank.get(worst, 9):
+                    worst = dep_status
             return worst
 
         def _comp_slo(node, eff_status):
             """Compute deterministic component SLO from SLA target and effective status."""
+            if eff_status == "no_data":
+                return None
             try:
                 target = float(node["sla"].replace("%", ""))
             except (ValueError, KeyError):
@@ -1852,11 +1865,15 @@ def get_enriched_applications():
             # Deployment exclusions = app-level + deployment-level
             dep_excl = app_excl | set(DEPLOYMENT_EXCLUDED_INDICATORS.get(f"{slug}:{plat_id}", []))
             active = [c for c in dep_comps if c["indicator_type"] not in dep_excl]
-            # Status = worst of active component statuses only (no hardcoded platform status)
-            worst = "healthy"
-            for c in active:
-                if _status_rank.get(c["status"], 9) < _status_rank.get(worst, 9):
-                    worst = c["status"]
+            # Status = worst of active RAG statuses; if all are no_data → no_data
+            rag_active = [c for c in active if c["status"] != "no_data"]
+            if not rag_active:
+                worst = "no_data"
+            else:
+                worst = "healthy"
+                for c in rag_active:
+                    if _status_rank.get(c["status"], 9) < _status_rank.get(worst, 9):
+                        worst = c["status"]
             # SLO = min of active component SLOs
             active_slos = [c["slo"] for c in active if c.get("slo") is not None]
             dep_slo = min(active_slos) if active_slos else None
@@ -1887,11 +1904,15 @@ def get_enriched_applications():
                 dep_id = d.get("id", "")
                 dep_excl = app_excl | set(DEPLOYMENT_EXCLUDED_INDICATORS.get(f"{slug}:{dep_id}", []))
                 active = [c for c in dep_comps if c["indicator_type"] not in dep_excl]
-                # Status purely from active components (ignore hardcoded status)
-                worst = "healthy"
-                for c in active:
-                    if _status_rank.get(c["status"], 9) < _status_rank.get(worst, 9):
-                        worst = c["status"]
+                # Status = worst of active RAG statuses; if all are no_data → no_data
+                rag_active = [c for c in active if c["status"] != "no_data"]
+                if not rag_active:
+                    worst = "no_data"
+                else:
+                    worst = "healthy"
+                    for c in rag_active:
+                        if _status_rank.get(c["status"], 9) < _status_rank.get(worst, 9):
+                            worst = c["status"]
                 d["status"] = worst
                 d["components"] = dep_comps
                 active_slos = [c["slo"] for c in active if c.get("slo") is not None]

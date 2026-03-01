@@ -51,7 +51,7 @@ A real-time observability platform purpose-built for AWM engineering — combini
 ---
 
 ### Applications
-> Full application registry with health status, SLA targets, team ownership, and 30-day incident history.
+> Hierarchical application views with business and technology tree navigation, card and table layouts, status filtering, search, and expand/collapse — monitor health at every level of your org.
 
 <img src="docs/gifs/applications.gif" alt="Applications" width="100%">
 
@@ -106,7 +106,7 @@ The frontend proxies all `/api/*` requests to the backend via Vite's dev server 
 | **Incident Zero** | Proactive pre-incident management — burn rate alerts, error budgets, breach ETAs, and prevention timelines to stop P1s before they start |
 | **Multi-Tenant Portal** | Branded portal instances with custom logos, titles, default scope filters, and one-click tenant switching |
 | **View Central** | Customizable dashboards for your team — drag-and-drop widgets, real-time notifications, and personalized views |
-| **Applications** | Full application registry with health status, SLA targets, team ownership, and 30-day incident history |
+| **Applications** | Hierarchical application views with business and technology tree navigation, card and table layouts, status filtering, search, and expand/collapse |
 | **Product Catalog** | Business products at a glance — health status, service counts, and direct links to observability views |
 | **Customer Journeys** | End-to-end path health — step-by-step latency and error rates across every service hop in your critical workflows |
 | **SLO Agent** | Autonomous agent that predicts SLO breaches, tracks error budgets, and proposes remediation before incidents happen |
