@@ -1711,66 +1711,9 @@ for _comp_id, _plat_id in COMPONENT_PLATFORM_EDGES:
 def get_enriched_applications():
     """Return all apps enriched with components, deployments, SLO, and completeness."""
     from collections import OrderedDict
+    from apps_registry import APPS_REGISTRY
 
-    # Mirror the APPS array from the frontend — generated from AWM portfolio spreadsheet
-    # Import app data from a shared JSON would be ideal, but for demo we duplicate
-    import json as _json, os as _os
-    _fe_path = _os.path.join(_os.path.dirname(__file__), "..", "frontend", "src", "data", "appData.js")
-    APPS_BACKEND = []
-    try:
-        with open(_fe_path, "r", encoding="utf-8") as _f:
-            _src = _f.read()
-        # Extract the APPS array via simple parsing: find first '[' after 'export const APPS'
-        _start = _src.index("export const APPS")
-        _arr_start = _src.index("[", _start)
-        _depth = 0
-        _arr_end = _arr_start
-        for _i in range(_arr_start, len(_src)):
-            if _src[_i] == "[":
-                _depth += 1
-            elif _src[_i] == "]":
-                _depth -= 1
-                if _depth == 0:
-                    _arr_end = _i + 1
-                    break
-        # Convert JS object array to JSON: add quotes around keys, handle trailing commas
-        import re as _re
-        _js_arr = _src[_arr_start:_arr_end]
-        # Remove single-line comments
-        _js_arr = _re.sub(r"//[^\n]*", "", _js_arr)
-        # Quote unquoted keys
-        _js_arr = _re.sub(r"(\s)(\w+)\s*:", r'\1"\2":', _js_arr)
-        # Remove trailing commas before ] or }
-        _js_arr = _re.sub(r",\s*([\]}])", r"\1", _js_arr)
-        # Convert JS single-quoted strings to double-quoted JSON strings
-        # Replace 'value' with "value" carefully (handle apostrophes in values)
-        _result = []
-        _in_str = False
-        _str_char = None
-        for _ch in _js_arr:
-            if not _in_str:
-                if _ch == "'":
-                    _result.append('"')
-                    _in_str = True
-                    _str_char = "'"
-                elif _ch == '"':
-                    _result.append('"')
-                    _in_str = True
-                    _str_char = '"'
-                else:
-                    _result.append(_ch)
-            else:
-                if _ch == _str_char:
-                    _result.append('"')
-                    _in_str = False
-                elif _ch == '"' and _str_char == "'":
-                    _result.append('\\"')
-                else:
-                    _result.append(_ch)
-        _js_arr = "".join(_result)
-        APPS_BACKEND = _json.loads(_js_arr)
-    except Exception:
-        APPS_BACKEND = []
+    APPS_BACKEND = APPS_REGISTRY
 
     results = []
     for app in APPS_BACKEND:
