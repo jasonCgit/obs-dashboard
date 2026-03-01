@@ -1,236 +1,314 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import {
-  Card, CardContent, Box, Typography, Chip, Collapse,
-  Table, TableBody, TableRow, TableCell,
-  IconButton, Stack, Divider,
+  Card, CardContent, Box, Typography, Chip, Link,
+  IconButton, Stack, Tooltip,
 } from '@mui/material'
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
 import ChevronRightIcon from '@mui/icons-material/ChevronRight'
 import FiberManualRecordIcon from '@mui/icons-material/FiberManualRecord'
+import ChatBubbleIcon from '@mui/icons-material/ChatBubble'
+import TuneIcon from '@mui/icons-material/Tune'
+import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined'
 import CrossLinkChips from './CrossLinkChips'
+import AppDetailModal from './AppDetailModal'
+import DeploymentDetailModal from './DeploymentDetailModal'
+import ContactModal from './ContactModal'
 
 const STATUS_COLOR = { critical: '#f44336', warning: '#ff9800', healthy: '#4caf50' }
+const STATUS_RANK = { critical: 0, warning: 1, healthy: 2 }
 
-/* ── Collapsible Section ── */
+/* ── Deployment sub-card ── */
 
-function Section({ title, defaultOpen = false, children, count }) {
-  const [open, setOpen] = useState(defaultOpen)
-  return (
-    <Box>
-      <Box
-        onClick={() => setOpen(o => !o)}
-        sx={{
-          display: 'flex', alignItems: 'center', gap: 0.5,
-          py: 0.5, cursor: 'pointer',
-          '&:hover': { bgcolor: 'action.hover' },
-          borderRadius: 0.5,
-        }}
-      >
-        <IconButton size="small" sx={{ p: 0, width: 20, height: 20 }}>
-          {open ? <ExpandMoreIcon sx={{ fontSize: 16 }} /> : <ChevronRightIcon sx={{ fontSize: 16 }} />}
-        </IconButton>
-        <Typography variant="caption" fontWeight={600} sx={{ fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: 0.5 }}>
-          {title}
-        </Typography>
-        {count != null && (
-          <Typography variant="caption" sx={{ fontSize: '0.62rem', color: 'text.disabled', ml: 0.5 }}>
-            ({count})
-          </Typography>
-        )}
-      </Box>
-      <Collapse in={open} timeout={150}>
-        <Box sx={{ pl: 2.5, pb: 1 }}>{children}</Box>
-      </Collapse>
-    </Box>
-  )
-}
-
-/* ── Deployment accordion row ── */
-
-function DeploymentRow({ deployment, failing, healthyCount }) {
-  const [open, setOpen] = useState(failing > 0)
+function DeploymentCard({ deployment, app, teams, onSetContactApp, onSetDetailDep, allExpanded }) {
+  const [open, setOpen] = useState(false)
+  useEffect(() => { setOpen(!!allExpanded) }, [allExpanded])
   const d = deployment
-  const depComps = d.components || []
+  const comps = d.components || []
+  const dColor = STATUS_COLOR[d.status] || '#999'
+
+  const depMetaItems = [
+    ['Deployment ID', d.id],
+    ['RTO', d.rto != null ? `${d.rto}h` : null],
+    ['SLO', d.slo != null ? `${d.slo}%` : null],
+    ['CPOF', d.cpof ? 'Yes' : null],
+  ].filter(([, v]) => v)
 
   return (
-    <Box>
-      <Box
-        onClick={() => setOpen(o => !o)}
-        sx={{
-          display: 'flex', alignItems: 'center', gap: 0.75,
-          py: 0.5, cursor: 'pointer',
-          '&:hover': { bgcolor: 'action.hover' },
-          borderRadius: 0.5,
-        }}
-      >
-        <IconButton size="small" sx={{ p: 0, width: 18, height: 18 }}>
-          {open ? <ExpandMoreIcon sx={{ fontSize: 14 }} /> : <ChevronRightIcon sx={{ fontSize: 14 }} />}
-        </IconButton>
-        <FiberManualRecordIcon sx={{ fontSize: 7, color: STATUS_COLOR[d.status] || '#999' }} />
-        <Typography variant="caption" fontWeight={600} sx={{ fontSize: '0.68rem', flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-          {d.label}
-        </Typography>
-        {d.deployment_id && (
-          <Typography variant="caption" color="text.disabled" sx={{ fontSize: '0.58rem', flexShrink: 0 }}>
-            {d.deployment_id}
+    <Card variant="outlined" sx={{ bgcolor: 'rgba(0,0,0,0.02)' }}>
+      <Box sx={{ px: 1.25, py: 0.75 }}>
+        {/* Row 1: name ... status */}
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, mb: 0.25 }}>
+          {comps.length > 0 && (
+            <IconButton size="small" onClick={() => setOpen(o => !o)} sx={{ p: 0, width: 18, height: 18 }}>
+              {open ? <ExpandMoreIcon sx={{ fontSize: 14 }} /> : <ChevronRightIcon sx={{ fontSize: 14 }} />}
+            </IconButton>
+          )}
+          <Typography variant="caption" fontWeight={600} sx={{ fontSize: '0.7rem', minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: 'text.secondary' }}>
+            {d.label}
           </Typography>
-        )}
-        {d.cpof && (
-          <Chip label="CPOF" size="small" sx={{ height: 14, fontSize: '0.52rem', fontWeight: 700, bgcolor: '#e3f2fd', color: '#1565c0', flexShrink: 0 }} />
-        )}
-        {d.rto != null && (
-          <Typography variant="caption" sx={{ fontSize: '0.56rem', color: 'text.disabled', flexShrink: 0 }}>
-            RTO {d.rto}h
-          </Typography>
-        )}
-        {failing > 0 ? (
-          <Typography variant="caption" sx={{ fontSize: '0.62rem', color: '#f44336', fontWeight: 600, flexShrink: 0 }}>
-            {failing} failing
-          </Typography>
-        ) : depComps.length > 0 ? (
-          <Typography variant="caption" sx={{ fontSize: '0.62rem', color: 'text.disabled', flexShrink: 0 }}>
-            {healthyCount}/{depComps.length}
-          </Typography>
-        ) : null}
-      </Box>
-      {depComps.length > 0 && (
-        <Collapse in={open} timeout={150}>
-          <Stack spacing={0.25} sx={{ pl: 3.5, pb: 0.75 }}>
-            {depComps.map(c => (
-              <Box key={c.id} sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
-                <FiberManualRecordIcon sx={{ fontSize: 6, color: STATUS_COLOR[c.status] || '#999' }} />
-                <Typography
-                  variant="caption"
-                  sx={{
-                    fontSize: '0.68rem', flex: 1, minWidth: 0,
-                    overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-                    fontWeight: c.status !== 'healthy' ? 600 : 400,
-                    color: c.status !== 'healthy' ? 'text.primary' : 'text.secondary',
-                  }}
-                >
-                  {c.label}
-                </Typography>
-                {c.incidents_30d > 0 && (
-                  <Typography variant="caption" sx={{ fontSize: '0.6rem', color: STATUS_COLOR[c.status] || '#ff9800', fontWeight: 600 }}>
-                    {c.incidents_30d} inc
+          <Box sx={{ flex: 1 }} />
+          <Chip
+            label={d.status}
+            size="small"
+            sx={{
+              height: 16, fontSize: '0.48rem', fontWeight: 700,
+              textTransform: 'uppercase',
+              bgcolor: `${dColor}18`,
+              color: dColor,
+              flexShrink: 0,
+            }}
+          />
+        </Box>
+
+        {/* Row 2: metadata + contact + manage + cpof */}
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+          {depMetaItems.length > 0 && (
+            <Tooltip
+              arrow
+              title={
+                <Box sx={{ fontSize: '0.64rem' }}>
+                  {depMetaItems.map(([k, v]) => (
+                    <Box key={k}><b>{k}:</b> {v}</Box>
+                  ))}
+                </Box>
+              }
+            >
+              <IconButton size="small" sx={{ p: 0.25, flexShrink: 0 }}>
+                <InfoOutlinedIcon sx={{ fontSize: 13, color: 'text.disabled' }} />
+              </IconButton>
+            </Tooltip>
+          )}
+          <Tooltip title="Contact Team" arrow>
+            <IconButton size="small" onClick={() => onSetContactApp?.({ ...app, name: `${app.name} — ${d.label}` })} sx={{ p: 0.25, flexShrink: 0 }}>
+              <ChatBubbleIcon sx={{ fontSize: 13, color: '#42a5f5' }} />
+            </IconButton>
+          </Tooltip>
+          <Tooltip title="Manage" arrow>
+            <IconButton size="small" onClick={() => onSetDetailDep?.({ deployment: d, app })} sx={{ p: 0.25, flexShrink: 0, color: '#42a5f5', '&:hover': { color: '#1e88e5' } }}>
+              <TuneIcon sx={{ fontSize: 13 }} />
+            </IconButton>
+          </Tooltip>
+          {d.cpof && (
+            <Chip
+              label="CPOF"
+              size="small"
+              sx={{ height: 16, fontSize: '0.48rem', fontWeight: 700, bgcolor: '#e3f2fd', color: '#1565c0', flexShrink: 0 }}
+            />
+          )}
+        </Box>
+
+        {/* Components (expandable) */}
+        {open && comps.length > 0 && (
+          <Stack spacing={0.25} sx={{ mt: 0.75, pl: 1 }}>
+            {comps.map(c => {
+              const cColor = STATUS_COLOR[c.status] || '#999'
+              return (
+                <Box key={c.id} sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+                  <FiberManualRecordIcon sx={{ fontSize: 5, color: cColor, flexShrink: 0 }} />
+                  <Typography
+                    variant="caption"
+                    sx={{
+                      fontSize: '0.62rem', flex: 1, minWidth: 0,
+                      overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                      color: 'text.primary',
+                    }}
+                  >
+                    {c.label}
                   </Typography>
-                )}
-              </Box>
-            ))}
+                </Box>
+              )
+            })}
           </Stack>
-        </Collapse>
-      )}
-    </Box>
+        )}
+      </Box>
+    </Card>
   )
 }
 
 /* ── Main Card ── */
 
-export default function AppCard({ app }) {
+export default function AppCard({ app, teams = [], onAppTeamsChanged, onAppExcludedChanged, allExpanded }) {
+  const [contactApp, setContactApp] = useState(null)
+  const [detailApp, setDetailApp] = useState(null)
+  const [detailDep, setDetailDep] = useState(null)
+  const [showDeps, setShowDeps] = useState(false)
+  useEffect(() => { setShowDeps(!!allExpanded) }, [allExpanded])
+  const resolveTeams = (a) => (a.team_ids || []).map(id => teams.find(t => t.id === id)).filter(Boolean)
   const {
-    name, team, status, sla, incidents_30d, last,
+    name, status, incidents_30d, last,
     seal, lob, subLob, cto, cbt, appOwner, cpof,
     riskRanking, classification, state, investmentStrategy, rto,
     productLine, product,
     deployments = [],
   } = app
 
-  // Derive CPOF from deployments: app has CPOF if any deployment is CPOF
+  // Derive CPOF from deployments
   const hasCpof = cpof === 'Yes' || deployments.some(d => d.cpof)
-  // Derive strictest RTO from deployments (smallest non-null value)
+  // Derive strictest RTO
   const deployRtos = deployments.filter(d => d.rto != null).map(d => d.rto)
   const strictestRto = deployRtos.length > 0 ? Math.min(...deployRtos) : null
   const displayRto = strictestRto ?? rto
 
-  // Derive app status from deployments/components (worst status wins)
-  const statusRank = { critical: 0, warning: 1, healthy: 2 }
+  // Derive status from deployments/components
   let derivedStatus = status
   if (deployments.length > 0) {
     for (const d of deployments) {
-      if (statusRank[d.status] < statusRank[derivedStatus]) derivedStatus = d.status
+      if ((STATUS_RANK[d.status] ?? 2) < (STATUS_RANK[derivedStatus] ?? 2)) derivedStatus = d.status
       for (const c of (d.components || [])) {
-        if (statusRank[c.status] < statusRank[derivedStatus]) derivedStatus = c.status
+        if ((STATUS_RANK[c.status] ?? 2) < (STATUS_RANK[derivedStatus] ?? 2)) derivedStatus = c.status
       }
     }
   }
 
+  // Derive SLO
+  const depSlos = deployments.map(d => d.slo).filter(v => v != null)
+  const sloVal = depSlos.length > 0 ? Math.min(...depSlos) : app.slo?.current
+
+  const statusColor = STATUS_COLOR[derivedStatus] || '#999'
+
+  // Metadata tooltip content
+  const metaItems = [
+    ['LOB', lob], ['Sub LOB', subLob], ['Product Line', productLine], ['Product', product],
+    ['CTO', cto], ['CBT', cbt], ['App Owner', appOwner],
+    ['RTO', displayRto ? `${displayRto}h` : null],
+    ['Risk Ranking', riskRanking], ['Classification', classification],
+    ['State', state], ['Investment', investmentStrategy],
+  ].filter(([, v]) => v)
+
   return (
-    <Card sx={{ height: '100%' }}>
-      <CardContent sx={{ py: '10px !important', px: 1.5 }}>
-        {/* ── Header ── */}
-        <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', mb: 0.5 }}>
-          <Box sx={{ minWidth: 0, flex: 1 }}>
-            <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 0.75, mb: 0.25 }}>
-              <Typography variant="body2" fontWeight={700} sx={{ lineHeight: 1.3, fontSize: '0.82rem' }}>
-                {name} — {seal}
-              </Typography>
-            </Box>
-            <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.66rem' }}>
-              SLO: {app.slo?.current ?? '—'}% · Incidents 30d: {incidents_30d} · Team: {team}
-            </Typography>
-          </Box>
-          <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 0.5, ml: 1, flexShrink: 0 }}>
-            <Chip
-              label={derivedStatus.toUpperCase()}
-              size="small"
-              sx={{
-                bgcolor: `${STATUS_COLOR[derivedStatus]}22`,
-                color: STATUS_COLOR[derivedStatus],
-                fontWeight: 700, fontSize: '0.6rem', height: 18,
-              }}
-            />
-            <CrossLinkChips seal={seal} only={['blast-radius']} />
-          </Box>
+    <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+      <CardContent sx={{ py: '10px !important', px: 1.5, flex: 1, display: 'flex', flexDirection: 'column' }}>
+        {/* ── Row 1: name ... status ── */}
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, mb: 0.25 }}>
+          <Typography variant="body2" fontWeight={700} sx={{ fontSize: '0.82rem', minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: '#1976d2' }}>
+            {name} — {seal}
+          </Typography>
+          <Box sx={{ flex: 1 }} />
+          <Chip
+            label={derivedStatus}
+            size="small"
+            sx={{
+              height: 20, fontSize: '0.6rem', fontWeight: 700,
+              textTransform: 'uppercase',
+              bgcolor: `${statusColor}18`,
+              color: statusColor,
+              flexShrink: 0,
+            }}
+          />
         </Box>
 
-        <Divider sx={{ mb: 0.5 }} />
-
-        {/* ── Expandable sections ── */}
-
-        <Section title="Deployments" count={deployments.length} defaultOpen={deployments.some(d => d.status !== 'healthy')}>
-          {deployments.length === 0 ? (
-            <Typography variant="caption" color="text.disabled" sx={{ fontSize: '0.7rem' }}>No deployment data</Typography>
-          ) : (
-            <Stack spacing={0}>
-              {deployments.map(d => {
-                const depComps = d.components || []
-                const healthyCount = depComps.filter(c => c.status === 'healthy').length
-                const failing = depComps.length - healthyCount
-                return (
-                  <DeploymentRow key={d.id} deployment={d} failing={failing} healthyCount={healthyCount} />
-                )
-              })}
-            </Stack>
+        {/* ── Row 2: blast radius + metadata + contact + manage + cpof ── */}
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, mb: 0.25 }}>
+          <CrossLinkChips seal={seal} only={['blast-radius']} />
+          <Tooltip
+            arrow
+            title={
+              <Box sx={{ fontSize: '0.64rem' }}>
+                {metaItems.map(([k, v]) => (
+                  <Box key={k}><b>{k}:</b> {v}</Box>
+                ))}
+              </Box>
+            }
+          >
+            <IconButton size="small" sx={{ p: 0.25, flexShrink: 0 }}>
+              <InfoOutlinedIcon sx={{ fontSize: 15, color: 'text.disabled' }} />
+            </IconButton>
+          </Tooltip>
+          <Tooltip title="Contact Team" arrow>
+            <IconButton size="small" onClick={() => setContactApp(app)} sx={{ p: 0.25, flexShrink: 0 }}>
+              <ChatBubbleIcon sx={{ fontSize: 15, color: '#42a5f5' }} />
+            </IconButton>
+          </Tooltip>
+          <Tooltip title="Manage" arrow>
+            <IconButton size="small" onClick={() => setDetailApp(app)} sx={{ p: 0.25, flexShrink: 0, color: '#42a5f5', '&:hover': { color: '#1e88e5' } }}>
+              <TuneIcon sx={{ fontSize: 15 }} />
+            </IconButton>
+          </Tooltip>
+          {hasCpof && (
+            <Chip
+              label="CPOF"
+              size="small"
+              sx={{ height: 20, fontSize: '0.6rem', fontWeight: 700, bgcolor: '#e3f2fd', color: '#1565c0', flexShrink: 0 }}
+            />
           )}
-        </Section>
+        </Box>
 
-        <Section title="Metadata">
-          <Table size="small" sx={{ '& td': { py: 0.2, px: 0.5, border: 0, fontSize: '0.66rem' }, '& td:first-of-type': { color: 'text.secondary', width: 110 } }}>
-            <TableBody>
-              {[
-                ['LOB', lob],
-                ['Sub LOB', subLob || '—'],
-                ['Product Line', productLine || '—'],
-                ['Product', product || '—'],
-                ['CTO', cto],
-                ['CBT', cbt],
-                ['App Owner', appOwner],
-                ['CPOF', hasCpof ? 'Yes' : 'No'],
-                ['Risk Ranking', riskRanking],
-                ['Classification', classification],
-                ['State', state],
-                ['Investment', investmentStrategy],
-                ['Strictest RTO', displayRto ? `${displayRto}h` : '—'],
-              ].map(([k, v]) => (
-                <TableRow key={k}>
-                  <TableCell>{k}</TableCell>
-                  <TableCell>{v}</TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </Section>
+        {/* ── Row 3: stats ── */}
+        <Box sx={{ display: 'flex', gap: 1.5, mb: 0.75, flexWrap: 'wrap', alignItems: 'center' }}>
+          <Typography variant="caption" sx={{ fontSize: '0.72rem', color: 'text.disabled' }}>
+            SLO Status: <Box component="span" sx={{ fontWeight: 700, color: sloVal != null ? 'text.secondary' : 'text.disabled' }}>{sloVal != null ? `${sloVal}%` : '—'}</Box>
+          </Typography>
+          <Typography variant="caption" sx={{ fontSize: '0.72rem', color: 'text.disabled' }}>
+            Open P1/P2:{' '}
+            {(incidents_30d ?? 0) > 0 ? (
+              <Link href="#" onClick={e => e.preventDefault()} underline="hover" sx={{ fontSize: '0.72rem', fontWeight: 700, color: incidents_30d > 2 ? '#f44336' : '#ff9800' }}>
+                {incidents_30d}
+              </Link>
+            ) : (
+              <Box component="span" sx={{ fontWeight: 700, color: 'text.disabled' }}>0</Box>
+            )}
+          </Typography>
+          <Typography variant="caption" sx={{ fontSize: '0.72rem', color: 'text.disabled' }}>
+            Last Incident: <Box component="span" sx={{ color: last && last !== '—' ? 'text.secondary' : 'text.disabled' }}>{last || '—'}</Box>
+          </Typography>
+        </Box>
+
+        {/* ── Deployment cards ── */}
+        {deployments.length > 0 && (
+          <>
+            <Box
+              onClick={() => setShowDeps(v => !v)}
+              sx={{ display: 'flex', alignItems: 'center', gap: 0.5, cursor: 'pointer', mb: 0.5 }}
+            >
+              <IconButton size="small" sx={{ p: 0, width: 18, height: 18 }}>
+                {showDeps ? <ExpandMoreIcon sx={{ fontSize: 14 }} /> : <ChevronRightIcon sx={{ fontSize: 14 }} />}
+              </IconButton>
+              <Typography variant="caption" sx={{ fontSize: '0.66rem', color: 'text.disabled', fontWeight: 600 }}>
+                {deployments.length} Deployment{deployments.length !== 1 ? 's' : ''}
+              </Typography>
+            </Box>
+            {showDeps && (
+              <Stack spacing={0.75} sx={{ flex: 1 }}>
+                {deployments.map(d => (
+                  <DeploymentCard key={d.id} deployment={d} app={app} teams={teams} onSetContactApp={setContactApp} onSetDetailDep={setDetailDep} allExpanded={allExpanded} />
+                ))}
+              </Stack>
+            )}
+          </>
+        )}
+        {deployments.length === 0 && (
+          <Typography variant="caption" color="text.disabled" sx={{ fontSize: '0.66rem' }}>
+            No deployment data
+          </Typography>
+        )}
       </CardContent>
+
+      {/* Modals */}
+      {detailApp && (
+        <AppDetailModal
+          app={detailApp}
+          teams={teams}
+          onClose={() => setDetailApp(null)}
+          onTeamsChanged={onAppTeamsChanged}
+          onExcludedIndicatorsChanged={onAppExcludedChanged}
+        />
+      )}
+      {detailDep && (
+        <DeploymentDetailModal
+          deployment={detailDep.deployment}
+          app={detailDep.app}
+          teams={teams}
+          onClose={() => setDetailDep(null)}
+          onExcludedIndicatorsChanged={onAppExcludedChanged}
+        />
+      )}
+      {contactApp && (
+        <ContactModal
+          app={contactApp}
+          teams={resolveTeams(contactApp)}
+          onClose={() => setContactApp(null)}
+        />
+      )}
     </Card>
   )
 }

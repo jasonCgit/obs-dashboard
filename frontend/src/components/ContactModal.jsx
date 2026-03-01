@@ -90,11 +90,7 @@ export default function ContactModal({ app, team, teams: teamsProp, onClose }) {
   const isDark = theme.palette.mode === 'dark'
   const teamsList = teamsProp || (team ? [team] : [])
 
-  const title = teamsList.length === 1
-    ? `Contact ${teamsList[0].name}`
-    : teamsList.length > 1
-      ? `Contact ${teamsList.length} Teams`
-      : `Contact ${app?.team || 'Team'}`
+  const title = 'Contact'
 
   // Fetch all managed teams so user can add more
   const [allTeams, setAllTeams] = useState([])

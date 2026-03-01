@@ -126,6 +126,16 @@ const AppTable = forwardRef(function AppTable({ apps, teams = [], onAppTeamsChan
   const [expandedApps, setExpandedApps] = useState(new Set())
   const [expandedDeps, setExpandedDeps] = useState(new Set())
 
+  // Restore expand-all state from sessionStorage on mount
+  const expandedOnce = useState(false)
+  useEffect(() => {
+    if (!expandedOnce[0] && sessionStorage.getItem('apps-table-expanded') === 'true' && rows.length > 0) {
+      expandedOnce[0] = true
+      setExpandedApps(new Set(rows.filter(r => r.depCount > 0).map(r => r.name)))
+      setExpandedDeps(new Set(rows.flatMap(r => (r.deployments || []).filter(d => (d.components || []).length > 0).map(d => d.id))))
+    }
+  }, [rows])
+
   const toggleApp = (name) => setExpandedApps(prev => {
     const next = new Set(prev)
     if (next.has(name)) next.delete(name)
@@ -143,11 +153,13 @@ const AppTable = forwardRef(function AppTable({ apps, teams = [], onAppTeamsChan
   const expandAll = () => {
     setExpandedApps(new Set(rows.filter(r => r.depCount > 0).map(r => r.name)))
     setExpandedDeps(new Set(rows.flatMap(r => (r.deployments || []).filter(d => (d.components || []).length > 0).map(d => d.id))))
+    sessionStorage.setItem('apps-table-expanded', 'true')
   }
 
   const collapseAll = () => {
     setExpandedApps(new Set())
     setExpandedDeps(new Set())
+    sessionStorage.setItem('apps-table-expanded', 'false')
   }
 
   const isAllExpanded = rows.filter(r => r.depCount > 0).every(r => expandedApps.has(r.name))

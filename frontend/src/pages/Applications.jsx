@@ -7,9 +7,12 @@ import NavigateNextIcon from '@mui/icons-material/NavigateNext'
 import SearchIcon from '@mui/icons-material/Search'
 import UnfoldMoreIcon from '@mui/icons-material/UnfoldMore'
 import UnfoldLessIcon from '@mui/icons-material/UnfoldLess'
+import ViewListIcon from '@mui/icons-material/ViewList'
+import GridViewIcon from '@mui/icons-material/GridView'
 import { useFilters } from '../FilterContext'
 import AppTreeSidebar from '../components/AppTreeSidebar'
 import AppTable from '../components/AppTable'
+import AppCard from '../components/AppCard'
 
 const SS_KEY = 'apps-page-state'
 const STATUS_RANK = { critical: 0, warning: 1, healthy: 2 }
@@ -37,6 +40,8 @@ export default function Applications() {
   const [appFilter, setAppFilter] = useState('')
   const tableRef = useRef(null)
   const [, forceUpdate] = useState(0)
+  const [viewMode, setViewMode] = useState(() => sessionStorage.getItem('apps-view-mode') || 'cards')
+  const [cardsAllExpanded, setCardsAllExpanded] = useState(() => sessionStorage.getItem('apps-cards-expanded') === 'true')
 
   // Full-viewport height calc
   const containerRef = useRef(null)
@@ -333,7 +338,7 @@ export default function Applications() {
                   {visible.length} of {appsWithEnrichment.length}
                 </Typography>
               )}
-              {!loading && (
+              {!loading && viewMode === 'table' && (
                 <Tooltip title={tableRef.current?.isAllExpanded ? 'Collapse All' : 'Expand All'} arrow>
                   <IconButton
                     size="small"
@@ -351,6 +356,42 @@ export default function Applications() {
                   </IconButton>
                 </Tooltip>
               )}
+              {!loading && viewMode === 'cards' && (
+                <Tooltip title={cardsAllExpanded ? 'Collapse All' : 'Expand All'} arrow>
+                  <IconButton
+                    size="small"
+                    onClick={() => setCardsAllExpanded(v => { const next = !v; sessionStorage.setItem('apps-cards-expanded', String(next)); return next })}
+                    sx={{ p: 0.25 }}
+                  >
+                    {cardsAllExpanded
+                      ? <UnfoldLessIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
+                      : <UnfoldMoreIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
+                    }
+                  </IconButton>
+                </Tooltip>
+              )}
+              {!loading && (
+                <Box sx={{ display: 'flex', alignItems: 'center', ml: 0.5, borderLeft: '1px solid', borderColor: 'divider', pl: 0.5 }}>
+                  <Tooltip title="Table View" arrow>
+                    <IconButton
+                      size="small"
+                      onClick={() => { setViewMode('table'); sessionStorage.setItem('apps-view-mode', 'table') }}
+                      sx={{ p: 0.25, color: viewMode === 'table' ? '#1976d2' : 'text.disabled' }}
+                    >
+                      <ViewListIcon sx={{ fontSize: 18 }} />
+                    </IconButton>
+                  </Tooltip>
+                  <Tooltip title="Cards View" arrow>
+                    <IconButton
+                      size="small"
+                      onClick={() => { setViewMode('cards'); sessionStorage.setItem('apps-view-mode', 'cards') }}
+                      sx={{ p: 0.25, color: viewMode === 'cards' ? '#1976d2' : 'text.disabled' }}
+                    >
+                      <GridViewIcon sx={{ fontSize: 18 }} />
+                    </IconButton>
+                  </Tooltip>
+                </Box>
+              )}
             </Box>
           </Box>
 
@@ -364,9 +405,17 @@ export default function Applications() {
                 No applications match the current filters.
               </Typography>
             </Box>
-          ) : (
+          ) : viewMode === 'table' ? (
             <Box sx={{ flex: 1, minHeight: 0, overflow: 'hidden' }}>
               <AppTable ref={tableRef} apps={visible} teams={teams} onAppTeamsChanged={handleAppTeamsChanged} onAppExcludedChanged={handleExcludedIndicatorsChanged} externalFilter={appFilter} onExternalFilterChange={setAppFilter} hideFilterBar />
+            </Box>
+          ) : (
+            <Box sx={{ flex: 1, minHeight: 0, overflow: 'auto', pt: 1 }}>
+              <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(408px, 1fr))', gap: 1.5 }}>
+                {visible.filter(app => !appFilter || app.name.toLowerCase().includes(appFilter.toLowerCase())).map(app => (
+                  <AppCard key={app.name} app={app} teams={teams} onAppTeamsChanged={handleAppTeamsChanged} onAppExcludedChanged={handleExcludedIndicatorsChanged} allExpanded={cardsAllExpanded} />
+                ))}
+              </Box>
             </Box>
           )}
         </Box>
