@@ -23,9 +23,16 @@ A real-time observability platform purpose-built for AWM engineering — combini
 ---
 
 ### Blast Radius
-> Assess severity of business impacts — trace upstream and downstream impact across components, platforms, and data centers.
+> Assess severity of business impacts — trace upstream and downstream impacts across applications, deployments, components, platforms, and data centers.
 
 <img src="docs/gifs/blast-radius.gif" alt="Blast Radius" width="100%">
+
+---
+
+### Applications
+> Hierarchical application views with business and technology tree navigation, card and table layouts, status filtering, search, and expand/collapse — monitor health at every level of your org.
+
+<img src="docs/gifs/applications.gif" alt="Applications" width="100%">
 
 ---
 
@@ -47,20 +54,6 @@ A real-time observability platform purpose-built for AWM engineering — combini
 > Customizable dashboards for your team — drag-and-drop widgets, real-time notifications, and personalized views.
 
 <img src="docs/gifs/view-central.gif" alt="View Central" width="100%">
-
----
-
-### Applications
-> Hierarchical application views with business and technology tree navigation, card and table layouts, status filtering, search, and expand/collapse — monitor health at every level of your org.
-
-<img src="docs/gifs/applications.gif" alt="Applications" width="100%">
-
----
-
-### Product Catalog
-> Business products at a glance — health status, service counts, and direct links to observability views.
-
-<img src="docs/gifs/product-catalog.gif" alt="Product Catalog" width="100%">
 
 ---
 
@@ -102,12 +95,11 @@ The frontend proxies all `/api/*` requests to the backend via Vite's dev server 
 |---------|-------------|
 | **Executive Overview** | AI-driven summary, live health status, and context-driven measures across your entire platform ecosystem |
 | **AURA AI Assistant** | AI-Powered Observability Insights — smart prompts, rich visual responses, and context-aware platform analysis |
-| **Blast Radius** | Assess severity of business impacts — trace upstream and downstream impact across components, platforms, and data centers |
+| **Blast Radius** | Assess severity of business impacts — trace upstream and downstream impacts across applications, deployments, components, platforms, and data centers |
+| **Applications** | Hierarchical application views with business and technology tree navigation, card and table layouts, status filtering, search, and expand/collapse |
 | **Incident Zero** | Proactive pre-incident management — burn rate alerts, error budgets, breach ETAs, and prevention timelines to stop P1s before they start |
 | **Multi-Tenant Portal** | Branded portal instances with custom logos, titles, default scope filters, and one-click tenant switching |
 | **View Central** | Customizable dashboards for your team — drag-and-drop widgets, real-time notifications, and personalized views |
-| **Applications** | Hierarchical application views with business and technology tree navigation, card and table layouts, status filtering, search, and expand/collapse |
-| **Product Catalog** | Business products at a glance — health status, service counts, and direct links to observability views |
 | **Customer Journeys** | End-to-end path health — step-by-step latency and error rates across every service hop in your critical workflows |
 | **SLO Agent** | Autonomous agent that predicts SLO breaches, tracks error budgets, and proposes remediation before incidents happen |
 | **Announcements** | Create, manage, and broadcast platform announcements — with search, filters, pinning, and live auto-refresh |
