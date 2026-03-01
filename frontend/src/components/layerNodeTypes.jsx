@@ -258,7 +258,7 @@ export const ExternalNode = memo(({ data }) => {
         wordBreak: 'break-word', lineHeight: 1.3 }}>
         {data.label}
       </Typography>
-      <Typography sx={{ fontSize: '0.5rem', color: EXT_BORDER, opacity: 0.7, mt: 0.25 }}>
+      <Typography sx={{ fontSize: '0.5rem', mt: 0.25, color: isDark ? '#fff' : '#333', fontWeight: 600 }}>
         {appLabel}
       </Typography>
     </Box>

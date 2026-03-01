@@ -2915,6 +2915,14 @@ if not _FRONTEND_DIST.is_dir():
 if _FRONTEND_DIST.is_dir():
     app.mount("/assets", StaticFiles(directory=_FRONTEND_DIST / "assets"), name="static-assets")
 
+# Serve docs/gifs — same dual-layout detection as frontend dist
+_GIFS_DIR = Path(__file__).resolve().parent.parent / "docs" / "gifs"
+if not _GIFS_DIR.is_dir():
+    _GIFS_DIR = Path(__file__).resolve().parent / "docs" / "gifs"
+if _GIFS_DIR.is_dir():
+    app.mount("/gifs", StaticFiles(directory=_GIFS_DIR), name="gifs")
+
+if _FRONTEND_DIST.is_dir():
     @app.get("/{full_path:path}")
     async def serve_spa(full_path: str):
         """Serve index.html for any non-API route (SPA catch-all)."""

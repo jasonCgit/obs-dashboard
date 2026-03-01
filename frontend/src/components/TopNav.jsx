@@ -79,6 +79,14 @@ export default function TopNav() {
   const navigate           = useNavigate()
   const { pathname }       = useLocation()
   const [openTabs, setOpenTabs] = useState(loadTabs)
+
+  // Sync tabs when another component calls openAppTab()
+  useEffect(() => {
+    const handler = () => setOpenTabs(loadTabs())
+    window.addEventListener('obs-tabs-changed', handler)
+    return () => window.removeEventListener('obs-tabs-changed', handler)
+  }, [])
+
   const [anchorEl, setAnchorEl] = useState(null)
   const [tabSearch, setTabSearch] = useState('')
   const [profileAnchor, setProfileAnchor] = useState(null)

@@ -37,7 +37,7 @@ export default function Applications() {
   const [enrichedMap, setEnrichedMap] = useState({})       // slug → enriched data
   const [loading, setLoading] = useState(true)
   const [teams, setTeams] = useState([])
-  const [appFilter, setAppFilter] = useState('')
+  const [appFilter, setAppFilter] = useState(saved.current?.appFilter || '')
   const tableRef = useRef(null)
   const [, forceUpdate] = useState(0)
   const [viewMode, setViewMode] = useState(() => sessionStorage.getItem('apps-view-mode') || 'cards')
@@ -75,6 +75,15 @@ export default function Applications() {
 
   // Scroll ref for content panel
   const scrollRef = useRef(null)
+
+  // Clear one-time appFilter from sessionStorage so it doesn't persist across navigations
+  useEffect(() => {
+    if (saved.current?.appFilter) {
+      const prev = JSON.parse(sessionStorage.getItem(SS_KEY) || '{}')
+      delete prev.appFilter
+      sessionStorage.setItem(SS_KEY, JSON.stringify(prev))
+    }
+  }, [])
 
   // Persist state to sessionStorage for back-button restoration
   useEffect(() => {

@@ -1,8 +1,9 @@
-import { useNavigate } from 'react-router-dom'
 import { Chip, Stack } from '@mui/material'
+import { useNavigate } from 'react-router-dom'
 import LayersIcon from '@mui/icons-material/Layers'
 import SpeedIcon from '@mui/icons-material/Speed'
 import ShieldIcon from '@mui/icons-material/Shield'
+import openAppTab from '../utils/openAppTab'
 
 const LINKS = [
   { key: 'blast-radius', icon: LayersIcon,  label: 'Blast Radius',  path: '/graph-layers' },
@@ -21,6 +22,7 @@ export default function CrossLinkChips({ seal, service, only }) {
         if (seal && key === 'blast-radius') params.set('seal', seal)
         if (service) params.set('service', service)
         const q = params.toString()
+        const fullPath = `${path}${q ? `?${q}` : ''}`
         const active = (key === 'blast-radius' && !!seal) || (key !== 'blast-radius' && !!service)
         return (
           <Chip
@@ -29,7 +31,7 @@ export default function CrossLinkChips({ seal, service, only }) {
             label={label}
             size="small"
             variant={active ? 'filled' : 'outlined'}
-            onClick={(e) => { e.stopPropagation(); navigate(`${path}${q ? `?${q}` : ''}`) }}
+            onClick={(e) => { e.stopPropagation(); openAppTab(fullPath, navigate) }}
             sx={{
               fontSize: '0.68rem', height: 22,
               cursor: 'pointer',

@@ -408,3 +408,132 @@ Returns: impact severity, incident count/trend, business-perspective executive s
 **Currently mocked in**: `backend/main.py` — `_AURA_SCENARIOS` dict (line ~2848). Uses keyword matching to select from 11 hardcoded scenario response handlers.
 
 **Live integration**: Replace keyword-matching `_AURA_SCENARIOS` with actual AURA AI API calls. Pass current health state, incidents, and graph context as prompt context. Stream response tokens back via SSE.
+
+---
+
+## Search & Filter Endpoints
+
+The application inventory and filter metadata are currently hardcoded in `frontend/src/data/appData.js`. These endpoints will replace the static data with backend-served values. The frontend filter logic (`FilterContext.jsx`) and UI components (`SearchFilterPopover.jsx`, `ScopeBar.jsx`) already consume data generically — only the data source needs to change.
+
+### GET /api/apps
+
+Returns the full application inventory.
+
+**Response — `200 OK`**:
+```json
+[
+  {
+    "name": "GWM GLOBAL COLLATERAL MANAGEMENT",
+    "seal": "90176",
+    "team": "Collateral",
+    "status": "critical",
+    "sla": "99.9%",
+    "incidents": 12,
+    "last": "15m ago",
+    "lob": "AWM",
+    "subLob": "Global Private Bank",
+    "cto": "Gitanjali Nistala",
+    "cbt": "Aadi Thayyar",
+    "appOwner": "Nathan Brooks",
+    "cpof": "Yes",
+    "riskRanking": "Critical",
+    "classification": "In House",
+    "state": "Operate",
+    "investmentStrategy": "Invest",
+    "rto": "2"
+  }
+]
+```
+
+**App Object Schema**:
+
+| Field               | Type   | Required | Description                                     |
+|---------------------|--------|----------|-------------------------------------------------|
+| `name`              | string | yes      | Application display name (uppercase convention) |
+| `seal`              | string | yes      | Unique SEAL identifier (e.g. `"90176"`)         |
+| `team`              | string | yes      | Owning team name                                |
+| `status`            | string | yes      | `critical` \| `warning` \| `healthy`            |
+| `sla`               | string | yes      | SLA target percentage                           |
+| `incidents`         | number | yes      | Active incident count                           |
+| `last`              | string | yes      | Last incident relative timestamp                |
+| `lob`               | string | yes      | Line of Business                                |
+| `subLob`            | string | no       | Sub-LOB (only for AWM, CIB)                     |
+| `cto`               | string | yes      | CTO name                                        |
+| `cbt`               | string | yes      | CBT name                                        |
+| `appOwner`          | string | yes      | Application owner name                          |
+| `cpof`              | string | yes      | `Yes` \| `No`                                   |
+| `riskRanking`       | string | yes      | `Critical` \| `High` \| `Medium` \| `Low`       |
+| `classification`    | string | yes      | `In House` \| `Vendor` \| `SaaS`                |
+| `state`             | string | yes      | `Operate` \| `Build` \| `Sunset`                |
+| `investmentStrategy`| string | yes      | `Invest` \| `Maintain` \| `Retire`              |
+| `rto`               | string | yes      | Recovery Time Objective (hours)                 |
+
+**Currently mocked in**: `frontend/src/data/appData.js` — `APPS` array (24 entries)
+
+**Live integration**: Source from real CMDB / app registry (ServiceNow, AppDynamics, etc.).
+
+---
+
+### GET /api/filters
+
+Returns filter field definitions, option values, and grouping metadata. Replaces the static `FILTER_FIELDS` array and `getFilterOptions()` in `appData.js`.
+
+**Response — `200 OK`**:
+```json
+{
+  "fields": [
+    { "key": "seal",               "label": "App" },
+    { "key": "lob",                "label": "LOB" },
+    { "key": "subLob",             "label": "Sub LOB" },
+    { "key": "cto",                "label": "CTO" },
+    { "key": "cbt",                "label": "CBT" },
+    { "key": "appOwner",           "label": "App Owner" },
+    { "key": "cpof",               "label": "CPOF" },
+    { "key": "riskRanking",        "label": "Risk Ranking" },
+    { "key": "classification",     "label": "Classification" },
+    { "key": "state",              "label": "State" },
+    { "key": "investmentStrategy", "label": "Investment Strategy" },
+    { "key": "rto",                "label": "RTO" }
+  ],
+  "groups": [
+    { "label": "Taxonomy",          "keys": ["lob", "subLob", "seal", "state", "classification", "investmentStrategy"] },
+    { "label": "People",            "keys": ["cto", "cbt", "appOwner"] },
+    { "label": "Risk & Compliance", "keys": ["cpof", "riskRanking", "rto"] }
+  ],
+  "options": {
+    "seal":               ["Advisor Connect - 90176", "Spectrum Equities - 90215"],
+    "lob":                ["AWM", "CCB", "CIB", "Corporate"],
+    "cpof":               ["Yes", "No"],
+    "riskRanking":        ["Critical", "High", "Medium", "Low"],
+    "classification":     ["In House", "Vendor", "SaaS"],
+    "state":              ["Operate", "Build", "Sunset"],
+    "investmentStrategy": ["Invest", "Maintain", "Retire"]
+  },
+  "subLobMap": {
+    "AWM": ["Asset Management", "AWM Shared", "Global Private Bank"],
+    "CIB": ["Digital Platform and Services", "Global Banking", "Markets", "Payments"]
+  },
+  "sealDisplay": {
+    "90176": "Advisor Connect - 90176",
+    "90215": "Spectrum Equities - 90215",
+    "88180": "Connect OS - 88180"
+  }
+}
+```
+
+**Currently mocked in**: `frontend/src/data/appData.js` — `FILTER_FIELDS` array + `getFilterOptions()` function
+
+**Live integration**: Dynamically derive options from the app inventory. `subLobMap` reflects real LOB hierarchy. `sealDisplay` maps SEAL IDs to `"<Name> - <ID>"` display format.
+
+---
+
+### Filter Logic (Client-Side)
+
+Filtering is applied **client-side** after fetching the full app list from `/api/apps`.
+
+- **Text search**: Case-insensitive substring match across `name`, `seal`, `team`, `appOwner`, `cto`
+- **AND across fields**: An app must satisfy every active filter field
+- **OR within a field**: Selecting multiple values matches any of them
+- **SEAL display parsing**: Values use display format `"Name - 90176"`, raw ID extracted via `/ - (\d+)$/`
+- **Sub-LOB dependency**: Disabled unless a LOB with known sub-LOBs (AWM or CIB) is selected
+- **Tenant scoping**: Each tenant defines `defaultFilters` (e.g. `{ seal: ['90176'] }`); "Reset" restores tenant defaults, not blank state

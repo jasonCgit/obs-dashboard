@@ -292,10 +292,9 @@ export default function SearchFilterPopover({ anchorEl, open, onClose }) {
     >
       <ClickAwayListener onClickAway={onClose}>
       <Paper elevation={8} sx={{
-        width: 1008,
-        minWidth: 1008,
-        minHeight: 600,
-        maxHeight: '85vh',
+        width: 'clamp(360px, 50vw, 800px)',
+        maxHeight: '80vh',
+        resize: 'both',
         bgcolor: 'background.paper',
         border: '1px solid',
         borderColor: 'divider',

@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { useSearchParams, useNavigate } from 'react-router-dom'
 import {
   Box, Typography, Chip, Divider, CircularProgress, Alert, Stack,
   Card, CardContent, CardHeader, Autocomplete, TextField, Link,
@@ -13,9 +13,11 @@ import RadarIcon          from '@mui/icons-material/Radar'
 import ErrorIcon          from '@mui/icons-material/Error'
 import WarningIcon        from '@mui/icons-material/Warning'
 import TrendingUpIcon     from '@mui/icons-material/TrendingUp'
+import OpenInNewIcon      from '@mui/icons-material/OpenInNew'
 import LayeredDependencyFlow from '../components/LayeredDependencyFlow'
 import { useFilters }     from '../FilterContext'
-import { parseSealDisplay } from '../data/appData'
+import { parseSealDisplay, APPS } from '../data/appData'
+import openAppTab from '../utils/openAppTab'
 
 // ── All SEALs (matches backend SEAL_COMPONENTS) ────────────────────────────
 const ALL_SEALS = [
@@ -352,7 +354,7 @@ function DependencyOverview({ apiData, activeLayers, seal }) {
 }
 
 // ── Node detail panel (sidebar) ─────────────────────────────────────────────
-function NodeDetailPanel({ node, onNavigateToSeal }) {
+function NodeDetailPanel({ node, onGoToApp, onJumpToSeal }) {
   if (!node) {
     return (
       <Box sx={{ textAlign: 'center', mt: 4 }}>
@@ -538,29 +540,32 @@ function NodeDetailPanel({ node, onNavigateToSeal }) {
         {nodeType === 'external' && node.external_seal && (
           <>
             <Divider sx={{ my: 1 }} />
-            <Box
-              onClick={() => onNavigateToSeal?.(node.external_seal)}
-              sx={{
-                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 0.5,
-                py: 0.6, px: 1, borderRadius: 1,
-                cursor: 'pointer',
-                bgcolor: (t) => t.palette.mode === 'dark' ? 'rgba(21,101,192,0.18)' : 'rgba(21,101,192,0.10)',
-                border: '1.5px solid', borderColor: (t) => t.palette.mode === 'dark' ? 'rgba(21,101,192,0.5)' : 'rgba(21,101,192,0.35)',
-                transition: 'all 0.18s',
-                '&:hover': {
-                  bgcolor: (t) => t.palette.mode === 'dark' ? 'rgba(21,101,192,0.30)' : 'rgba(21,101,192,0.18)',
-                  borderColor: (t) => t.palette.mode === 'dark' ? 'rgba(21,101,192,0.7)' : 'rgba(21,101,192,0.5)',
-                  transform: 'translateY(-1px)',
-                  boxShadow: '0 2px 6px rgba(21,101,192,0.2)',
-                },
-              }}
-            >
-              <RadarIcon sx={{ fontSize: 13, color: '#1565C0' }} />
-              <Typography sx={{ fontSize: '0.65rem', fontWeight: 800, color: '#1565C0' }}>
-                View {node.external_seal_label} Blast Radius
-              </Typography>
-              <Typography sx={{ fontSize: '0.75rem', color: '#1565C0', lineHeight: 1 }}>{'\u2192'}</Typography>
-            </Box>
+            <Stack spacing={0.75}>
+              <Chip
+                icon={<RadarIcon sx={{ fontSize: '14px !important' }} />}
+                label="Jump to App"
+                size="small"
+                onClick={() => onJumpToSeal?.(node.external_seal)}
+                sx={{
+                  width: '100%', fontWeight: 700, fontSize: '0.68rem', height: 28,
+                  cursor: 'pointer', color: '#fff', bgcolor: '#1565C0',
+                  '& .MuiChip-icon': { color: '#fff' },
+                  '&:hover': { bgcolor: '#1258a8' },
+                }}
+              />
+              <Chip
+                icon={<OpenInNewIcon sx={{ fontSize: '14px !important' }} />}
+                label="View in Applications"
+                size="small"
+                onClick={() => onGoToApp?.(node.external_seal)}
+                sx={{
+                  width: '100%', fontWeight: 700, fontSize: '0.68rem', height: 28,
+                  cursor: 'pointer', color: '#fff', bgcolor: '#1565C0',
+                  '& .MuiChip-icon': { color: '#fff' },
+                  '&:hover': { bgcolor: '#1258a8' },
+                }}
+              />
+            </Stack>
           </>
         )}
       </CardContent>
@@ -571,22 +576,26 @@ function NodeDetailPanel({ node, onNavigateToSeal }) {
 
 // ── Main page ───────────────────────────────────────────────────────────────
 export default function GraphLayers() {
-  const { activeFilters } = useFilters()
+  const { activeFilters, filteredApps, searchText } = useFilters()
+  const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
   const urlSeal = searchParams.get('seal') || ''
 
+  const hasActiveScope = searchText || Object.keys(activeFilters).length > 0
+
   const availableSeals = useMemo(() => {
-    const sealFilter = activeFilters.seal || []
-    if (sealFilter.length === 0) return ALL_SEALS
-    const rawSeals = sealFilter.map(parseSealDisplay)
-    const filtered = ALL_SEALS.filter(s => rawSeals.includes(s.seal))
+    if (!hasActiveScope) return ALL_SEALS
+    // Derive available seals from filteredApps so ALL filter types
+    // (CTO, LOB, searchText, etc.) reduce the dropdown — not just seal filters
+    const matchingSeals = new Set(filteredApps.map(app => app.seal))
+    const filtered = ALL_SEALS.filter(s => matchingSeals.has(s.seal))
     // Always include the URL seal so navigating from another page works
     if (urlSeal && !filtered.find(s => s.seal === urlSeal)) {
       const urlEntry = ALL_SEALS.find(s => s.seal === urlSeal)
       if (urlEntry) filtered.unshift(urlEntry)
     }
     return filtered
-  }, [activeFilters, urlSeal])
+  }, [hasActiveScope, filteredApps, urlSeal])
   const [selectedSeal, setSelectedSeal] = useState(urlSeal)
   const [apiData, setApiData]           = useState(null)
   const [loading, setLoading]           = useState(false)
@@ -596,6 +605,25 @@ export default function GraphLayers() {
     try { return parseInt(sessionStorage.getItem('gl-sidebar-tab') || '0', 10) } catch { return 0 }
   })
   const [sidebarOpen, setSidebarOpen]   = useState(false)
+
+  // Navigate to Applications page with tree opened to CBT level and app name in filter box
+  const goToApplications = useCallback((seal) => {
+    const app = seal && APPS.find(a => a.seal === seal)
+    if (app) {
+      const lob = app.lob || '(No LOB)'
+      const cto = app.cto || '(No CTO)'
+      const cbt = app.cbt || '(No CBT)'
+      const selectedPath = `l3:${lob}/${cto}/${cbt}`
+      sessionStorage.setItem('apps-page-state', JSON.stringify({
+        statusFilter: [], selectedPath, treeMode: 'technology', appFilter: app.name,
+      }))
+      sessionStorage.setItem('apps-tree-expanded', JSON.stringify([
+        'all', `lob:${lob}`, `sub:${lob}/${cto}`, selectedPath,
+      ]))
+      sessionStorage.setItem('apps-cards-expanded', 'true')
+    }
+    openAppTab('/applications', navigate)
+  }, [navigate])
 
   const [layers, setLayers] = useState(() => {
     const layerParam = searchParams.get('layers')
@@ -789,6 +817,24 @@ export default function GraphLayers() {
                 />
               )
             })}
+            {selectedSeal && (
+              <>
+                <Divider sx={{ width: '100%', my: 0.25 }} />
+                <Chip
+                  icon={<OpenInNewIcon sx={{ fontSize: '14px !important' }} />}
+                  label="View in Applications"
+                  size="small"
+                  onClick={() => goToApplications(selectedSeal)}
+                  sx={{
+                    alignSelf: 'center',
+                    fontWeight: 700, fontSize: '0.68rem', height: 26,
+                    cursor: 'pointer', color: '#fff', bgcolor: '#1565C0',
+                    '& .MuiChip-icon': { color: '#fff' },
+                    '&:hover': { bgcolor: '#1258a8' },
+                  }}
+                />
+              </>
+            )}
           </Stack>
           {loading && (
             <Box sx={{ position: 'absolute', inset: 0, zIndex: 10, display: 'flex', alignItems: 'center',
@@ -812,6 +858,7 @@ export default function GraphLayers() {
                 apiData={apiData}
                 activeLayers={layers}
                 onNodeSelect={handleNodeSelect}
+                onGoToApp={goToApplications}
               />
             </>
           )}
@@ -865,7 +912,7 @@ export default function GraphLayers() {
 
               <Box sx={{ flexGrow: 1, overflowY: 'auto', p: 2 }}>
                 {sidebarTab === 0 && <DependencyOverview apiData={apiData} activeLayers={layers} seal={selectedSeal} />}
-                {sidebarTab === 1 && <NodeDetailPanel node={selectedNode} onNavigateToSeal={setSelectedSeal} />}
+                {sidebarTab === 1 && <NodeDetailPanel node={selectedNode} onGoToApp={goToApplications} onJumpToSeal={setSelectedSeal} />}
               </Box>
             </>
           ) : (

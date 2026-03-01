@@ -580,12 +580,27 @@ function buildLayeredGraph(apiData, activeLayers) {
       const zoneTop = minY - zonePadY
       const zoneW = NODE_DIMS.service.w + 120
 
+      // Collect unique seals per zone for clickable links
+      const upSeals = [], downSeals = []
+      const seenUp = new Set(), seenDown = new Set()
+      for (const n of extNodes) {
+        const s = n.external_seal
+        if (!s) continue
+        if (n.cross_direction === 'upstream' && !seenUp.has(s)) {
+          seenUp.add(s)
+          upSeals.push({ seal: s, label: n.external_seal_label || s })
+        } else if (n.cross_direction !== 'upstream' && !seenDown.has(s)) {
+          seenDown.add(s)
+          downSeals.push({ seal: s, label: n.external_seal_label || s })
+        }
+      }
+
       if (upstreamColX != null) {
         rfNodes.push({
           id: '__zone-upstream', type: 'zone',
           position: { x: upstreamColX - zoneW / 2, y: zoneTop },
           zIndex: 0, selectable: false, draggable: false, connectable: false,
-          data: { width: zoneW, height: zoneHeight, label: 'Upstream', direction: 'upstream' },
+          data: { width: zoneW, height: zoneHeight, label: 'Upstream', direction: 'upstream', seals: upSeals },
         })
       }
       if (downstreamColX != null) {
@@ -593,7 +608,7 @@ function buildLayeredGraph(apiData, activeLayers) {
           id: '__zone-downstream', type: 'zone',
           position: { x: downstreamColX - zoneW / 2, y: zoneTop },
           zIndex: 0, selectable: false, draggable: false, connectable: false,
-          data: { width: zoneW, height: zoneHeight, label: 'Downstream', direction: 'downstream' },
+          data: { width: zoneW, height: zoneHeight, label: 'Downstream', direction: 'downstream', seals: downSeals },
         })
       }
     }
@@ -614,7 +629,7 @@ function miniMapNodeColor(n) {
 }
 
 // ── Main component ──────────────────────────────────────────────────────────
-function LayeredDependencyFlowInner({ apiData, activeLayers, onNodeSelect }) {
+function LayeredDependencyFlowInner({ apiData, activeLayers, onNodeSelect, onGoToApp }) {
   const [nodes, setNodes, onNodesChange] = useNodesState([])
   const [edges, setEdges, onEdgesChange] = useEdgesState([])
   const [highlightedEdges, setHighlightedEdges] = useState(new Set())
@@ -625,6 +640,12 @@ function LayeredDependencyFlowInner({ apiData, activeLayers, onNodeSelect }) {
   // Rebuild graph whenever data or layers change
   useEffect(() => {
     const { nodes: rfNodes, edges: rfEdges } = buildLayeredGraph(apiData, activeLayers)
+    // Inject navigation callback into zone and external nodes
+    if (onGoToApp) {
+      rfNodes.forEach(n => {
+        if (n.type === 'zone' || n.type === 'external') n.data.onGoToApp = onGoToApp
+      })
+    }
     setNodes(rfNodes)
     setEdges(rfEdges)
     setHighlightedEdges(new Set())
