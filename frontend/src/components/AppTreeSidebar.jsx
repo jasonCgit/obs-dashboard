@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from 'react'
+import { useState, useMemo, useCallback, useEffect, useRef } from 'react'
 import {
   Box, Typography, ToggleButtonGroup, ToggleButton,
   Collapse, IconButton, Tooltip,
@@ -11,6 +11,19 @@ import FiberManualRecordIcon from '@mui/icons-material/FiberManualRecord'
 
 const STATUS_RANK = { critical: 0, warning: 1, healthy: 2, no_data: 3 }
 const STATUS_COLOR = { critical: '#f44336', warning: '#ff9800', healthy: '#4caf50', no_data: '#78909c' }
+
+const SS_TREE_KEY = 'apps-tree-expanded'
+
+function loadExpandedPaths() {
+  try {
+    const raw = sessionStorage.getItem(SS_TREE_KEY)
+    return raw ? new Set(JSON.parse(raw)) : null
+  } catch { return null }
+}
+
+function saveExpandedPaths(expanded) {
+  sessionStorage.setItem(SS_TREE_KEY, JSON.stringify([...expanded]))
+}
 
 function derivedStatus(app) {
   const deployments = app.deployments || []
@@ -83,16 +96,15 @@ function collectApps(obj) {
 
 function isAncestorOf(nodePath, selectedPath) {
   if (!selectedPath || selectedPath === 'all' || nodePath === 'all') return false
-  // Extract the value parts after the prefix (lob:, sub:, l3:, l4:)
   const selParts = selectedPath.replace(/^[^:]+:/, '').split('/')
   const nodeParts = nodePath.replace(/^[^:]+:/, '').split('/')
   if (nodeParts.length >= selParts.length) return false
   return nodeParts.every((p, i) => p === selParts[i])
 }
 
-function TreeNode({ label, apps, depth, children, selectedPath, onSelect, path, allExpanded }) {
-  const [open, setOpen] = useState(() => allExpanded ? true : depth === 0)
-  const isLeafBranch = !children // has apps directly
+function TreeNode({ label, apps, depth, children, selectedPath, onSelect, path, expandedPaths, onToggle }) {
+  const isOpen = expandedPaths.has(path)
+  const isLeafBranch = !children
   const status = worstStatus(apps)
   const isSelected = selectedPath === path
 
@@ -100,7 +112,7 @@ function TreeNode({ label, apps, depth, children, selectedPath, onSelect, path, 
     <Box>
       <Box
         onClick={() => {
-          if (children) setOpen(o => !o)
+          if (children) onToggle(path)
           onSelect(path, apps)
         }}
         sx={{
@@ -114,7 +126,7 @@ function TreeNode({ label, apps, depth, children, selectedPath, onSelect, path, 
       >
         {children ? (
           <IconButton size="small" sx={{ p: 0, width: 18, height: 18 }}>
-            {open ? <ExpandMoreIcon sx={{ fontSize: 16 }} /> : <ChevronRightIcon sx={{ fontSize: 16 }} />}
+            {isOpen ? <ExpandMoreIcon sx={{ fontSize: 16 }} /> : <ChevronRightIcon sx={{ fontSize: 16 }} />}
           </IconButton>
         ) : (
           <Box sx={{ width: 18 }} />
@@ -137,7 +149,7 @@ function TreeNode({ label, apps, depth, children, selectedPath, onSelect, path, 
         </Typography>
       </Box>
       {children && (
-        <Collapse in={open} timeout={150}>
+        <Collapse in={isOpen} timeout={150}>
           {children}
         </Collapse>
       )}
@@ -153,12 +165,63 @@ export default function AppTreeSidebar({ apps, onSelect, selectedPath, statusFil
   const techTree = useMemo(() => buildTechTree(apps), [apps])
 
   const tree = mode === 'business' ? businessTree : techTree
-  const [allExpanded, setAllExpanded] = useState(null)
-  const [treeVersion, setTreeVersion] = useState(0)
-  const toggleExpandAll = useCallback(() => {
-    setAllExpanded(v => v === true ? false : true)
-    setTreeVersion(v => v + 1)
+
+  // Collect all possible tree paths for expand/collapse-all
+  const allPaths = useMemo(() => {
+    const paths = new Set(['all'])
+    for (const lob of Object.keys(tree)) {
+      paths.add(`lob:${lob}`)
+      for (const sub of Object.keys(tree[lob])) {
+        paths.add(`sub:${lob}/${sub}`)
+        for (const l3 of Object.keys(tree[lob][sub])) {
+          paths.add(`l3:${lob}/${sub}/${l3}`)
+          if (!Array.isArray(tree[lob][sub][l3])) {
+            for (const l4 of Object.keys(tree[lob][sub][l3])) {
+              paths.add(`l4:${lob}/${sub}/${l3}/${l4}`)
+            }
+          }
+        }
+      }
+    }
+    return paths
+  }, [tree])
+
+  // Centralized expansion state — persisted to sessionStorage
+  const [expandedPaths, setExpandedPaths] = useState(() => {
+    const saved = loadExpandedPaths()
+    if (saved) return saved
+    return new Set(['all'])
+  })
+
+  // Persist whenever expandedPaths changes
+  useEffect(() => { saveExpandedPaths(expandedPaths) }, [expandedPaths])
+
+  // Reset expansions when tree mode changes (paths differ between business/technology)
+  const prevMode = useRef(mode)
+  useEffect(() => {
+    if (prevMode.current !== mode) {
+      setExpandedPaths(new Set(['all']))
+      prevMode.current = mode
+    }
+  }, [mode])
+
+  const toggleNode = useCallback((path) => {
+    setExpandedPaths(prev => {
+      const next = new Set(prev)
+      if (next.has(path)) next.delete(path)
+      else next.add(path)
+      return next
+    })
   }, [])
+
+  const isAllExpanded = allPaths.size > 0 && [...allPaths].every(p => expandedPaths.has(p))
+
+  const toggleExpandAll = useCallback(() => {
+    setExpandedPaths(prev => {
+      if ([...allPaths].every(p => prev.has(p))) return new Set()
+      return new Set(allPaths)
+    })
+  }, [allPaths])
 
   return (
     <Box sx={{
@@ -184,9 +247,9 @@ export default function AppTreeSidebar({ apps, onSelect, selectedPath, statusFil
               Technology
             </ToggleButton>
           </ToggleButtonGroup>
-          <Tooltip title={allExpanded === true ? 'Collapse All' : 'Expand All'} arrow>
+          <Tooltip title={isAllExpanded ? 'Collapse All' : 'Expand All'} arrow>
             <IconButton size="small" onClick={toggleExpandAll} sx={{ p: 0.5 }}>
-              {allExpanded === true ? <UnfoldLessIcon sx={{ fontSize: 18 }} /> : <UnfoldMoreIcon sx={{ fontSize: 18 }} />}
+              {isAllExpanded ? <UnfoldLessIcon sx={{ fontSize: 18 }} /> : <UnfoldMoreIcon sx={{ fontSize: 18 }} />}
             </IconButton>
           </Tooltip>
         </Box>
@@ -196,39 +259,42 @@ export default function AppTreeSidebar({ apps, onSelect, selectedPath, statusFil
       <Box sx={{ flex: 1, overflow: 'auto', pb: 1 }}>
         {/* "All" root node */}
         <TreeNode
-          key={treeVersion}
           label="All Applications"
           apps={apps}
           depth={0}
           selectedPath={selectedPath}
           onSelect={onSelect}
           path="all"
-          allExpanded={allExpanded}
+          expandedPaths={expandedPaths}
+          onToggle={toggleNode}
         >
-          {Object.keys(tree).sort().map((lob, li) => {
+          {Object.keys(tree).sort().map((lob) => {
             const lobApps = collectApps(tree[lob])
             return (
               <TreeNode key={lob} label={lob} apps={lobApps} depth={1}
-                selectedPath={selectedPath} onSelect={onSelect} path={`lob:${lob}`} allExpanded={allExpanded}
+                selectedPath={selectedPath} onSelect={onSelect} path={`lob:${lob}`}
+                expandedPaths={expandedPaths} onToggle={toggleNode}
               >
-                {Object.keys(tree[lob]).sort().map((sub, si) => {
+                {Object.keys(tree[lob]).sort().map((sub) => {
                   const subApps = collectApps(tree[lob][sub])
                   const skipSub = sub === '(General)' && Object.keys(tree[lob]).length === 1
 
                   const l3Keys = Object.keys(tree[lob][sub]).sort()
-                  const l3Content = l3Keys.map((l3, l3i) => {
+                  const l3Content = l3Keys.map((l3) => {
                     const l3Apps = collectApps(tree[lob][sub][l3])
                     const l3Children = Array.isArray(tree[lob][sub][l3]) ? null : tree[lob][sub][l3]
                     const l4Keys = l3Children ? Object.keys(l3Children).sort() : []
                     return (
                       <TreeNode key={l3} label={l3} apps={l3Apps} depth={skipSub ? 2 : 3}
-                        selectedPath={selectedPath} onSelect={onSelect} path={`l3:${lob}/${sub}/${l3}`} allExpanded={allExpanded}
+                        selectedPath={selectedPath} onSelect={onSelect} path={`l3:${lob}/${sub}/${l3}`}
+                        expandedPaths={expandedPaths} onToggle={toggleNode}
                       >
-                        {l3Children && l4Keys.map((l4, l4i) => {
+                        {l3Children && l4Keys.map((l4) => {
                           const l4Apps = collectApps(l3Children[l4])
                           return (
                             <TreeNode key={l4} label={l4} apps={l4Apps} depth={skipSub ? 3 : 4}
-                              selectedPath={selectedPath} onSelect={onSelect} path={`l4:${lob}/${sub}/${l3}/${l4}`} allExpanded={allExpanded}
+                              selectedPath={selectedPath} onSelect={onSelect} path={`l4:${lob}/${sub}/${l3}/${l4}`}
+                              expandedPaths={expandedPaths} onToggle={toggleNode}
                             />
                           )
                         })}
@@ -240,7 +306,8 @@ export default function AppTreeSidebar({ apps, onSelect, selectedPath, statusFil
 
                   return (
                     <TreeNode key={sub} label={sub} apps={subApps} depth={2}
-                      selectedPath={selectedPath} onSelect={onSelect} path={`sub:${lob}/${sub}`} allExpanded={allExpanded}
+                      selectedPath={selectedPath} onSelect={onSelect} path={`sub:${lob}/${sub}`}
+                      expandedPaths={expandedPaths} onToggle={toggleNode}
                     >
                       {l3Content}
                     </TreeNode>

@@ -572,7 +572,7 @@ function NodeDetailPanel({ node, onNavigateToSeal }) {
 // ── Main page ───────────────────────────────────────────────────────────────
 export default function GraphLayers() {
   const { activeFilters } = useFilters()
-  const [searchParams] = useSearchParams()
+  const [searchParams, setSearchParams] = useSearchParams()
   const urlSeal = searchParams.get('seal') || ''
 
   const availableSeals = useMemo(() => {
@@ -592,15 +592,24 @@ export default function GraphLayers() {
   const [loading, setLoading]           = useState(false)
   const [error, setError]               = useState(null)
   const [selectedNode, setSelectedNode] = useState(null)
-  const [sidebarTab, setSidebarTab]     = useState(0)
+  const [sidebarTab, setSidebarTab]     = useState(() => {
+    try { return parseInt(sessionStorage.getItem('gl-sidebar-tab') || '0', 10) } catch { return 0 }
+  })
   const [sidebarOpen, setSidebarOpen]   = useState(false)
 
-  const [layers, setLayers] = useState({
-    component:  true,
-    crossapp:   true,
-    platform:   false,
-    datacenter: false,
-    indicator:  false,
+  const [layers, setLayers] = useState(() => {
+    const layerParam = searchParams.get('layers')
+    if (layerParam) {
+      const active = new Set(layerParam.split(','))
+      return {
+        component:  true,
+        crossapp:   active.has('crossapp'),
+        platform:   active.has('platform'),
+        datacenter: active.has('datacenter'),
+        indicator:  active.has('indicator'),
+      }
+    }
+    return { component: true, crossapp: true, platform: false, datacenter: false, indicator: false }
   })
 
   // If navigated here with a ?seal= param, always honour it
@@ -637,6 +646,22 @@ export default function GraphLayers() {
       return next
     })
   }, [])
+
+  // Sync layer state to URL search params
+  useEffect(() => {
+    const activeKeys = Object.entries(layers)
+      .filter(([k, v]) => v && k !== 'component')
+      .map(([k]) => k)
+    setSearchParams(prev => {
+      const next = new URLSearchParams(prev)
+      if (activeKeys.length > 0) next.set('layers', activeKeys.join(','))
+      else next.delete('layers')
+      return next
+    }, { replace: true })
+  }, [layers, setSearchParams])
+
+  // Persist sidebarTab to sessionStorage
+  useEffect(() => { sessionStorage.setItem('gl-sidebar-tab', String(sidebarTab)) }, [sidebarTab])
 
   const handleNodeSelect = useCallback((nodeData) => {
     setSelectedNode(nodeData)

@@ -1,6 +1,13 @@
+from pathlib import Path
+import sys
+
+# Ensure sibling modules (apps_registry, etc.) are importable regardless of cwd
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import StreamingResponse
+from fastapi.responses import FileResponse, StreamingResponse
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from typing import Optional, List
 from collections import deque
@@ -22,57 +29,62 @@ app.add_middleware(
 
 # ── Mock Data ─────────────────────────────────────────────────────────────────
 
-# ── Dashboard Apps — filter-aware app registry for dashboard aggregation ──────
-# Mirrors frontend appData.js for API consistency. In production, this comes
-# from PATOOLS (business hierarchy) and V12 (technology hierarchy) APIs.
-# Filter params: lob, subLob, cto, cbt, seal, appOwner, status, region
-DASHBOARD_APPS = [
-    # AWM — Asset Management
-    {"seal": "35115", "name": "PANDA",                                 "lob": "AWM", "subLob": "Asset Management", "cto": "Gitanjali Nistala", "cbt": "Karthik Rajagopalan", "status": "healthy",  "region": "NA",   "incidents_30d": 1,  "incidents_today": 0, "recurring_30d": 1,  "p1_30d": 0, "p2_30d": 1},
-    {"seal": "16649", "name": "Morgan Money",                          "lob": "AWM", "subLob": "Asset Management", "cto": "Jon Glennie",       "cbt": "Kalpesh Narkhede",    "status": "critical", "region": "APAC", "incidents_30d": 8,  "incidents_today": 2, "recurring_30d": 6,  "p1_30d": 2, "p2_30d": 6,
-     "recent_issues": [
-         {"description": "NAV calculation timeout — downstream pricing feed delay in APAC region", "time_ago": "25m ago", "severity": "critical"},
-         {"description": "Memory pressure on liquidity aggregation service (85% heap)", "time_ago": "2h ago", "severity": "warning"},
-     ]},
-    {"seal": "90556", "name": "Spectrum UI",                           "lob": "AWM", "subLob": "Asset Management", "cto": "Sheetal Gandhi",    "cbt": "Alex Feinberg",       "status": "healthy",  "region": "NA",   "incidents_30d": 0,  "incidents_today": 0, "recurring_30d": 0,  "p1_30d": 0, "p2_30d": 0},
-    {"seal": "91001", "name": "Quantum",                               "lob": "AWM", "subLob": "Asset Management", "cto": "Alec Hamby",        "cbt": "Michael Hasing",      "status": "healthy",  "region": "APAC", "incidents_30d": 1,  "incidents_today": 0, "recurring_30d": 0,  "p1_30d": 0, "p2_30d": 1},
-    {"seal": "90215", "name": "Spectrum Portfolio Mgmt (Equities)",    "lob": "AWM", "subLob": "Asset Management", "cto": "Lakith Leelasena",  "cbt": "Aadi Thayyar",        "status": "healthy",  "region": "NA",   "incidents_30d": 1,  "incidents_today": 0, "recurring_30d": 0,  "p1_30d": 0, "p2_30d": 1},
-    {"seal": "107517","name": "AM PMT Routing Service",                "lob": "AWM", "subLob": "Asset Management", "cto": "Lakith Leelasena",  "cbt": "Ashvin Venkatraman",  "status": "warning",  "region": "EMEA", "incidents_30d": 3,  "incidents_today": 0, "recurring_30d": 2,  "p1_30d": 0, "p2_30d": 3,
-     "recent_issues": [
-         {"description": "Intermittent routing failures to EMEA settlement gateway", "time_ago": "4h ago", "severity": "warning"},
-     ]},
-    {"seal": "81884", "name": "Order Decision Engine",                 "lob": "AWM", "subLob": "Asset Management", "cto": "Lakith Leelasena",  "cbt": "Kent Zheng",          "status": "healthy",  "region": "NA",   "incidents_30d": 0,  "incidents_today": 0, "recurring_30d": 0,  "p1_30d": 0, "p2_30d": 0},
-    # AWM — Global Private Bank
-    {"seal": "88180", "name": "Connect OS",                            "lob": "AWM", "subLob": "Global Private Bank", "cto": "Rod Thomas",     "cbt": "Arun Tummalapalli",   "status": "healthy",  "region": "NA",   "incidents_30d": 0,  "incidents_today": 0, "recurring_30d": 0,  "p1_30d": 0, "p2_30d": 0},
-    {"seal": "90176", "name": "Advisor Connect",                       "lob": "AWM", "subLob": "Global Private Bank", "cto": "Rod Thomas",     "cbt": "Arun Tummalapalli",   "status": "warning",  "region": "NA",   "incidents_30d": 2,  "incidents_today": 1, "recurring_30d": 1,  "p1_30d": 0, "p2_30d": 2,
-     "recent_issues": [
-         {"description": "Advisor profile sync latency elevated (p95 > 2s during peak)", "time_ago": "1h ago", "severity": "warning"},
-     ]},
-    {"seal": "102987","name": "AWM Entitlements (WEAVE)",              "lob": "AWM", "subLob": "Global Private Bank", "cto": "Stephen Musacchia","cbt": "Pranit Pan",         "status": "healthy",  "region": "NA",   "incidents_30d": 0,  "incidents_today": 0, "recurring_30d": 0,  "p1_30d": 0, "p2_30d": 0},
-    # AWM — AWM Shared
-    {"seal": "84540", "name": "AWM Data Platform",                     "lob": "AWM", "subLob": "AWM Shared",    "cto": "Michael Heizer",       "cbt": "Nidhi Verma",         "status": "healthy",  "region": "NA",   "incidents_30d": 1,  "incidents_today": 0, "recurring_30d": 0,  "p1_30d": 0, "p2_30d": 1},
-    # CIB — Markets
-    {"seal": "62100", "name": "Real-Time Payments Gateway",            "lob": "CIB", "subLob": "Payments",      "cto": "Joe Pedone",           "cbt": "Alex Rivera",         "status": "critical", "region": "NA",   "incidents_30d": 6,  "incidents_today": 2, "recurring_30d": 4,  "p1_30d": 1, "p2_30d": 5,
-     "recent_issues": [
-         {"description": "Connection pool exhaustion — max connections reached on primary DB cluster", "time_ago": "20m ago", "severity": "critical"},
-         {"description": "Latency spike on /api/payments/process (p99 > 8s)", "time_ago": "1h ago", "severity": "warning"},
-     ]},
-    {"seal": "45440", "name": "Credit Card Processing Engine",         "lob": "CIB", "subLob": "Markets",       "cto": "Joe Pedone",           "cbt": "Robert Patel",        "status": "warning",  "region": "NA",   "incidents_30d": 4,  "incidents_today": 1, "recurring_30d": 3,  "p1_30d": 0, "p2_30d": 4,
-     "recent_issues": [
-         {"description": "Elevated transaction decline rate on Visa network (2.1% vs 0.8% baseline)", "time_ago": "6h ago", "severity": "warning"},
-     ]},
-    # CIB — Global Banking
-    {"seal": "106003","name": "CIB Digital Onboarding",                "lob": "CIB", "subLob": "Global Banking","cto": "Jennifer Liu",         "cbt": "Alex Rivera",         "status": "healthy",  "region": "EMEA", "incidents_30d": 0,  "incidents_today": 0, "recurring_30d": 0,  "p1_30d": 0, "p2_30d": 0},
-    {"seal": "85003", "name": "CIB Payments Gateway",                  "lob": "CIB", "subLob": "Payments",      "cto": "Thomas Anderson",      "cbt": "Samantha Park",       "status": "healthy",  "region": "NA",   "incidents_30d": 1,  "incidents_today": 0, "recurring_30d": 0,  "p1_30d": 0, "p2_30d": 1},
-    # CCB
-    {"seal": "83278", "name": "Consumer Lending Platform",             "lob": "CCB", "subLob": "",              "cto": "Michael Torres",       "cbt": "Sarah Kim",           "status": "healthy",  "region": "NA",   "incidents_30d": 2,  "incidents_today": 0, "recurring_30d": 1,  "p1_30d": 0, "p2_30d": 2},
-    {"seal": "89749", "name": "Digital Banking Portal",                "lob": "CCB", "subLob": "",              "cto": "Michael Torres",       "cbt": "Robert Nguyen",       "status": "healthy",  "region": "NA",   "incidents_30d": 1,  "incidents_today": 0, "recurring_30d": 0,  "p1_30d": 0, "p2_30d": 1},
-    # CDAO
-    {"seal": "88652", "name": "Enterprise Data Lake",                  "lob": "CDAO","subLob": "",              "cto": "David Chen",           "cbt": "Nicole Chen",         "status": "healthy",  "region": "NA",   "incidents_30d": 0,  "incidents_today": 0, "recurring_30d": 0,  "p1_30d": 0, "p2_30d": 0},
-    {"seal": "110787","name": "ML Feature Store",                      "lob": "CDAO","subLob": "",              "cto": "David Chen",           "cbt": "Derek Johnson",       "status": "healthy",  "region": "NA",   "incidents_30d": 1,  "incidents_today": 0, "recurring_30d": 0,  "p1_30d": 0, "p2_30d": 1},
-    # EP
-    {"seal": "110143","name": "Employee Portal",                       "lob": "EP",  "subLob": "",              "cto": "Lisa Zhang",           "cbt": "Rachel Kim",          "status": "healthy",  "region": "NA",   "incidents_30d": 0,  "incidents_today": 0, "recurring_30d": 0,  "p1_30d": 0, "p2_30d": 0},
-]
+# ── Enriched app cache — single source of truth for all dashboard endpoints ──
+# Status is computed bottom-up from the enriched /api/applications/enriched logic.
+# In production, _filter_dashboard_apps becomes a database query with WHERE clauses.
+
+_enriched_cache: list[dict] | None = None
+
+def _get_enriched_apps() -> list[dict]:
+    """Return all apps with computed status from the enriched pipeline.
+    Cached at module level since mock data is deterministic."""
+    global _enriched_cache
+    if _enriched_cache is not None:
+        return _enriched_cache
+
+    # Import here to avoid circular import at module load time
+    from apps_registry import APPS_REGISTRY
+
+    _status_rank = {"critical": 0, "warning": 1, "healthy": 2, "no_data": 3}
+    _rank_to_status = {0: "critical", 1: "warning", 2: "healthy", 3: "no_data"}
+
+    enriched = get_enriched_applications()
+    # Build a lookup by seal for the enriched data (which has computed deployments)
+    enriched_by_seal = {a["seal"]: a for a in enriched}
+
+    dashboard_apps = []
+    for app in APPS_REGISTRY:
+        e = enriched_by_seal.get(app["seal"])
+        # Derive status from deployments (worst of deployment statuses)
+        if e and e.get("deployments"):
+            worst_rank = 3  # no_data
+            for d in e["deployments"]:
+                r = _status_rank.get(d.get("status", "no_data"), 3)
+                if r < worst_rank:
+                    worst_rank = r
+            computed_status = _rank_to_status[worst_rank]
+        else:
+            computed_status = "healthy"
+
+        dashboard_apps.append({
+            "seal": app["seal"],
+            "name": app["name"],
+            "lob": app["lob"],
+            "subLob": app.get("subLob", ""),
+            "cto": app.get("cto", ""),
+            "cbt": app.get("cbt", ""),
+            "region": app.get("region", "NA"),
+            "status": computed_status,
+            "incidents_30d": app.get("incidents", 0),
+            "incidents_today": app.get("incidents_today", 0),
+            "recurring_30d": app.get("recurring_30d", 0),
+            "p1_30d": app.get("p1_30d", 0),
+            "p2_30d": app.get("p2_30d", 0),
+            "recent_issues": app.get("recent_issues", []),
+        })
+
+    _enriched_cache = dashboard_apps
+    return _enriched_cache
 
 
 def _filter_dashboard_apps(
@@ -84,9 +96,9 @@ def _filter_dashboard_apps(
     status: list[str] | None = None,
     search: str | None = None,
 ) -> list[dict]:
-    """Filter DASHBOARD_APPS by the given scope params.
+    """Filter enriched apps by the given scope params.
     In production this becomes a database query with WHERE clauses."""
-    result = DASHBOARD_APPS
+    result = _get_enriched_apps()
     if lob:
         result = [a for a in result if a["lob"] in lob]
     if sub_lob:
@@ -133,87 +145,6 @@ FILTER_PARAMS = {
 }
 
 
-HEALTH_SUMMARY = {
-    "critical_issues": 2,
-    "warnings": 3,
-    "recurring_30d": 16,
-    "incidents_today": 4,
-    "trends": {
-        "critical_issues": {"spark": [4, 3, 3, 2, 3, 2, 2], "pct": -33},
-        "warnings":        {"spark": [5, 4, 4, 3, 3, 3, 3], "pct": -40},
-        "recurring_30d":   {"spark": [12, 13, 14, 14, 15, 15, 16], "pct": 14},
-        "incidents_today": {"spark": [6, 8, 5, 7, 4, 6, 4], "pct": -33},
-    },
-}
-
-AI_ANALYSIS = {
-    "critical_alert": (
-        "Currently tracking 2 critical applications affecting approximately 4,800 users. "
-        "Morgan Money is experiencing NAV calculation timeouts due to a downstream pricing feed "
-        "delay in APAC, and Real-Time Payments Gateway has connection pool exhaustion on the "
-        "primary DB cluster. Both issues are being actively triaged."
-    ),
-    "trend_analysis": (
-        "Issue frequency has decreased 33% over the past 7 days. Morgan Money has experienced "
-        "8 incidents in 30 days, primarily NAV calculation timeouts during APAC market open. "
-        "Real-Time Payments Gateway has seen 6 incidents related to connection pool capacity."
-    ),
-    "recommendations": [
-        "Investigate Morgan Money NAV calculation timeout — coordinate with APAC pricing feed provider to resolve downstream latency",
-        "Address Real-Time Payments Gateway connection pool exhaustion — increase max connections and add connection recycling on primary DB cluster",
-        "Schedule incident review with Liquidity Management and Payments Core teams to prevent recurrence",
-    ],
-}
-
-REGIONAL_STATUS = [
-    {"region": "NA",   "status": "healthy",  "sod_impacts": 0, "app_issues": 0},
-    {"region": "EMEA", "status": "warning",  "sod_impacts": 0, "app_issues": 1},
-    {"region": "APAC", "status": "critical", "sod_impacts": 1, "app_issues": 1},
-]
-
-CRITICAL_APPS = [
-    {
-        "id": "morgan-money",
-        "name": "MORGAN MONEY",
-        "seal": "SEAL - 16649",
-        "status": "critical",
-        "current_issues": 2,
-        "recurring_30d": 6,
-        "last_incident": "25m ago",
-        "recent_issues": [
-            {"description": "NAV calculation timeout — downstream pricing feed delay in APAC region", "time_ago": "25m ago", "severity": "critical"},
-            {"description": "Memory pressure on liquidity aggregation service (85% heap)", "time_ago": "2h ago", "severity": "warning"},
-        ],
-    },
-    {
-        "id": "real-time-payments-gateway",
-        "name": "REAL-TIME PAYMENTS GATEWAY",
-        "seal": "SEAL - 62100",
-        "status": "critical",
-        "current_issues": 2,
-        "recurring_30d": 4,
-        "last_incident": "20m ago",
-        "recent_issues": [
-            {"description": "Connection pool exhaustion — max connections reached on primary DB cluster", "time_ago": "20m ago", "severity": "critical"},
-            {"description": "Latency spike on /api/payments/process (p99 > 8s)", "time_ago": "1h ago", "severity": "warning"},
-        ],
-    },
-]
-
-WARNING_APPS = [
-    {
-        "id": "am-pmt-routing",
-        "name": "AM PMT ROUTING SERVICE",
-        "seal": "SEAL - 107517",
-        "status": "warning",
-        "current_issues": 1,
-        "recurring_30d": 2,
-        "last_incident": "4h ago",
-        "recent_issues": [
-            {"description": "Intermittent routing failures to EMEA settlement gateway", "time_ago": "4h ago", "severity": "warning"},
-        ],
-    },
-]
 
 # 90-day incident trend — deterministic, split into P1 / P2
 # P1: ~15 total, max 2, mostly 0s with rare 1-2 spikes
@@ -264,68 +195,9 @@ INCIDENT_TREND_SUMMARY = {
     "escalation_rate": 12,
 }
 
-# Derive last-week P1/P2 from incident trends (with trend vs previous week)
-_last_week = INCIDENT_TRENDS[-1] if INCIDENT_TRENDS else {"p1": 0, "p2": 0}
-_prev_week = INCIDENT_TRENDS[-2] if len(INCIDENT_TRENDS) >= 2 else {"p1": 0, "p2": 0}
-_p1_wk = _last_week["p1"]
-_p2_wk = _last_week["p2"]
-_p1_prev = _prev_week["p1"]
-_p2_prev = _prev_week["p2"]
-_p1_trend = round((_p1_wk - _p1_prev) / _p1_prev * 100) if _p1_prev else 0
-_p2_trend = round((_p2_wk - _p2_prev) / _p2_prev * 100) if _p2_prev else 0
 
-ACTIVE_INCIDENTS = {
-    "week_label": "Last 7 Days",
-    "p1": {
-        "total": _p1_wk,
-        "trend": _p1_trend,
-        "breakdown": [
-            {"label": "Unresolved", "count": max(0, _p1_wk),  "color": "#f44336"},
-            {"label": "Resolved",   "count": 0,               "color": "#4ade80"},
-        ],
-    },
-    "p2": {
-        "total": _p2_wk,
-        "trend": _p2_trend,
-        "breakdown": [
-            {"label": "Unresolved", "count": max(1, _p2_wk // 3),                          "color": "#ffab00"},
-            {"label": "Resolved",   "count": max(0, _p2_wk - max(1, _p2_wk // 3)),         "color": "#4ade80"},
-        ],
-    },
-    "convey": {
-        "total": 4,
-        "trend": -20,
-        "breakdown": [
-            {"label": "Unresolved", "count": 2, "color": "#60a5fa"},
-            {"label": "Resolved",   "count": 2, "color": "#4ade80"},
-        ],
-    },
-    "spectrum": {
-        "total": 4,
-        "trend": 0,
-        "breakdown": [
-            {"label": "Info", "count": 3, "color": "#60a5fa"},
-            {"label": "High", "count": 1, "color": "#f44336"},
-        ],
-    },
-}
-
-RECENT_ACTIVITIES = [
-    {
-        "category": "P1 INCIDENTS",
-        "color": "#f44336",
-        "items": [
-            {"status": "CRITICAL", "description": "GWM Global Collateral Mgmt — Database connection timeout affecting collateral calculations", "time_ago": "15m ago"},
-        ],
-    },
-    {
-        "category": "P2 INCIDENTS",
-        "color": "#ff9800",
-        "items": [
-            {"status": "REASSIGNED", "description": "Cannot load the review page — reassigned to Platform Team", "time_ago": "25m ago"},
-            {"status": "UNRESOLVED", "description": "Fees & Billing invoice delivery down for maintenance window 8–10 PM ET", "time_ago": "3h ago"},
-        ],
-    },
+# Platform-wide notification categories (not app-specific, shown globally)
+_GLOBAL_ACTIVITY_CATEGORIES = [
     {
         "category": "CONVEY NOTIFICATIONS",
         "color": "#60a5fa",
@@ -354,39 +226,16 @@ RECENT_ACTIVITIES = [
     },
 ]
 
-FREQUENT_INCIDENTS = [
-    {
-        "app": "GWM Global Collateral Mgmt",
-        "seal": "90083",
-        "status": "critical",
-        "description": "Database connection timeout",
-        "occurrences": 12,
-        "last_seen": "15m ago",
-    },
-    {
-        "app": "Payment Gateway API",
-        "seal": "90176",
-        "status": "critical",
-        "description": "Connection pool exhaustion",
-        "occurrences": 8,
-        "last_seen": "10m ago",
-    },
-    {
-        "app": "User Authentication",
-        "seal": "92156",
-        "status": "warning",
-        "description": "Elevated login failures",
-        "occurrences": 5,
-        "last_seen": "4h ago",
-    },
-    {
-        "app": "Trade Execution Engine",
-        "seal": "90215",
-        "status": "warning",
-        "description": "Order queue backlog >500",
-        "occurrences": 4,
-        "last_seen": "6h ago",
-    },
+# Template descriptions for deriving frequent incidents from enriched app data
+_FREQUENT_ISSUE_TEMPLATES = [
+    "Database connection timeout",
+    "Connection pool exhaustion",
+    "Elevated error rate",
+    "Memory pressure on primary service",
+    "Latency spike on core endpoint",
+    "Upstream feed delay",
+    "Intermittent routing failures",
+    "Cache invalidation storm",
 ]
 
 # ── Knowledge Graph ───────────────────────────────────────────────────────────
@@ -1341,8 +1190,9 @@ def get_incident_trends(
     # Scale the global trend data proportionally to the filtered scope
     total_p1 = sum(a.get("p1_30d", 0) for a in apps)
     total_p2 = sum(a.get("p2_30d", 0) for a in apps)
-    all_p1 = sum(a.get("p1_30d", 0) for a in DASHBOARD_APPS)
-    all_p2 = sum(a.get("p2_30d", 0) for a in DASHBOARD_APPS)
+    all_apps = _get_enriched_apps()
+    all_p1 = sum(a.get("p1_30d", 0) for a in all_apps)
+    all_p2 = sum(a.get("p2_30d", 0) for a in all_apps)
     p1_ratio = total_p1 / all_p1 if all_p1 else 0
     p2_ratio = total_p2 / all_p2 if all_p2 else 0
     scaled = []
@@ -1358,8 +1208,31 @@ def get_incident_trends(
 
 
 @app.get("/api/frequent-incidents")
-def get_frequent_incidents():
-    return FREQUENT_INCIDENTS
+def get_frequent_incidents(
+    lob: list[str] | None = Query(None), sub_lob: list[str] | None = Query(None, alias="subLob"),
+    cto: list[str] | None = Query(None), cbt: list[str] | None = Query(None),
+    seal: list[str] | None = Query(None), status: list[str] | None = Query(None),
+    search: str | None = Query(None),
+):
+    """Top recurring incidents derived from enriched app data, respects scope filters."""
+    apps = _filter_dashboard_apps(lob, sub_lob, cto, cbt, seal, status, search)
+    # Pick apps with highest recurring_30d as frequent incident sources
+    ranked = sorted(apps, key=lambda a: a.get("recurring_30d", 0), reverse=True)
+    result = []
+    for i, a in enumerate(ranked[:6]):
+        if a.get("recurring_30d", 0) == 0 and a.get("incidents_30d", 0) == 0:
+            break
+        issues = a.get("recent_issues", [])
+        desc = issues[0]["description"] if issues else _FREQUENT_ISSUE_TEMPLATES[i % len(_FREQUENT_ISSUE_TEMPLATES)]
+        result.append({
+            "app": a["name"],
+            "seal": a["seal"],
+            "status": a["status"],
+            "description": desc,
+            "occurrences": a.get("recurring_30d", 0) + a.get("incidents_today", 0),
+            "last_seen": issues[0]["time_ago"] if issues else "—",
+        })
+    return result
 
 @app.get("/api/active-incidents")
 def get_active_incidents(
@@ -1410,8 +1283,35 @@ def get_active_incidents(
     }
 
 @app.get("/api/recent-activities")
-def get_recent_activities():
-    return RECENT_ACTIVITIES
+def get_recent_activities(
+    lob: list[str] | None = Query(None), sub_lob: list[str] | None = Query(None, alias="subLob"),
+    cto: list[str] | None = Query(None), cbt: list[str] | None = Query(None),
+    seal: list[str] | None = Query(None), status: list[str] | None = Query(None),
+    search: str | None = Query(None),
+):
+    """Recent activity feed — P1/P2 derived from enriched apps, global categories always shown."""
+    apps = _filter_dashboard_apps(lob, sub_lob, cto, cbt, seal, status, search)
+    # P1 = critical apps with recent issues
+    p1_items = []
+    for a in apps:
+        if a["status"] == "critical":
+            for issue in a.get("recent_issues", []):
+                p1_items.append({"status": "CRITICAL", "description": f"{a['name']} — {issue['description']}", "time_ago": issue["time_ago"]})
+    if not p1_items:
+        p1_items = [{"status": "OK", "description": "No active P1 incidents in current scope", "time_ago": "—"}]
+    # P2 = warning apps or apps with warning-severity recent issues
+    p2_items = []
+    for a in apps:
+        for issue in a.get("recent_issues", []):
+            if issue.get("severity") == "warning":
+                p2_items.append({"status": "UNRESOLVED", "description": f"{a['name']} — {issue['description']}", "time_ago": issue["time_ago"]})
+    if not p2_items:
+        p2_items = [{"status": "OK", "description": "No active P2 incidents in current scope", "time_ago": "—"}]
+    return [
+        {"category": "P1 INCIDENTS", "color": "#f44336", "items": p1_items[:3]},
+        {"category": "P2 INCIDENTS", "color": "#ff9800", "items": p2_items[:3]},
+        *_GLOBAL_ACTIVITY_CATEGORIES,
+    ]
 
 @app.get("/api/graph/nodes")
 def get_all_nodes():
@@ -1597,39 +1497,39 @@ DEPLOYMENT_OVERRIDES = {
     # Connect OS (88180) — 6 components across 18 deployments
     # Components: connect-portal, connect-cloud-gw, connect-auth-svc, connect-home-app-na, connect-home-app-apac, connect-home-app-emea
     "connect-os": [
-        {"id": "112224", "deployment_id": "112224", "label": "Connect OS Critical Applications and Services AWS - Global (xSwiss)", "status": "critical", "cpof": True,  "rto": 4,    "component_ids": ["connect-cloud-gw", "connect-auth-svc", "connect-portal"]},
-        {"id": "111848", "deployment_id": "111848", "label": "Connect OS Mobile AWS - Global",                                     "status": "warning",  "cpof": False, "rto": 8,    "component_ids": ["connect-portal"]},
-        {"id": "110175", "deployment_id": "110175", "label": "Connect OS Internet Facing Applications and Services Gaia Cloud Foundry - NA", "status": "healthy", "cpof": True, "rto": 4, "component_ids": ["connect-home-app-na", "connect-auth-svc"]},
-        {"id": "103719", "deployment_id": "103719", "label": "Connect OS Legacy Infrastructure - NA",                              "status": "healthy",  "cpof": False, "rto": 24,   "component_ids": ["connect-home-app-na"]},
-        {"id": "103720", "deployment_id": "103720", "label": "Connect Desktop - DEV",                                              "status": "healthy",  "cpof": False, "rto": None, "component_ids": []},
-        {"id": "103721", "deployment_id": "103721", "label": "Connect Desktop - UAT",                                              "status": "healthy",  "cpof": False, "rto": None, "component_ids": []},
-        {"id": "103722", "deployment_id": "103722", "label": "Connect Desktop - PROD",                                             "status": "warning",  "cpof": True,  "rto": 4,    "component_ids": ["connect-portal", "connect-cloud-gw"]},
-        {"id": "103723", "deployment_id": "103723", "label": "Connect Desktop - Global Link",                                      "status": "healthy",  "cpof": False, "rto": 12,   "component_ids": []},
-        {"id": "104739", "deployment_id": "104739", "label": "Connect OS WordPress CMS Gaia Cloud Foundry - NA",                   "status": "healthy",  "cpof": False, "rto": 24,   "component_ids": []},
-        {"id": "108750", "deployment_id": "108750", "label": "Connect OS AI Machine Learning",                                     "status": "healthy",  "cpof": False, "rto": 12,   "component_ids": []},
-        {"id": "109718", "deployment_id": "109718", "label": "Connect OS Critical Applications and Services Gaia Cloud Foundry - Global", "status": "critical", "cpof": True, "rto": 4, "component_ids": ["connect-cloud-gw", "connect-auth-svc"]},
-        {"id": "109719", "deployment_id": "109719", "label": "Connect OS Mobile Gaia Cloud Foundry - Global",                      "status": "healthy",  "cpof": False, "rto": 8,    "component_ids": ["connect-portal"]},
-        {"id": "109720", "deployment_id": "109720", "label": "Connect OS Non-Critical Applications and Services Gaia Cloud Foundry - Global", "status": "healthy", "cpof": False, "rto": 24, "component_ids": []},
-        {"id": "109739", "deployment_id": "109739", "label": "Connect OS Swiss Applications and Services Gaia Cloud Foundry - SwissNet", "status": "healthy", "cpof": True, "rto": 4, "component_ids": ["connect-auth-svc"]},
-        {"id": "111835", "deployment_id": "111835", "label": "Connect OS Gaia Oracle Services - Global",                           "status": "healthy",  "cpof": False, "rto": 12,   "component_ids": []},
-        {"id": "111836", "deployment_id": "111836", "label": "Connect OS User Metrics Elastic/Cassandra - Global",                 "status": "healthy",  "cpof": False, "rto": 24,   "component_ids": []},
-        {"id": "61867",  "deployment_id": "61867",  "label": "Connect OS Legacy Infrastructure - Asia",                            "status": "healthy",  "cpof": False, "rto": 24,   "component_ids": ["connect-home-app-apac"]},
-        {"id": "61868",  "deployment_id": "61868",  "label": "Connect OS Legacy Infrastructure - EMEA",                            "status": "healthy",  "cpof": False, "rto": 24,   "component_ids": ["connect-home-app-emea"]},
+        {"id": "112224", "deployment_id": "112224", "label": "Connect OS Critical Applications and Services AWS - Global (xSwiss)", "cpof": True,  "rto": 4,    "component_ids": ["connect-cloud-gw", "connect-auth-svc", "connect-portal"]},
+        {"id": "111848", "deployment_id": "111848", "label": "Connect OS Mobile AWS - Global",                                     "cpof": False, "rto": 8,    "component_ids": ["connect-portal"]},
+        {"id": "110175", "deployment_id": "110175", "label": "Connect OS Internet Facing Applications and Services Gaia Cloud Foundry - NA", "cpof": True, "rto": 4, "component_ids": ["connect-home-app-na", "connect-auth-svc"]},
+        {"id": "103719", "deployment_id": "103719", "label": "Connect OS Legacy Infrastructure - NA",                              "cpof": False, "rto": 24,   "component_ids": ["connect-home-app-na"]},
+        {"id": "103720", "deployment_id": "103720", "label": "Connect Desktop - DEV",                                              "cpof": False, "rto": None, "component_ids": []},
+        {"id": "103721", "deployment_id": "103721", "label": "Connect Desktop - UAT",                                              "cpof": False, "rto": None, "component_ids": []},
+        {"id": "103722", "deployment_id": "103722", "label": "Connect Desktop - PROD",                                             "cpof": True,  "rto": 4,    "component_ids": ["connect-portal", "connect-cloud-gw"]},
+        {"id": "103723", "deployment_id": "103723", "label": "Connect Desktop - Global Link",                                      "cpof": False, "rto": 12,   "component_ids": []},
+        {"id": "104739", "deployment_id": "104739", "label": "Connect OS WordPress CMS Gaia Cloud Foundry - NA",                   "cpof": False, "rto": 24,   "component_ids": []},
+        {"id": "108750", "deployment_id": "108750", "label": "Connect OS AI Machine Learning",                                     "cpof": False, "rto": 12,   "component_ids": []},
+        {"id": "109718", "deployment_id": "109718", "label": "Connect OS Critical Applications and Services Gaia Cloud Foundry - Global", "cpof": True, "rto": 4, "component_ids": ["connect-cloud-gw", "connect-auth-svc"]},
+        {"id": "109719", "deployment_id": "109719", "label": "Connect OS Mobile Gaia Cloud Foundry - Global",                      "cpof": False, "rto": 8,    "component_ids": ["connect-portal"]},
+        {"id": "109720", "deployment_id": "109720", "label": "Connect OS Non-Critical Applications and Services Gaia Cloud Foundry - Global", "cpof": False, "rto": 24, "component_ids": []},
+        {"id": "109739", "deployment_id": "109739", "label": "Connect OS Swiss Applications and Services Gaia Cloud Foundry - SwissNet", "cpof": True, "rto": 4, "component_ids": ["connect-auth-svc"]},
+        {"id": "111835", "deployment_id": "111835", "label": "Connect OS Gaia Oracle Services - Global",                           "cpof": False, "rto": 12,   "component_ids": []},
+        {"id": "111836", "deployment_id": "111836", "label": "Connect OS User Metrics Elastic/Cassandra - Global",                 "cpof": False, "rto": 24,   "component_ids": []},
+        {"id": "61867",  "deployment_id": "61867",  "label": "Connect OS Legacy Infrastructure - Asia",                            "cpof": False, "rto": 24,   "component_ids": ["connect-home-app-apac"]},
+        {"id": "61868",  "deployment_id": "61868",  "label": "Connect OS Legacy Infrastructure - EMEA",                            "cpof": False, "rto": 24,   "component_ids": ["connect-home-app-emea"]},
     ],
     # Advisor Connect (90176) — 10 components across 10 deployments
     # Components: connect-profile-svc, connect-coverage-app, connect-notification, connect-data-sync,
     #             connect-doc-svc, connect-pref-svc, connect-audit-svc, active-advisory, ipbol-account, ipbol-doc-domain
     "advisor-connect": [
-        {"id": "109974", "deployment_id": "109974", "label": "Advisor Connect Suite - NA - AWS",       "status": "warning",  "cpof": True,  "rto": 4,    "component_ids": ["connect-profile-svc", "connect-coverage-app", "connect-notification", "connect-data-sync"]},
-        {"id": "112169", "deployment_id": "112169", "label": "ADVISOR CONNECT AWS - NA",               "status": "critical", "cpof": True,  "rto": 4,    "component_ids": ["connect-coverage-app", "ipbol-account", "ipbol-doc-domain"]},
-        {"id": "102024", "deployment_id": "102024", "label": "ADVISOR CONNECT - EMEA",                 "status": "healthy",  "cpof": True,  "rto": 8,    "component_ids": ["connect-profile-svc", "connect-doc-svc"]},
-        {"id": "102025", "deployment_id": "102025", "label": "ADVISOR CONNECT - Asia",                 "status": "healthy",  "cpof": False, "rto": 8,    "component_ids": ["connect-profile-svc", "connect-pref-svc"]},
-        {"id": "102026", "deployment_id": "102026", "label": "ADVISOR CONNECT - US",                   "status": "warning",  "cpof": True,  "rto": 4,    "component_ids": ["connect-coverage-app", "connect-notification", "active-advisory"]},
-        {"id": "104948", "deployment_id": "104948", "label": "JPMS Advisor Connect Deployment",        "status": "healthy",  "cpof": False, "rto": 12,   "component_ids": ["active-advisory", "connect-audit-svc"]},
-        {"id": "109355", "deployment_id": "109355", "label": "ADVISOR CONNECT - Swiss AWS",            "status": "healthy",  "cpof": True,  "rto": 4,    "component_ids": ["connect-profile-svc", "connect-pref-svc"]},
-        {"id": "62056",  "deployment_id": "62056",  "label": "Tool for Reaching and Acquiring Clients (TRAC)", "status": "healthy", "cpof": False, "rto": 24, "component_ids": ["connect-data-sync", "connect-doc-svc"]},
-        {"id": "114650", "deployment_id": "114650", "label": "ADVISOR CONNECT AWS - AP",               "status": "healthy",  "cpof": False, "rto": 8,    "component_ids": ["connect-profile-svc", "connect-notification"]},
-        {"id": "115060", "deployment_id": "115060", "label": "ADVISOR CONNECT AWS - EU",               "status": "healthy",  "cpof": False, "rto": 8,    "component_ids": ["connect-profile-svc", "connect-doc-svc", "connect-audit-svc"]},
+        {"id": "109974", "deployment_id": "109974", "label": "Advisor Connect Suite - NA - AWS",       "cpof": True,  "rto": 4,    "component_ids": ["connect-profile-svc", "connect-coverage-app", "connect-notification", "connect-data-sync"]},
+        {"id": "112169", "deployment_id": "112169", "label": "ADVISOR CONNECT AWS - NA",               "cpof": True,  "rto": 4,    "component_ids": ["connect-coverage-app", "ipbol-account", "ipbol-doc-domain"]},
+        {"id": "102024", "deployment_id": "102024", "label": "ADVISOR CONNECT - EMEA",                 "cpof": True,  "rto": 8,    "component_ids": ["connect-profile-svc", "connect-doc-svc"]},
+        {"id": "102025", "deployment_id": "102025", "label": "ADVISOR CONNECT - Asia",                 "cpof": False, "rto": 8,    "component_ids": ["connect-profile-svc", "connect-pref-svc"]},
+        {"id": "102026", "deployment_id": "102026", "label": "ADVISOR CONNECT - US",                   "cpof": True,  "rto": 4,    "component_ids": ["connect-coverage-app", "connect-notification", "active-advisory"]},
+        {"id": "104948", "deployment_id": "104948", "label": "JPMS Advisor Connect Deployment",        "cpof": False, "rto": 12,   "component_ids": ["active-advisory", "connect-audit-svc"]},
+        {"id": "109355", "deployment_id": "109355", "label": "ADVISOR CONNECT - Swiss AWS",            "cpof": True,  "rto": 4,    "component_ids": ["connect-profile-svc", "connect-pref-svc"]},
+        {"id": "62056",  "deployment_id": "62056",  "label": "Tool for Reaching and Acquiring Clients (TRAC)", "cpof": False, "rto": 24, "component_ids": ["connect-data-sync", "connect-doc-svc"]},
+        {"id": "114650", "deployment_id": "114650", "label": "ADVISOR CONNECT AWS - AP",               "cpof": False, "rto": 8,    "component_ids": ["connect-profile-svc", "connect-notification"]},
+        {"id": "115060", "deployment_id": "115060", "label": "ADVISOR CONNECT AWS - EU",               "cpof": False, "rto": 8,    "component_ids": ["connect-profile-svc", "connect-doc-svc", "connect-audit-svc"]},
     ],
     # Spectrum Portfolio Management Equities (90215) — 14 components across 5 deployments
     # Components: spieq-ui-service, spieq-api-gateway, spieq-trade-service, spieq-portfolio-svc,
@@ -1637,27 +1537,14 @@ DEPLOYMENT_OVERRIDES = {
     #             spieq-compliance-svc, spieq-settlement-svc, spieq-audit-trail, spieq-notif-svc,
     #             payment-gateway, email-notification
     "spectrum-portfolio-management-(equities)": [
-        {"id": "64958",  "deployment_id": "64958",  "label": "Spectrum PI - Equities Deployment",           "status": "healthy",  "cpof": True,  "rto": 4,  "component_ids": ["spieq-ui-service", "spieq-api-gateway", "spieq-trade-service", "spieq-portfolio-svc", "spieq-order-router"]},
-        {"id": "103262", "deployment_id": "103262", "label": "Spectrum PI - Equities - Deployment",         "status": "healthy",  "cpof": False, "rto": 8,  "component_ids": ["spieq-pricing-engine", "spieq-risk-service", "spieq-market-data"]},
-        {"id": "109606", "deployment_id": "109606", "label": "Spectrum PI - Equities PSF",                  "status": "warning",  "cpof": True,  "rto": 4,  "component_ids": ["spieq-compliance-svc", "spieq-settlement-svc", "payment-gateway"]},
-        {"id": "110724", "deployment_id": "110724", "label": "Spectrum PI - Equities GKP Config Server",    "status": "healthy",  "cpof": False, "rto": 12, "component_ids": ["spieq-audit-trail", "spieq-notif-svc", "email-notification"]},
-        {"id": "112256", "deployment_id": "112256", "label": "Spectrum PI - Equities Dep 5",                "status": "healthy",  "cpof": False, "rto": 24, "component_ids": []},
+        {"id": "64958",  "deployment_id": "64958",  "label": "Spectrum PI - Equities Deployment",           "cpof": True,  "rto": 4,  "component_ids": ["spieq-ui-service", "spieq-api-gateway", "spieq-trade-service", "spieq-portfolio-svc", "spieq-order-router"]},
+        {"id": "103262", "deployment_id": "103262", "label": "Spectrum PI - Equities - Deployment",         "cpof": False, "rto": 8,  "component_ids": ["spieq-pricing-engine", "spieq-risk-service", "spieq-market-data"]},
+        {"id": "109606", "deployment_id": "109606", "label": "Spectrum PI - Equities PSF",                  "cpof": True,  "rto": 4,  "component_ids": ["spieq-compliance-svc", "spieq-settlement-svc", "payment-gateway"]},
+        {"id": "110724", "deployment_id": "110724", "label": "Spectrum PI - Equities GKP Config Server",    "cpof": False, "rto": 12, "component_ids": ["spieq-audit-trail", "spieq-notif-svc", "email-notification"]},
+        {"id": "112256", "deployment_id": "112256", "label": "Spectrum PI - Equities Dep 5",                "cpof": False, "rto": 24, "component_ids": []},
     ],
 }
 
-# Map each app (by lowercase name slug) to its component IDs in the knowledge graph
-# Representative mappings for apps that have known components in the graph
-APP_COMPONENT_MAPPING = {
-    "morgan-money":                             ["connect-coverage-app", "connect-notification"],
-    "quantum":                                  ["meridian-query", "meridian-order"],
-    "jedi---j.p.-morgan-etf-data-intelligence": ["spieq-ui-service", "spieq-risk-service"],
-    "order-decision-engine":                    ["sb-service-order", "sb-service-query"],
-    "awm-entitlements-aka-weave":               ["auth-service", "spieq-compliance-svc"],
-    "connect-os":                               ["connect-coverage-app", "api-gateway", "connect-doc-svc"],
-    "pam:-gwm-party-and-account-maintenance":   ["payment-gateway", "connect-notification"],
-    "murex":                                    ["meridian-order", "email-notification"],
-    "omni-core-accounting-(omnitrust)":         ["db-primary", "data-pipeline"],
-}
 
 # Mock SLO data per app slug — critical/warning apps get explicit data; healthy apps use default
 APP_SLO_DATA = {
@@ -1776,8 +1663,8 @@ def get_enriched_applications():
         # ── Exclusions for this app ──
         app_excl = set(APP_EXCLUDED_INDICATORS.get(slug, []))
 
-        # Components from knowledge graph
-        comp_ids = APP_COMPONENT_MAPPING.get(slug, [])
+        # Components from knowledge graph — SEAL_COMPONENTS is the single source of truth
+        comp_ids = SEAL_COMPONENTS.get(app["seal"], [])
         components = []
         for cid in comp_ids:
             cd = _build_comp_dict(cid)
@@ -1808,9 +1695,12 @@ def get_enriched_applications():
             # Deployment exclusions = app-level + deployment-level
             dep_excl = app_excl | set(DEPLOYMENT_EXCLUDED_INDICATORS.get(f"{slug}:{plat_id}", []))
             active = [c for c in dep_comps if c["indicator_type"] not in dep_excl]
-            # Status = worst of active RAG statuses; if all are no_data → no_data
+            # Status = worst of active RAG statuses
+            # Empty deployments (no components) → healthy; components with no indicators → no_data
             rag_active = [c for c in active if c["status"] != "no_data"]
-            if not rag_active:
+            if not dep_comps:
+                worst = "healthy"
+            elif not rag_active:
                 worst = "no_data"
             else:
                 worst = "healthy"
@@ -1847,9 +1737,13 @@ def get_enriched_applications():
                 dep_id = d.get("id", "")
                 dep_excl = app_excl | set(DEPLOYMENT_EXCLUDED_INDICATORS.get(f"{slug}:{dep_id}", []))
                 active = [c for c in dep_comps if c["indicator_type"] not in dep_excl]
-                # Status = worst of active RAG statuses; if all are no_data → no_data
+                # Status = worst of active RAG statuses
+                # Empty deployments (no components, e.g. DEV/UAT) → healthy
+                # Deployments with components but no indicators → no_data
                 rag_active = [c for c in active if c["status"] != "no_data"]
-                if not rag_active:
+                if not dep_comps:
+                    worst = "healthy"
+                elif not rag_active:
                     worst = "no_data"
                 else:
                     worst = "healthy"
@@ -1912,9 +1806,21 @@ def get_enriched_applications():
                 APP_TEAM_ASSIGNMENTS[slug] = [matched_team["id"]]
         assigned_ids = APP_TEAM_ASSIGNMENTS.get(slug, [])
 
+        # Compute app-level status = worst of deployment statuses (bottom-up)
+        if deployments:
+            worst_app_rank = 3  # no_data
+            for d in deployments:
+                r = _status_rank.get(d.get("status", "no_data"), 3)
+                if r < worst_app_rank:
+                    worst_app_rank = r
+            app_status = {0: "critical", 1: "warning", 2: "healthy", 3: "no_data"}[worst_app_rank]
+        else:
+            app_status = "healthy"
+
         results.append({
             **app,
             "id": slug,
+            "status": app_status,
             "incidents_30d": app["incidents"],
             "components": components,
             "deployments": deployments,
@@ -2995,3 +2901,19 @@ async def aura_chat(payload: AuraChatRequest):
             "X-Accel-Buffering": "no",
         },
     )
+
+
+# ── Serve frontend static files (production) ─────────────────────────────────
+
+_FRONTEND_DIST = Path(__file__).resolve().parent.parent / "frontend" / "dist"
+
+if _FRONTEND_DIST.is_dir():
+    app.mount("/assets", StaticFiles(directory=_FRONTEND_DIST / "assets"), name="static-assets")
+
+    @app.get("/{full_path:path}")
+    async def serve_spa(full_path: str):
+        """Serve index.html for any non-API route (SPA catch-all)."""
+        file = _FRONTEND_DIST / full_path
+        if file.is_file():
+            return FileResponse(file)
+        return FileResponse(_FRONTEND_DIST / "index.html")

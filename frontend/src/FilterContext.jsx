@@ -6,6 +6,26 @@ const FilterContext = createContext()
 
 export const useFilters = () => useContext(FilterContext)
 
+const SS_FILTER_KEY = 'obs-filter-state'
+
+function loadFilterState(tenantId) {
+  try {
+    const raw = sessionStorage.getItem(SS_FILTER_KEY)
+    if (!raw) return null
+    const data = JSON.parse(raw)
+    if (data.tenantId !== (tenantId || null)) return null
+    return data
+  } catch { return null }
+}
+
+function saveFilterState(tenantId, searchText, activeFilters) {
+  sessionStorage.setItem(SS_FILTER_KEY, JSON.stringify({
+    tenantId: tenantId || null,
+    searchText,
+    activeFilters,
+  }))
+}
+
 // Shared filter-match logic used by both filteredApps and getCandidateApps
 function appMatchesFilters(app, searchText, activeFilters, excludeKey = null) {
   if (searchText) {
@@ -31,14 +51,26 @@ function appMatchesFilters(app, searchText, activeFilters, excludeKey = null) {
 
 export function FilterProvider({ children }) {
   const { tenant } = useTenant()
-  const [searchText, setSearchText] = useState('')
-  const [activeFilters, setActiveFilters] = useState(() => tenant.defaultFilters || {})
+  const [searchText, setSearchText] = useState(() => {
+    const saved = loadFilterState(tenant.id)
+    return saved?.searchText ?? ''
+  })
+  const [activeFilters, setActiveFilters] = useState(() => {
+    const saved = loadFilterState(tenant.id)
+    return saved?.activeFilters ?? (tenant.defaultFilters || {})
+  })
 
   // Reset filters when tenant changes
   useEffect(() => {
     setActiveFilters(tenant.defaultFilters || {})
     setSearchText('')
+    sessionStorage.removeItem(SS_FILTER_KEY)
   }, [tenant.id])
+
+  // Persist filter state to sessionStorage
+  useEffect(() => {
+    saveFilterState(tenant.id, searchText, activeFilters)
+  }, [tenant.id, searchText, activeFilters])
 
   const setFilterValues = useCallback((key, values) => {
     setActiveFilters(prev => {

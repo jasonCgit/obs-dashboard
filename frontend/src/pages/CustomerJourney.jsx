@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import {
   Container, Typography, Box, Card, CardContent,
   Chip, Grid, Divider, LinearProgress, ToggleButtonGroup, ToggleButton,
@@ -37,7 +37,10 @@ const JOURNEYS = {
 }
 
 export default function CustomerJourney() {
-  const [activeJourney, setActiveJourney] = useState('Trade Execution')
+  const [activeJourney, setActiveJourney] = useState(() =>
+    sessionStorage.getItem('cj-active-journey') || 'Trade Execution'
+  )
+  useEffect(() => { sessionStorage.setItem('cj-active-journey', activeJourney) }, [activeJourney])
   const steps = JOURNEYS[activeJourney]
   const overallStatus = steps.some(s => s.status === 'critical') ? 'critical' : steps.some(s => s.status === 'warning') ? 'warning' : 'healthy'
 

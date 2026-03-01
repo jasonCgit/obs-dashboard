@@ -1,29 +1,36 @@
-import { useState, useMemo } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import {
   Box, Typography, Card, CardContent,
   Table, TableBody, TableCell, TableHead, TableRow,
   Chip, ToggleButtonGroup, ToggleButton,
 } from '@mui/material'
-import { APPS } from '../../data/appData'
 
 const STATUS_COLOR = { critical: '#f44336', warning: '#ff9800', healthy: '#4caf50' }
 
 export default function ApplicationsWidget({ viewFilters }) {
   const [statusFilter, setStatusFilter] = useState('all')
+  const [enrichedApps, setEnrichedApps] = useState([])
+
+  useEffect(() => {
+    fetch('/api/applications/enriched')
+      .then(r => r.json())
+      .then(data => setEnrichedApps(data))
+      .catch(() => {})
+  }, [])
 
   // Filter by SEAL from viewFilters
   const sealFiltered = useMemo(() => {
     const seals = viewFilters?.seal || []
-    if (seals.length === 0) return APPS
-    return APPS.filter(a => seals.includes(a.seal))
-  }, [viewFilters])
+    if (seals.length === 0) return enrichedApps
+    return enrichedApps.filter(a => seals.includes(a.seal))
+  }, [viewFilters, enrichedApps])
 
-  const visible = sealFiltered.filter(a => statusFilter === 'all' || a.status === statusFilter)
+  const visible = sealFiltered.filter(a => statusFilter === 'all' || (a.status || 'healthy') === statusFilter)
 
   const counts = {
-    critical: sealFiltered.filter(a => a.status === 'critical').length,
-    warning: sealFiltered.filter(a => a.status === 'warning').length,
-    healthy: sealFiltered.filter(a => a.status === 'healthy').length,
+    critical: sealFiltered.filter(a => (a.status || 'healthy') === 'critical').length,
+    warning: sealFiltered.filter(a => (a.status || 'healthy') === 'warning').length,
+    healthy: sealFiltered.filter(a => (a.status || 'healthy') === 'healthy').length,
   }
 
   return (
@@ -76,11 +83,11 @@ export default function ApplicationsWidget({ viewFilters }) {
                 <TableCell sx={{ color: 'text.secondary', fontFamily: 'monospace', fontSize: '0.68rem', display: { xs: 'none', md: 'table-cell' } }}>{app.seal}</TableCell>
                 <TableCell sx={{ color: 'text.secondary' }}>{app.team}</TableCell>
                 <TableCell>
-                  <Chip label={app.status.toUpperCase()} size="small" sx={{ bgcolor: `${STATUS_COLOR[app.status]}22`, color: STATUS_COLOR[app.status], fontWeight: 700, fontSize: '0.58rem', height: 18 }} />
+                  <Chip label={(app.status || 'healthy').toUpperCase()} size="small" sx={{ bgcolor: `${STATUS_COLOR[app.status || 'healthy']}22`, color: STATUS_COLOR[app.status || 'healthy'], fontWeight: 700, fontSize: '0.58rem', height: 18 }} />
                 </TableCell>
                 <TableCell sx={{ color: 'text.secondary', display: { xs: 'none', md: 'table-cell' } }}>{app.sla}</TableCell>
-                <TableCell sx={{ color: app.incidents > 5 ? '#f44336' : app.incidents > 0 ? '#ff9800' : 'text.secondary', fontWeight: app.incidents > 0 ? 600 : 400 }}>{app.incidents}</TableCell>
-                <TableCell sx={{ color: 'text.secondary' }}>{app.last}</TableCell>
+                <TableCell sx={{ color: (app.incidents_30d || app.incidents || 0) > 5 ? '#f44336' : (app.incidents_30d || app.incidents || 0) > 0 ? '#ff9800' : 'text.secondary', fontWeight: (app.incidents_30d || app.incidents || 0) > 0 ? 600 : 400 }}>{app.incidents_30d ?? app.incidents ?? 0}</TableCell>
+                <TableCell sx={{ color: 'text.secondary' }}>{app.last || '—'}</TableCell>
               </TableRow>
             ))}
           </TableBody>

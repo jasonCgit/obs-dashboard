@@ -113,6 +113,8 @@ export default function Applications() {
   }, [filteredApps, enrichedMap])
 
   // Reconstruct selectedApps from restored selectedPath after data loads
+  // Tree paths store display labels (e.g. "(General)" for empty subLob),
+  // so we must apply the same fallback defaults the tree builders use.
   useEffect(() => {
     if (loading || !appsWithEnrichment.length) return
     if (selectedPath === 'all' || selectedApps !== null) return
@@ -123,11 +125,15 @@ export default function Applications() {
     const fields = treeMode === 'business'
       ? ['lob', 'subLob', 'productLine', 'product']
       : ['lob', 'cto', 'cbt']
+    const defaults = treeMode === 'business'
+      ? { lob: '(No LOB)', subLob: '(General)', productLine: '(No Product Line)', product: '(No Product)' }
+      : { lob: '(No LOB)', cto: '(No CTO)', cbt: '(No CBT)' }
     const levelDepth = { lob: 1, sub: 2, l3: 3, l4: 4 }
     const depth = levelDepth[level] || 1
     const filtered = appsWithEnrichment.filter(a => {
       for (let i = 0; i < depth && i < parts.length && i < fields.length; i++) {
-        if (parts[i] && a[fields[i]] !== parts[i]) return false
+        const val = a[fields[i]] || defaults[fields[i]]
+        if (parts[i] && val !== parts[i]) return false
       }
       return true
     })
