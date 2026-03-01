@@ -1,21 +1,41 @@
-import { useState, useEffect, Suspense } from 'react'
+import { useState, useEffect, useMemo, Suspense } from 'react'
 import { Box, IconButton, CircularProgress, Alert, Card, Tooltip } from '@mui/material'
 import CloseIcon from '@mui/icons-material/Close'
 import DragIndicatorIcon from '@mui/icons-material/DragIndicator'
 import OpenInFullIcon from '@mui/icons-material/OpenInFull'
 import CloseFullscreenIcon from '@mui/icons-material/CloseFullscreen'
 import { useRefresh } from '../RefreshContext'
+import { useFilters } from '../FilterContext'
+import buildFilterQueryString from '../utils/buildFilterQueryString'
 import { WIDGET_REGISTRY } from './widgetRegistry'
 
 const fSmall = { fontSize: 'clamp(0.6rem, 0.8vw, 0.7rem)' }
 
 export default function WidgetWrapper({ widgetInstance, viewFilters, onRemove, onExpand, isEditing, isExpanded }) {
   const { refreshTick } = useRefresh()
+  const { activeFilters, searchText } = useFilters()
   const [data, setData] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
 
   const reg = WIDGET_REGISTRY[widgetInstance.type]
+
+  // Merge global ScopeBar filters with view-specific filters
+  // View-specific filters take precedence where set
+  const mergedFilters = useMemo(() => {
+    const merged = { ...activeFilters }
+    if (viewFilters) {
+      for (const [k, v] of Object.entries(viewFilters)) {
+        if (Array.isArray(v) && v.length > 0) merged[k] = v
+      }
+    }
+    return merged
+  }, [activeFilters, viewFilters])
+
+  const filterQs = useMemo(
+    () => buildFilterQueryString(mergedFilters, searchText),
+    [mergedFilters, searchText]
+  )
 
   useEffect(() => {
     if (!reg || reg.selfContained || !reg.apiEndpoint) {
@@ -24,7 +44,7 @@ export default function WidgetWrapper({ widgetInstance, viewFilters, onRemove, o
     }
     setLoading(true)
     setError(null)
-    fetch(reg.apiEndpoint)
+    fetch(`${reg.apiEndpoint}${filterQs}`)
       .then(r => { if (!r.ok) throw new Error('Failed to load'); return r.json() })
       .then(json => {
         const result = reg.dataKey ? json[reg.dataKey] : json
@@ -32,7 +52,7 @@ export default function WidgetWrapper({ widgetInstance, viewFilters, onRemove, o
       })
       .catch(e => setError(e.message))
       .finally(() => setLoading(false))
-  }, [refreshTick, reg])
+  }, [refreshTick, reg, filterQs])
 
   if (!reg) return null
 
@@ -105,7 +125,7 @@ export default function WidgetWrapper({ widgetInstance, viewFilters, onRemove, o
             </Box>
           }>
             {reg.selfContained
-              ? <Component viewFilters={viewFilters} />
+              ? <Component viewFilters={mergedFilters} />
               : <Component data={data} />
             }
           </Suspense>

@@ -18,11 +18,16 @@ export default function ApplicationsWidget({ viewFilters }) {
       .catch(() => {})
   }, [])
 
-  // Filter by SEAL from viewFilters
+  // Filter by all active filters (ScopeBar + view-specific merged by WidgetWrapper)
   const sealFiltered = useMemo(() => {
-    const seals = viewFilters?.seal || []
-    if (seals.length === 0) return enrichedApps
-    return enrichedApps.filter(a => seals.includes(a.seal))
+    const f = viewFilters || {}
+    let apps = enrichedApps
+    if (f.seal?.length)   apps = apps.filter(a => f.seal.includes(a.seal))
+    if (f.lob?.length)    apps = apps.filter(a => f.lob.includes(a.lob))
+    if (f.subLob?.length) apps = apps.filter(a => f.subLob.includes(a.subLob))
+    if (f.cto?.length)    apps = apps.filter(a => f.cto.includes(a.cto))
+    if (f.cbt?.length)    apps = apps.filter(a => f.cbt.includes(a.cbt))
+    return apps
   }, [viewFilters, enrichedApps])
 
   const visible = sealFiltered.filter(a => statusFilter === 'all' || (a.status || 'healthy') === statusFilter)
