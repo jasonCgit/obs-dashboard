@@ -304,20 +304,7 @@ The knowledge graph represents application dependencies across five layers:
 
 ### 5.4 SEAL-to-Component Mapping
 
-Each application (SEAL) maps to a set of components. Currently 10 SEALs have knowledge graph data:
-
-| SEAL | Application | Components |
-|---|---|---|
-| 16649 | Morgan Money | 3 |
-| 35115 | PANDA | 4 |
-| 88180 | Connect OS | 6 |
-| 90176 | Advisor Connect | 10 |
-| 81884 | Order Decision Engine | 8 |
-| 91001 | Quantum | 7 |
-| 45440 | Credit Card Processing | 11 |
-| 102987 | AWM Entitlements (WEAVE) | 12 |
-| 90215 | Spectrum Portfolio Mgmt | 14 |
-| 62100 | Real-Time Payments | 15 |
+Each application (SEAL) maps to a set of components. Currently 10 SEALs have knowledge graph data (see [Appendix A](#appendix-a-application-seal-reference) for the full list with LOB and component counts). 71 additional apps in the registry have no graph data.
 
 ### 5.5 Application → Deployment → Component Relationship
 
@@ -481,24 +468,10 @@ GET /monitoring/indicators/summary
 - Blast Radius — Impact Severity, incident count/trend, Executive Summary (business perspective)
 - Interactive chat with observability context
 
-**Expected API**:
-```
-POST /aura/analyze
-  Content-Type: application/json
-  Body: { "context": { health_summary, incidents, trends }, "scope": { lob, seal } }
-  → Returns: { critical_alert, trend_analysis, recommendations[] }
-
-POST /aura/chat  (SSE streaming)
-  Body: { "message": "...", "conversation_id": "...", "context": { current_state } }
-  → Streams: token-by-token response with structured sections
-
-POST /aura/summarize/blast-radius
-  Body: { "seal": "88180", "graph_data": { components, dependencies, incidents } }
-  → Returns: { impact_severity, incident_count, trend, executive_summary }
-```
+The internal chat endpoint (`POST /api/aura/chat`) already uses SSE streaming — see [current-api.md](apidocs/current-api.md#aura-ai-chat-endpoint). Planned summarization use cases are documented in [future-api.md](apidocs/future-api.md#aura-ai-chat-endpoint-enhanced).
 
 **Integration notes**:
-- Chat should use SSE (Server-Sent Events) for streaming responses
+- The external AURA service should accept health state, incidents, and graph context as prompt input and stream tokens back
 - Context must include current filter scope so AI responses are relevant
 - Executive Summary for Blast Radius should focus on business impact, not technical details
 - Recurring issues analysis needs longer time windows (90d, 180d) beyond ServiceNow's incident data
@@ -509,17 +482,7 @@ POST /aura/summarize/blast-radius
 
 **Purpose**: End-to-end customer journey step health.
 
-**Currently**: Mock data with 3 journeys (Trade Execution, Client Login, Document Delivery), each with steps mapping to service components.
-
-**Expected API**:
-```
-GET /journeys
-  → Returns journey definitions with steps
-
-GET /journeys/{journey_id}/health
-  → Returns current health of each step (latency, error rate, status)
-  → Each step maps to a component/service in the knowledge graph
-```
+**Currently**: Mock data with 3 journeys (Trade Execution, Client Login, Document Delivery), each with steps mapping to service components. Planned internal endpoints are documented in [future-api.md](apidocs/future-api.md#customer-journey-endpoints).
 
 ---
 
@@ -596,13 +559,9 @@ ScopeBar (UI) → FilterContext (React Context) → buildFilterQueryString() →
 
 ### 8.1 Dual Data Source (Frontend + Backend)
 
-**Issue**: Application metadata exists in both `APPS` (frontend `appData.js`) and `APPS_REGISTRY` (backend `apps_registry.py`).
+**Issue**: Application metadata exists in both `APPS` (frontend `appData.js`) and `APPS_REGISTRY` (backend `apps_registry.py`). If the two registries diverge, filter options (ScopeBar) will not match API results.
 
-**Why it exists**: Frontend needs app data for instant client-side filter cascading without API round-trips. Backend needs it for enrichment and API responses.
-
-**Risk**: If the two registries diverge, filter options (ScopeBar) may not match API results.
-
-**Resolution for production**: Replace both with a single Product Catalog API call. Frontend can cache the catalog response for filter cascading.
+**Resolution**: Replace both with a single Product Catalog API call (see [Section 2 — Single Source of Truth](#single-source-of-truth-principle) and [Section 6.1 — PATOOLS](#61-product-catalog-api-patools)).
 
 ### 8.2 Health/Status Terminology Inconsistency
 
@@ -625,13 +584,11 @@ ScopeBar (UI) → FilterContext (React Context) → buildFilterQueryString() →
 
 2. **SLO threshold edge case**: The 0.5% gap between "warning" and "critical" SLO thresholds (`current < target - 0.5 → critical`) may be too wide for high-target apps (99.99% target) where 0.5% drop is catastrophic.
 
-3. **Indicator type mismatch**: ~~RESOLVED~~ — 6 components previously mapped to "Dependency Health" (not a valid indicator type) have been remapped to "Service".
+3. **Empty deployment handling**: Deployments with no active components (all excluded) get status "healthy", which may be misleading — should arguably show "no_data" or be hidden.
 
-4. **Empty deployment handling**: Deployments with no active components (all excluded) get status "healthy", which may be misleading — should arguably show "no_data" or be hidden.
+4. **Incident trends scaling**: When filters reduce the scope to few apps, `get_incident_trends()` scales the global 90-day data proportionally. This can produce fractional P1 counts (e.g., 0.3 P1 incidents), which are rounded but may produce unrealistic distributions.
 
-5. **Incident trends scaling**: When filters reduce the scope to few apps, `get_incident_trends()` scales the global 90-day data proportionally. This can produce fractional P1 counts (e.g., 0.3 P1 incidents), which are rounded but may produce unrealistic distributions.
-
-6. **SearchFilterPopover debouncing**: Search suggestions regenerate on every keystroke without debounce. For large app catalogs, this could cause performance issues.
+5. **SearchFilterPopover debouncing**: Search suggestions regenerate on every keystroke without debounce. For large app catalogs, this could cause performance issues.
 
 ### 8.5 Missing API Capabilities
 
@@ -639,7 +596,7 @@ ScopeBar (UI) → FilterContext (React Context) → buildFilterQueryString() →
 |---|---|---|
 | Pagination | All endpoints return full result set | Required for 500+ app catalogs |
 | Caching headers | No ETag / Cache-Control | Needed for performance |
-| WebSocket/SSE | Chat is request/response | AURA AI streaming |
+| Live AURA backend | Chat SSE works but uses keyword-matched mock responses | Connect to actual AURA AI service |
 | Bulk operations | Individual updates only | Team assignments, exclusions at scale |
 | Audit trail | No history tracking | Change tracking for exclusions, team assignments |
 

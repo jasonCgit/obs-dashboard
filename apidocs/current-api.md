@@ -481,7 +481,7 @@ Every endpoint above currently returns **deterministic mock data**. This section
 ### Developer Guide: Replacing Mock Data
 
 1. **Keep the same response schemas** — the frontend depends on the exact field names and shapes documented above
-2. **Add environment variables** for external service URLs and credentials (see `ARCHITECTURE.md` Section 10.4)
+2. **Add environment variables** for external service URLs and credentials (see `ARCHITECTURE.md` Section 9.4)
 3. **Replace data sources one at a time** — start with `APPS_REGISTRY` (Product Catalog), then incidents (ServiceNow), then graph data (ERMA/V12)
 4. **Cache expensive computations** — `_get_enriched_apps()` is currently cached at module level; maintain a similar caching strategy with TTL for live data
 5. **Filter logic stays the same** — `_filter_dashboard_apps()` works on any array of app objects matching the schema, regardless of whether data is mock or live

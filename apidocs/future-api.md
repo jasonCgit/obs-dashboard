@@ -363,28 +363,7 @@ Agent performance metrics over rolling 24-hour window.
 
 ## AURA AI Chat Endpoint (Enhanced)
 
-The existing `POST /api/aura/chat` endpoint already uses SSE streaming (see [current-api.md](current-api.md#aura-ai-chat-endpoint)). For production, it needs to connect to the actual AURA AI service.
-
-### Current SSE Event Protocol
-
-The endpoint streams Server-Sent Events with these event types:
-
-| Event | Payload | Description |
-|---|---|---|
-| `meta` | `{ message_id, timestamp }` | Sent first — conversation metadata |
-| `block` | `{ type, data }` | Content block (text, metrics, charts, etc.) |
-| `followups` | `["question1", "question2"]` | Suggested follow-up questions |
-| `done` | `{}` | Signal stream complete |
-
-### Content Block Types
-
-| type | data | Description |
-|---|---|---|
-| `"text"` | Markdown string | Narrative text with formatting |
-| `"metric_cards"` | `[{ label, value, status, trend }]` | KPI metric cards |
-| `"status_list"` | `[{ label, status, detail }]` | Status items with RAG indicators |
-| `"chart"` | `{ chart_type, data, title }` | Inline chart data |
-| `"recommendations"` | `[string]` | Action items |
+The existing `POST /api/aura/chat` endpoint already uses SSE streaming. See [current-api.md](current-api.md#aura-ai-chat-endpoint) for the request/response schema, SSE event protocol, and content block types. For production, it needs to connect to the actual AURA AI service.
 
 ### AURA Summarization Use Cases
 
