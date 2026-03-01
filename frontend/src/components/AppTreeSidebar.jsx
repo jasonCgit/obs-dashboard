@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react'
 import {
-  Box, Typography, Chip, ToggleButtonGroup, ToggleButton,
+  Box, Typography, ToggleButtonGroup, ToggleButton,
   Collapse, IconButton,
 } from '@mui/material'
 import ChevronRightIcon from '@mui/icons-material/ChevronRight'
@@ -10,10 +10,26 @@ import FiberManualRecordIcon from '@mui/icons-material/FiberManualRecord'
 const STATUS_RANK = { critical: 0, warning: 1, healthy: 2 }
 const STATUS_COLOR = { critical: '#f44336', warning: '#ff9800', healthy: '#4caf50' }
 
+function derivedStatus(app) {
+  const deployments = app.deployments || []
+  if (deployments.length === 0) return app.status || 'healthy'
+  const appExcl = new Set(app.excluded_indicators || [])
+  let worst = 'healthy'
+  for (const d of deployments) {
+    const depExcl = new Set([...appExcl, ...(d.excluded_indicators || [])])
+    for (const c of (d.components || [])) {
+      if (depExcl.has(c.indicator_type)) continue
+      if ((STATUS_RANK[c.status] ?? 2) < (STATUS_RANK[worst] ?? 2)) worst = c.status
+    }
+  }
+  return worst
+}
+
 function worstStatus(apps) {
   let worst = 'healthy'
   for (const a of apps) {
-    if (STATUS_RANK[a.status] < STATUS_RANK[worst]) worst = a.status
+    const s = derivedStatus(a)
+    if (STATUS_RANK[s] < STATUS_RANK[worst]) worst = s
   }
   return worst
 }
@@ -55,8 +71,17 @@ function collectApps(obj) {
 
 /* ── Generic collapsible tree node ── */
 
+function isAncestorOf(nodePath, selectedPath) {
+  if (!selectedPath || selectedPath === 'all' || nodePath === 'all') return false
+  // Extract the value parts after the prefix (lob:, sub:, l3:, l4:)
+  const selParts = selectedPath.replace(/^[^:]+:/, '').split('/')
+  const nodeParts = nodePath.replace(/^[^:]+:/, '').split('/')
+  if (nodeParts.length >= selParts.length) return false
+  return nodeParts.every((p, i) => p === selParts[i])
+}
+
 function TreeNode({ label, apps, depth, children, selectedPath, onSelect, path }) {
-  const [open, setOpen] = useState(depth < 2)
+  const [open, setOpen] = useState(() => depth < 2 || isAncestorOf(path, selectedPath))
   const isLeafBranch = !children // has apps directly
   const status = worstStatus(apps)
   const isSelected = selectedPath === path
@@ -112,8 +137,7 @@ function TreeNode({ label, apps, depth, children, selectedPath, onSelect, path }
 
 /* ── Main sidebar ── */
 
-export default function AppTreeSidebar({ apps, onSelect, selectedPath, statusFilter = 'all', onStatusFilter, width = 260 }) {
-  const [mode, setMode] = useState('technology')
+export default function AppTreeSidebar({ apps, onSelect, selectedPath, statusFilter = 'all', onStatusFilter, treeMode: mode, onTreeModeChange: setMode, width = 260 }) {
 
   const businessTree = useMemo(() => buildBusinessTree(apps), [apps])
   const techTree = useMemo(() => buildTechTree(apps), [apps])
@@ -121,12 +145,6 @@ export default function AppTreeSidebar({ apps, onSelect, selectedPath, statusFil
   const tree = mode === 'business' ? businessTree : techTree
   const l3Label = mode === 'business' ? 'productLine' : 'cto'
   const l4Label = mode === 'business' ? 'product' : 'cbt'
-
-  const statusCounts = useMemo(() => ({
-    critical: apps.filter(a => a.status === 'critical').length,
-    warning: apps.filter(a => a.status === 'warning').length,
-    healthy: apps.filter(a => a.status === 'healthy').length,
-  }), [apps])
 
   return (
     <Box sx={{
@@ -143,7 +161,6 @@ export default function AppTreeSidebar({ apps, onSelect, selectedPath, statusFil
           onChange={(_, v) => v && setMode(v)}
           size="small"
           fullWidth
-          sx={{ mb: 0.75 }}
         >
           <ToggleButton value="business" sx={{ textTransform: 'none', fontSize: '0.7rem', py: 0.4 }}>
             Business
@@ -152,22 +169,6 @@ export default function AppTreeSidebar({ apps, onSelect, selectedPath, statusFil
             Technology
           </ToggleButton>
         </ToggleButtonGroup>
-        <Box sx={{ display: 'flex', gap: 0.5, justifyContent: 'center', flexWrap: 'wrap' }}>
-          {Object.entries(statusCounts).map(([s, c]) => (
-            <Chip
-              key={s}
-              icon={<FiberManualRecordIcon sx={{ fontSize: '7px !important', color: `${STATUS_COLOR[s]} !important` }} />}
-              label={`${c} ${s}`}
-              size="small"
-              variant={statusFilter === s ? 'filled' : 'outlined'}
-              onClick={() => onStatusFilter?.(statusFilter === s ? 'all' : s)}
-              sx={{
-                fontSize: '0.65rem', height: 22, textTransform: 'capitalize',
-                ...(statusFilter === s && { bgcolor: `${STATUS_COLOR[s]}18`, borderColor: STATUS_COLOR[s] }),
-              }}
-            />
-          ))}
-        </Box>
       </Box>
 
       {/* Tree */}
@@ -189,28 +190,34 @@ export default function AppTreeSidebar({ apps, onSelect, selectedPath, statusFil
               >
                 {Object.keys(tree[lob]).sort().map(sub => {
                   const subApps = collectApps(tree[lob][sub])
+                  const skipSub = sub === '(General)' && Object.keys(tree[lob]).length === 1
+
+                  const l3Content = Object.keys(tree[lob][sub]).sort().map(l3 => {
+                    const l3Apps = collectApps(tree[lob][sub][l3])
+                    const l3Children = Array.isArray(tree[lob][sub][l3]) ? null : tree[lob][sub][l3]
+                    return (
+                      <TreeNode key={l3} label={l3} apps={l3Apps} depth={skipSub ? 2 : 3}
+                        selectedPath={selectedPath} onSelect={onSelect} path={`l3:${lob}/${sub}/${l3}`}
+                      >
+                        {l3Children && Object.keys(l3Children).sort().map(l4 => {
+                          const l4Apps = collectApps(l3Children[l4])
+                          return (
+                            <TreeNode key={l4} label={l4} apps={l4Apps} depth={skipSub ? 3 : 4}
+                              selectedPath={selectedPath} onSelect={onSelect} path={`l4:${lob}/${sub}/${l3}/${l4}`}
+                            />
+                          )
+                        })}
+                      </TreeNode>
+                    )
+                  })
+
+                  if (skipSub) return l3Content
+
                   return (
                     <TreeNode key={sub} label={sub} apps={subApps} depth={2}
                       selectedPath={selectedPath} onSelect={onSelect} path={`sub:${lob}/${sub}`}
                     >
-                      {Object.keys(tree[lob][sub]).sort().map(l3 => {
-                        const l3Apps = collectApps(tree[lob][sub][l3])
-                        const l3Children = Array.isArray(tree[lob][sub][l3]) ? null : tree[lob][sub][l3]
-                        return (
-                          <TreeNode key={l3} label={l3} apps={l3Apps} depth={3}
-                            selectedPath={selectedPath} onSelect={onSelect} path={`l3:${lob}/${sub}/${l3}`}
-                          >
-                            {l3Children && Object.keys(l3Children).sort().map(l4 => {
-                              const l4Apps = collectApps(l3Children[l4])
-                              return (
-                                <TreeNode key={l4} label={l4} apps={l4Apps} depth={4}
-                                  selectedPath={selectedPath} onSelect={onSelect} path={`l4:${lob}/${sub}/${l3}/${l4}`}
-                                />
-                              )
-                            })}
-                          </TreeNode>
-                        )
-                      })}
+                      {l3Content}
                     </TreeNode>
                   )
                 })}
@@ -223,18 +230,10 @@ export default function AppTreeSidebar({ apps, onSelect, selectedPath, statusFil
       {/* Footer summary */}
       <Box sx={{
         px: 1.5, py: 1, borderTop: '1px solid', borderColor: 'divider',
-        display: 'flex', gap: 1.5, justifyContent: 'center',
+        display: 'flex', justifyContent: 'center',
       }}>
-        {Object.entries(statusCounts).map(([s, c]) => (
-          <Box key={s} sx={{ display: 'flex', alignItems: 'center', gap: 0.4 }}>
-            <FiberManualRecordIcon sx={{ fontSize: 7, color: STATUS_COLOR[s] }} />
-            <Typography variant="caption" sx={{ fontSize: '0.65rem', color: 'text.secondary' }}>
-              {c}
-            </Typography>
-          </Box>
-        ))}
-        <Typography variant="caption" sx={{ fontSize: '0.65rem', color: 'text.disabled' }}>
-          {apps.length} total
+        <Typography variant="body2" sx={{ fontSize: '0.8rem', fontWeight: 700, color: 'text.primary' }}>
+          {apps.length} Applications
         </Typography>
       </Box>
     </Box>

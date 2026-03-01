@@ -34,6 +34,7 @@ import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings'
 import SpeedIcon from '@mui/icons-material/Speed'
 import DragIndicatorIcon from '@mui/icons-material/DragIndicator'
 import ViewQuiltIcon from '@mui/icons-material/ViewQuilt'
+import GroupsIcon from '@mui/icons-material/Groups'
 import LayersIcon from '@mui/icons-material/Layers'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useAppTheme } from '../ThemeContext'
@@ -56,6 +57,7 @@ const ALL_TABS = [
   { label: 'Incident Zero',    path: '/incident-zero',   Icon: ShieldIcon,      desc: 'Proactive pre-incident management' },
   { label: 'Links',             path: '/links',           Icon: LinkIcon,        desc: 'Quick links & resources' },
   { label: 'SLO Agent',         path: '/slo-agent',       Icon: SpeedIcon,       desc: 'Auto management of SLOs' },
+  { label: 'Teams',             path: '/teams',           Icon: GroupsIcon,      desc: 'Manage team contacts & channels' },
   { label: 'View Central',      path: '/view-central',    Icon: ViewQuiltIcon,   desc: 'Custom dashboards' },
 ]
 

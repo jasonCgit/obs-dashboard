@@ -284,14 +284,31 @@ function NodeDetailPanel({ node, onNavigateToSeal }) {
   } else if (nodeType === 'datacenter') {
     rows = [['Region', node.region], ['Identifier', node.label]]
     statusValue = node.status
+  } else if (nodeType === 'indicatorGroup') {
+    const indicators = node.indicators || []
+    const redCount = indicators.filter(i => i.health === 'red').length
+    const amberCount = indicators.filter(i => i.health === 'amber').length
+    const greenCount = indicators.filter(i => i.health === 'green').length
+    rows = [
+      ['Component', node.componentId],
+      ['Total Indicators', indicators.length],
+    ]
+    if (redCount > 0) rows.push(['Red', redCount])
+    if (amberCount > 0) rows.push(['Amber', amberCount])
+    if (greenCount > 0) rows.push(['Green', greenCount])
+    statusValue = redCount > 0 ? 'critical' : amberCount > 0 ? 'warning' : 'healthy'
   } else if (nodeType === 'indicator') {
-    const typeLabels = { process_group: 'Process Group', service: 'Service', synthetic: 'Synthetic' }
+    const typeLabels = { process_group: 'Process Group', service: 'Service', synthetic: 'Synthetic', 'Process Group': 'Process Group', 'Service': 'Service', 'Synthetic': 'Synthetic' }
     rows = [['Type', typeLabels[node.indicator_type] || node.indicator_type], ['Health', node.health?.toUpperCase()], ['Component', node.component]]
     statusValue = node.health === 'red' ? 'critical' : node.health === 'amber' ? 'warning' : 'healthy'
   }
 
-  const layerLabel = { service: 'COMPONENT', platform: 'PLATFORM', datacenter: 'DATA CENTER', indicator: 'INDICATOR', external: 'UPSTREAM / DOWNSTREAM' }[nodeType] || 'NODE'
-  const layerColor = { service: '#1565C0', platform: '#C27BA0', datacenter: '#5DA5A0', indicator: '#B8976B', external: '#78716c' }[nodeType] || '#94a3b8'
+  const title = nodeType === 'indicatorGroup' ? `Indicators (${(node.indicators || []).length})` : node.label
+  const layerLabel = { service: 'COMPONENT', platform: 'PLATFORM', datacenter: 'DATA CENTER', indicator: 'INDICATOR', indicatorGroup: 'HEALTH INDICATORS', external: 'UPSTREAM / DOWNSTREAM' }[nodeType] || 'NODE'
+  const layerColor = { service: '#1565C0', platform: '#C27BA0', datacenter: '#5DA5A0', indicator: '#B8976B', indicatorGroup: '#B8976B', external: '#78716c' }[nodeType] || '#94a3b8'
+
+  const HEALTH_COLORS = { red: '#f44336', amber: '#ff9800', green: '#4caf50' }
+  const HEALTH_LABELS = { red: 'RED', amber: 'AMBER', green: 'GREEN' }
 
   return (
     <Card sx={{ bgcolor: (t) => t.palette.mode === 'dark' ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)', border: '1px solid rgba(128,128,128,0.2)' }}>
@@ -302,7 +319,7 @@ function NodeDetailPanel({ node, onNavigateToSeal }) {
               {layerLabel}
             </Typography>
             <Typography variant="body2" fontWeight={700} sx={{ wordBreak: 'break-word', lineHeight: 1.3, fontSize: '0.78rem' }}>
-              {node.label}
+              {title}
             </Typography>
           </Box>
         }
@@ -321,6 +338,38 @@ function NodeDetailPanel({ node, onNavigateToSeal }) {
             </Box>
           ))}
         </Stack>
+        {nodeType === 'indicatorGroup' && (node.indicators || []).length > 0 && (
+          <>
+            <Divider sx={{ my: 1 }} />
+            <Typography sx={{ fontSize: '0.55rem', fontWeight: 700, textTransform: 'uppercase',
+              letterSpacing: 0.5, color: 'text.secondary', mb: 0.75 }}>
+              Indicators
+            </Typography>
+            <Stack spacing={0.4}>
+              {(node.indicators || []).map((ind, i) => {
+                const hColor = HEALTH_COLORS[ind.health] || '#94a3b8'
+                const typeLabels = { process_group: 'Process Group', service: 'Service', synthetic: 'Synthetic', 'Process Group': 'Process Group', 'Service': 'Service', 'Synthetic': 'Synthetic' }
+                return (
+                  <Box key={ind.id || i} sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                    <Box sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: hColor, flexShrink: 0 }} />
+                    <Box sx={{ flex: 1, minWidth: 0 }}>
+                      <Typography variant="caption" sx={{ fontSize: '0.6rem', fontWeight: 600, display: 'block',
+                        overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {ind.label}
+                      </Typography>
+                      <Typography variant="caption" sx={{ fontSize: '0.52rem', color: 'text.secondary' }}>
+                        {typeLabels[ind.indicator_type] || ind.indicator_type}
+                      </Typography>
+                    </Box>
+                    <Typography sx={{ fontSize: '0.48rem', fontWeight: 700, color: hColor, textTransform: 'uppercase', flexShrink: 0 }}>
+                      {HEALTH_LABELS[ind.health] || 'UNKNOWN'}
+                    </Typography>
+                  </Box>
+                )
+              })}
+            </Stack>
+          </>
+        )}
         {nodeType === 'external' && node.external_seal && (
           <>
             <Divider sx={{ my: 1 }} />

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { Container, Grid, Box, Stack, CircularProgress, Alert } from '@mui/material'
 import SummaryCards          from '../components/SummaryCards'
 import AIHealthPanel         from '../components/AIHealthPanel'
@@ -9,6 +9,40 @@ import ActiveIncidentsPanel  from '../components/ActiveIncidentsPanel'
 import IncidentTrends        from '../components/IncidentTrends'
 import WorldClock            from '../components/WorldClock'
 import { useRefresh } from '../RefreshContext'
+import { useFilters } from '../FilterContext'
+
+/**
+ * Build a query string from the active filter state.
+ * Maps FilterContext keys → API query param names.
+ * Multi-value filters produce repeated params: ?lob=AWM&lob=CIB
+ */
+function buildFilterQueryString(activeFilters, searchText) {
+  const params = new URLSearchParams()
+
+  // Map frontend filter keys → backend query param names
+  const keyMap = {
+    lob:     'lob',
+    subLob:  'subLob',
+    cto:     'cto',
+    cbt:     'cbt',
+    seal:    'seal',
+    status:  'status',
+  }
+
+  for (const [feKey, apiKey] of Object.entries(keyMap)) {
+    const values = activeFilters[feKey] || []
+    for (const v of values) {
+      params.append(apiKey, v)
+    }
+  }
+
+  if (searchText) {
+    params.append('search', searchText)
+  }
+
+  const qs = params.toString()
+  return qs ? `?${qs}` : ''
+}
 
 export default function Dashboard() {
   const [summary,          setSummary]          = useState(null)
@@ -21,6 +55,13 @@ export default function Dashboard() {
   const [loading,          setLoading]          = useState(true)
   const [error,            setError]            = useState(null)
   const { refreshTick, reportUpdated } = useRefresh()
+  const { activeFilters, searchText } = useFilters()
+
+  // Build query string from current filter state
+  const filterQs = useMemo(
+    () => buildFilterQueryString(activeFilters, searchText),
+    [activeFilters, searchText]
+  )
 
   const endpoints = [
     ['/api/health-summary',     setSummary],
@@ -32,10 +73,13 @@ export default function Dashboard() {
     ['/api/active-incidents',   setActiveIncidents],
   ]
 
-  const fetchData = useCallback(() => {
+  const filterQsRef = useRef(filterQs)
+  filterQsRef.current = filterQs
+
+  const fetchData = useCallback((qs = '') => {
     return Promise.all(
       endpoints.map(([url, setter]) =>
-        fetch(url)
+        fetch(`${url}${qs}`)
           .then(r => { if (!r.ok) throw new Error(`${url} — ${r.status}`); return r.json() })
           .then(setter)
       )
@@ -46,13 +90,20 @@ export default function Dashboard() {
 
   // Initial fetch
   useEffect(() => {
-    fetchData().finally(() => setLoading(false))
-  }, [fetchData])
+    fetchData(filterQs).finally(() => setLoading(false))
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Re-fetch when filters change
+  useEffect(() => {
+    if (!loading) {
+      fetchData(filterQs)
+    }
+  }, [filterQs]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Re-fetch on global refresh tick
   useEffect(() => {
-    if (refreshTick > 0) fetchData()
-  }, [refreshTick])
+    if (refreshTick > 0) fetchData(filterQsRef.current)
+  }, [refreshTick]) // eslint-disable-line react-hooks/exhaustive-deps
 
   if (loading) {
     return (

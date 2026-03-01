@@ -156,6 +156,9 @@ const INDICATOR_TYPE_LABELS = {
   process_group: 'PROCESS GROUP',
   service: 'SERVICE',
   synthetic: 'SYNTHETIC',
+  'Process Group': 'PROCESS GROUP',
+  'Service': 'SERVICE',
+  'Synthetic': 'SYNTHETIC',
 }
 
 const HEALTH_STATUS_TEXT = { green: '#4caf50', amber: '#ff9800', red: '#f44336' }

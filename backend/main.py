@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
@@ -22,69 +22,179 @@ app.add_middleware(
 
 # ── Mock Data ─────────────────────────────────────────────────────────────────
 
+# ── Dashboard Apps — filter-aware app registry for dashboard aggregation ──────
+# Mirrors frontend appData.js for API consistency. In production, this comes
+# from PATOOLS (business hierarchy) and V12 (technology hierarchy) APIs.
+# Filter params: lob, subLob, cto, cbt, seal, appOwner, status, region
+DASHBOARD_APPS = [
+    # AWM — Asset Management
+    {"seal": "35115", "name": "PANDA",                                 "lob": "AWM", "subLob": "Asset Management", "cto": "Gitanjali Nistala", "cbt": "Karthik Rajagopalan", "status": "healthy",  "region": "NA",   "incidents_30d": 1,  "incidents_today": 0, "recurring_30d": 1,  "p1_30d": 0, "p2_30d": 1},
+    {"seal": "16649", "name": "Morgan Money",                          "lob": "AWM", "subLob": "Asset Management", "cto": "Jon Glennie",       "cbt": "Kalpesh Narkhede",    "status": "critical", "region": "APAC", "incidents_30d": 8,  "incidents_today": 2, "recurring_30d": 6,  "p1_30d": 2, "p2_30d": 6,
+     "recent_issues": [
+         {"description": "NAV calculation timeout — downstream pricing feed delay in APAC region", "time_ago": "25m ago", "severity": "critical"},
+         {"description": "Memory pressure on liquidity aggregation service (85% heap)", "time_ago": "2h ago", "severity": "warning"},
+     ]},
+    {"seal": "90556", "name": "Spectrum UI",                           "lob": "AWM", "subLob": "Asset Management", "cto": "Sheetal Gandhi",    "cbt": "Alex Feinberg",       "status": "healthy",  "region": "NA",   "incidents_30d": 0,  "incidents_today": 0, "recurring_30d": 0,  "p1_30d": 0, "p2_30d": 0},
+    {"seal": "91001", "name": "Quantum",                               "lob": "AWM", "subLob": "Asset Management", "cto": "Alec Hamby",        "cbt": "Michael Hasing",      "status": "healthy",  "region": "APAC", "incidents_30d": 1,  "incidents_today": 0, "recurring_30d": 0,  "p1_30d": 0, "p2_30d": 1},
+    {"seal": "90215", "name": "Spectrum Portfolio Mgmt (Equities)",    "lob": "AWM", "subLob": "Asset Management", "cto": "Lakith Leelasena",  "cbt": "Aadi Thayyar",        "status": "healthy",  "region": "NA",   "incidents_30d": 1,  "incidents_today": 0, "recurring_30d": 0,  "p1_30d": 0, "p2_30d": 1},
+    {"seal": "107517","name": "AM PMT Routing Service",                "lob": "AWM", "subLob": "Asset Management", "cto": "Lakith Leelasena",  "cbt": "Ashvin Venkatraman",  "status": "warning",  "region": "EMEA", "incidents_30d": 3,  "incidents_today": 0, "recurring_30d": 2,  "p1_30d": 0, "p2_30d": 3,
+     "recent_issues": [
+         {"description": "Intermittent routing failures to EMEA settlement gateway", "time_ago": "4h ago", "severity": "warning"},
+     ]},
+    {"seal": "81884", "name": "Order Decision Engine",                 "lob": "AWM", "subLob": "Asset Management", "cto": "Lakith Leelasena",  "cbt": "Kent Zheng",          "status": "healthy",  "region": "NA",   "incidents_30d": 0,  "incidents_today": 0, "recurring_30d": 0,  "p1_30d": 0, "p2_30d": 0},
+    # AWM — Global Private Bank
+    {"seal": "88180", "name": "Connect OS",                            "lob": "AWM", "subLob": "Global Private Bank", "cto": "Rod Thomas",     "cbt": "Arun Tummalapalli",   "status": "healthy",  "region": "NA",   "incidents_30d": 0,  "incidents_today": 0, "recurring_30d": 0,  "p1_30d": 0, "p2_30d": 0},
+    {"seal": "90176", "name": "Advisor Connect",                       "lob": "AWM", "subLob": "Global Private Bank", "cto": "Rod Thomas",     "cbt": "Arun Tummalapalli",   "status": "warning",  "region": "NA",   "incidents_30d": 2,  "incidents_today": 1, "recurring_30d": 1,  "p1_30d": 0, "p2_30d": 2,
+     "recent_issues": [
+         {"description": "Advisor profile sync latency elevated (p95 > 2s during peak)", "time_ago": "1h ago", "severity": "warning"},
+     ]},
+    {"seal": "102987","name": "AWM Entitlements (WEAVE)",              "lob": "AWM", "subLob": "Global Private Bank", "cto": "Stephen Musacchia","cbt": "Pranit Pan",         "status": "healthy",  "region": "NA",   "incidents_30d": 0,  "incidents_today": 0, "recurring_30d": 0,  "p1_30d": 0, "p2_30d": 0},
+    # AWM — AWM Shared
+    {"seal": "84540", "name": "AWM Data Platform",                     "lob": "AWM", "subLob": "AWM Shared",    "cto": "Michael Heizer",       "cbt": "Nidhi Verma",         "status": "healthy",  "region": "NA",   "incidents_30d": 1,  "incidents_today": 0, "recurring_30d": 0,  "p1_30d": 0, "p2_30d": 1},
+    # CIB — Markets
+    {"seal": "62100", "name": "Real-Time Payments Gateway",            "lob": "CIB", "subLob": "Payments",      "cto": "Joe Pedone",           "cbt": "Alex Rivera",         "status": "critical", "region": "NA",   "incidents_30d": 6,  "incidents_today": 2, "recurring_30d": 4,  "p1_30d": 1, "p2_30d": 5,
+     "recent_issues": [
+         {"description": "Connection pool exhaustion — max connections reached on primary DB cluster", "time_ago": "20m ago", "severity": "critical"},
+         {"description": "Latency spike on /api/payments/process (p99 > 8s)", "time_ago": "1h ago", "severity": "warning"},
+     ]},
+    {"seal": "45440", "name": "Credit Card Processing Engine",         "lob": "CIB", "subLob": "Markets",       "cto": "Joe Pedone",           "cbt": "Robert Patel",        "status": "warning",  "region": "NA",   "incidents_30d": 4,  "incidents_today": 1, "recurring_30d": 3,  "p1_30d": 0, "p2_30d": 4,
+     "recent_issues": [
+         {"description": "Elevated transaction decline rate on Visa network (2.1% vs 0.8% baseline)", "time_ago": "6h ago", "severity": "warning"},
+     ]},
+    # CIB — Global Banking
+    {"seal": "106003","name": "CIB Digital Onboarding",                "lob": "CIB", "subLob": "Global Banking","cto": "Jennifer Liu",         "cbt": "Alex Rivera",         "status": "healthy",  "region": "EMEA", "incidents_30d": 0,  "incidents_today": 0, "recurring_30d": 0,  "p1_30d": 0, "p2_30d": 0},
+    {"seal": "85003", "name": "CIB Payments Gateway",                  "lob": "CIB", "subLob": "Payments",      "cto": "Thomas Anderson",      "cbt": "Samantha Park",       "status": "healthy",  "region": "NA",   "incidents_30d": 1,  "incidents_today": 0, "recurring_30d": 0,  "p1_30d": 0, "p2_30d": 1},
+    # CCB
+    {"seal": "83278", "name": "Consumer Lending Platform",             "lob": "CCB", "subLob": "",              "cto": "Michael Torres",       "cbt": "Sarah Kim",           "status": "healthy",  "region": "NA",   "incidents_30d": 2,  "incidents_today": 0, "recurring_30d": 1,  "p1_30d": 0, "p2_30d": 2},
+    {"seal": "89749", "name": "Digital Banking Portal",                "lob": "CCB", "subLob": "",              "cto": "Michael Torres",       "cbt": "Robert Nguyen",       "status": "healthy",  "region": "NA",   "incidents_30d": 1,  "incidents_today": 0, "recurring_30d": 0,  "p1_30d": 0, "p2_30d": 1},
+    # CDAO
+    {"seal": "88652", "name": "Enterprise Data Lake",                  "lob": "CDAO","subLob": "",              "cto": "David Chen",           "cbt": "Nicole Chen",         "status": "healthy",  "region": "NA",   "incidents_30d": 0,  "incidents_today": 0, "recurring_30d": 0,  "p1_30d": 0, "p2_30d": 0},
+    {"seal": "110787","name": "ML Feature Store",                      "lob": "CDAO","subLob": "",              "cto": "David Chen",           "cbt": "Derek Johnson",       "status": "healthy",  "region": "NA",   "incidents_30d": 1,  "incidents_today": 0, "recurring_30d": 0,  "p1_30d": 0, "p2_30d": 1},
+    # EP
+    {"seal": "110143","name": "Employee Portal",                       "lob": "EP",  "subLob": "",              "cto": "Lisa Zhang",           "cbt": "Rachel Kim",          "status": "healthy",  "region": "NA",   "incidents_30d": 0,  "incidents_today": 0, "recurring_30d": 0,  "p1_30d": 0, "p2_30d": 0},
+]
+
+
+def _filter_dashboard_apps(
+    lob: list[str] | None = None,
+    sub_lob: list[str] | None = None,
+    cto: list[str] | None = None,
+    cbt: list[str] | None = None,
+    seal: list[str] | None = None,
+    status: list[str] | None = None,
+    search: str | None = None,
+) -> list[dict]:
+    """Filter DASHBOARD_APPS by the given scope params.
+    In production this becomes a database query with WHERE clauses."""
+    result = DASHBOARD_APPS
+    if lob:
+        result = [a for a in result if a["lob"] in lob]
+    if sub_lob:
+        result = [a for a in result if a.get("subLob", "") in sub_lob]
+    if cto:
+        result = [a for a in result if a["cto"] in cto]
+    if cbt:
+        result = [a for a in result if a["cbt"] in cbt]
+    if seal:
+        result = [a for a in result if a["seal"] in seal]
+    if status:
+        result = [a for a in result if a["status"] in status]
+    if search:
+        q = search.lower()
+        result = [a for a in result if q in a["name"].lower() or q in a.get("seal", "").lower()]
+    return result
+
+
+def _parse_filters(
+    lob: list[str] | None = None,
+    sub_lob: list[str] | None = None,
+    cto: list[str] | None = None,
+    cbt: list[str] | None = None,
+    seal: list[str] | None = None,
+    status: list[str] | None = None,
+    search: str | None = None,
+) -> dict:
+    """Bundle filter params for passing to helper functions."""
+    return {k: v for k, v in {
+        "lob": lob, "sub_lob": sub_lob, "cto": cto, "cbt": cbt,
+        "seal": seal, "status": status, "search": search,
+    }.items() if v}
+
+
+# Filter-aware query param signature reused across all dashboard endpoints
+FILTER_PARAMS = {
+    "lob":     Query(None, description="LOB filter (multi-value, e.g. ?lob=AWM&lob=CIB)"),
+    "sub_lob": Query(None, description="Sub LOB filter"),
+    "cto":     Query(None, description="CTO filter"),
+    "cbt":     Query(None, description="CBT filter"),
+    "seal":    Query(None, description="SEAL ID filter"),
+    "status":  Query(None, description="Status filter (critical/warning/healthy)"),
+    "search":  Query(None, description="Free-text search across app name and SEAL"),
+}
+
+
 HEALTH_SUMMARY = {
     "critical_issues": 2,
-    "warnings": 1,
-    "recurring_30d": 29,
-    "incidents_today": 5,
+    "warnings": 3,
+    "recurring_30d": 16,
+    "incidents_today": 4,
     "trends": {
         "critical_issues": {"spark": [4, 3, 3, 2, 3, 2, 2], "pct": -33},
-        "warnings":        {"spark": [3, 2, 2, 1, 2, 1, 1], "pct": -50},
-        "recurring_30d":   {"spark": [20, 22, 24, 25, 26, 27, 29], "pct": 21},
-        "incidents_today": {"spark": [8, 11, 7, 9, 6, 8, 5], "pct": -38},
+        "warnings":        {"spark": [5, 4, 4, 3, 3, 3, 3], "pct": -40},
+        "recurring_30d":   {"spark": [12, 13, 14, 14, 15, 15, 16], "pct": 14},
+        "incidents_today": {"spark": [6, 8, 5, 7, 4, 6, 4], "pct": -33},
     },
 }
 
 AI_ANALYSIS = {
     "critical_alert": (
-        "Currently tracking 2 critical applications affecting approximately 6,220 users. "
-        "GWM Global Collateral Management and Payment Gateway API experiencing critical "
-        "database connection timeouts and connection pool exhaustion. Both services showing "
-        "recurring patterns indicating systemic database infrastructure issues in APAC."
+        "Currently tracking 2 critical applications affecting approximately 4,800 users. "
+        "Morgan Money is experiencing NAV calculation timeouts due to a downstream pricing feed "
+        "delay in APAC, and Real-Time Payments Gateway has connection pool exhaustion on the "
+        "primary DB cluster. Both issues are being actively triaged."
     ),
     "trend_analysis": (
-        "Issue frequency has increased 34% over the past 7 days. GWM Global Collateral has "
-        "experienced 12 incidents in 30 days with recurring database timeouts. Payment Gateway "
-        "has seen 8 incidents, primarily connection pool exhaustion on the primary DB cluster."
+        "Issue frequency has decreased 33% over the past 7 days. Morgan Money has experienced "
+        "8 incidents in 30 days, primarily NAV calculation timeouts during APAC market open. "
+        "Real-Time Payments Gateway has seen 6 incidents related to connection pool capacity."
     ),
     "recommendations": [
-        "Investigate GWM Global Collateral database connection timeout — scale connection pool and add circuit breaker on /api/margin endpoint",
-        "Address Payment Gateway connection pool exhaustion — increase max connections on primary DB cluster and add connection recycling",
-        "Schedule incident review with Collateral Engineering and Payments teams to address recurring APAC infrastructure patterns",
+        "Investigate Morgan Money NAV calculation timeout — coordinate with APAC pricing feed provider to resolve downstream latency",
+        "Address Real-Time Payments Gateway connection pool exhaustion — increase max connections and add connection recycling on primary DB cluster",
+        "Schedule incident review with Liquidity Management and Payments Core teams to prevent recurrence",
     ],
 }
 
 REGIONAL_STATUS = [
     {"region": "NA",   "status": "healthy",  "sod_impacts": 0, "app_issues": 0},
-    {"region": "EMEA", "status": "healthy",  "sod_impacts": 0, "app_issues": 0},
-    {"region": "APAC", "status": "critical", "sod_impacts": 2, "app_issues": 2},
+    {"region": "EMEA", "status": "warning",  "sod_impacts": 0, "app_issues": 1},
+    {"region": "APAC", "status": "critical", "sod_impacts": 1, "app_issues": 1},
 ]
 
 CRITICAL_APPS = [
     {
-        "id": "gwm-global-collateral",
-        "name": "GWM GLOBAL COLLATERAL MANAGEMENT",
-        "seal": "SEAL - 90083",
+        "id": "morgan-money",
+        "name": "MORGAN MONEY",
+        "seal": "SEAL - 16649",
         "status": "critical",
-        "current_issues": 3,
-        "recurring_30d": 12,
-        "last_incident": "15m ago",
+        "current_issues": 2,
+        "recurring_30d": 6,
+        "last_incident": "25m ago",
         "recent_issues": [
-            {"description": "Database connection timeout - Unable to process collateral calculations", "time_ago": "15m ago", "severity": "critical"},
-            {"description": "High response time (>5s) on /api/margin endpoint", "time_ago": "45m ago", "severity": "warning"},
-            {"description": "Memory usage at 85%", "time_ago": "2h ago", "severity": "warning"},
+            {"description": "NAV calculation timeout — downstream pricing feed delay in APAC region", "time_ago": "25m ago", "severity": "critical"},
+            {"description": "Memory pressure on liquidity aggregation service (85% heap)", "time_ago": "2h ago", "severity": "warning"},
         ],
     },
     {
-        "id": "payment-gateway-api",
-        "name": "PAYMENT GATEWAY API",
-        "seal": "SEAL - 90176",
+        "id": "real-time-payments-gateway",
+        "name": "REAL-TIME PAYMENTS GATEWAY",
+        "seal": "SEAL - 62100",
         "status": "critical",
         "current_issues": 2,
-        "recurring_30d": 8,
-        "last_incident": "10m ago",
+        "recurring_30d": 4,
+        "last_incident": "20m ago",
         "recent_issues": [
-            {"description": "Connection pool exhaustion - Max connections reached on primary DB cluster", "time_ago": "10m ago", "severity": "critical"},
+            {"description": "Connection pool exhaustion — max connections reached on primary DB cluster", "time_ago": "20m ago", "severity": "critical"},
             {"description": "Latency spike on /api/payments/process (p99 > 8s)", "time_ago": "1h ago", "severity": "warning"},
         ],
     },
@@ -92,15 +202,15 @@ CRITICAL_APPS = [
 
 WARNING_APPS = [
     {
-        "id": "user-authentication",
-        "name": "USER AUTHENTICATION SERVICE",
-        "seal": "SEAL - 92156",
+        "id": "am-pmt-routing",
+        "name": "AM PMT ROUTING SERVICE",
+        "seal": "SEAL - 107517",
         "status": "warning",
         "current_issues": 1,
-        "recurring_30d": 5,
+        "recurring_30d": 2,
         "last_incident": "4h ago",
         "recent_issues": [
-            {"description": "Elevated login failure rate — LDAP response time >3s during peak hours", "time_ago": "4h ago", "severity": "warning"},
+            {"description": "Intermittent routing failures to EMEA settlement gateway", "time_ago": "4h ago", "severity": "warning"},
         ],
     },
 ]
@@ -414,6 +524,78 @@ NODES = [
     {"id": "rtpg-archive-svc",    "label": "RTPG-DATA-ARCHIVAL",          "status": "healthy",  "team": "Payments Core",     "sla": "99.0%",  "incidents_30d": 0},
     {"id": "rtpg-monitor-svc",    "label": "RTPG-HEALTH-MONITOR",         "status": "warning",  "team": "Payments Core",     "sla": "99.9%",  "incidents_30d": 2},
 ]
+
+# ── Health Indicator Types ────────────────────────────────────────────────────
+INDICATOR_TYPES = [
+    "Process Group",
+    "Service",
+    "Synthetic",
+]
+
+COMPONENT_INDICATOR_MAP = {
+    # Synthetic — UI services, portals, frontends (synthetic monitors)
+    "connect-portal": "Synthetic", "spieq-ui-service": "Synthetic",
+    "mm-ui": "Synthetic", "quantum-portal": "Synthetic",
+    "weave-admin-portal": "Synthetic", "connect-home-app-na": "Synthetic",
+    "connect-home-app-apac": "Synthetic", "connect-home-app-emea": "Synthetic",
+    # Service — API gateways, query/order services
+    "api-gateway": "Service", "spieq-api-gateway": "Service", "connect-cloud-gw": "Service",
+    "panda-gateway": "Service", "quantum-api-gw": "Service", "rtpg-api-gw": "Service",
+    "ode-router": "Service", "rtpg-ingress-lb": "Service", "ccpe-ingress": "Service",
+    "weave-gateway": "Service", "meridian-query": "Service", "meridian-order": "Service",
+    "sb-service-order": "Service", "sb-service-query": "Service", "mm-api": "Service",
+    # Process Group — databases, caches, queues, data stores
+    "db-primary": "Process Group", "db-replica": "Process Group",
+    "cache-layer": "Process Group", "message-queue": "Process Group",
+    "quantum-data-lake": "Process Group", "weave-cache-layer": "Process Group",
+    "weave-event-bus": "Process Group", "rtpg-archive-svc": "Process Group",
+    "ccpe-archive-svc": "Process Group", "panda-cache-svc": "Process Group",
+    # Service — auth, fraud, validation, risk, compliance
+    "auth-service": "Service", "connect-auth-svc": "Service",
+    "ccpe-auth-svc": "Service", "ccpe-fraud-engine": "Service",
+    "spieq-risk-service": "Service", "ode-risk-check": "Service",
+    "rtpg-validation-svc": "Service", "rtpg-sanctions-svc": "Service",
+    "rtpg-aml-svc": "Service", "weave-policy-engine": "Service",
+    "weave-token-svc": "Service", "quantum-auth-svc": "Service",
+    "ipbol-manager-auth": "Service", "spieq-compliance-svc": "Service",
+    "weave-consent-svc": "Service",
+    # Service — trade execution, routing, payments, settlement, clearing
+    "spieq-trade-service": "Service", "payment-gateway": "Service",
+    "ode-exec-svc": "Service", "rtpg-routing-engine": "Service",
+    "rtpg-clearing-svc": "Service", "rtpg-settlement-svc": "Service",
+    "ccpe-ledger-svc": "Service", "ccpe-settlement-svc": "Service",
+    "ccpe-limit-svc": "Service", "ccpe-rewards-svc": "Service",
+    "ccpe-dispute-svc": "Service", "spieq-settlement-svc": "Service",
+    "spieq-order-router": "Service", "spieq-pricing-engine": "Service",
+    "rtpg-ledger-svc": "Service", "rtpg-fx-converter": "Service",
+    "mm-data-svc": "Service", "quantum-portfolio-svc": "Service",
+    # Process Group — data sync, pipelines, profiles, integrations
+    "data-pipeline": "Process Group", "connect-data-sync": "Process Group",
+    "connect-profile-svc": "Dependency Health", "ipbol-account": "Dependency Health",
+    "ipbol-account-green": "Dependency Health", "ipbol-doc-domain": "Dependency Health",
+    "ipbol-doc-domain-g": "Dependency Health", "ipbol-doc-delivery": "Dependency Health",
+    "ipbol-contact-sync": "Process Group", "ipbol-investments": "Process Group",
+    "connect-coverage-app": "Process Group", "active-advisory": "Service",
+    "spieq-market-data": "Process Group", "ode-market-feed": "Process Group",
+    "spieq-portfolio-svc": "Synthetic", "panda-data-svc": "Process Group",
+    "panda-export-svc": "Process Group", "quantum-analytics-svc": "Service",
+    "weave-role-svc": "Service", "weave-user-store": "Process Group",
+    "weave-sync-svc": "Process Group", "connect-team-mgr": "Service",
+    "connect-search-svc": "Service", "connect-pref-svc": "Process Group",
+    "connect-session-svc": "Service", "connect-config-svc": "Process Group",
+    "connect-doc-svc": "Service", "ode-rule-engine": "Service",
+    "ode-reconcile-svc": "Service", "rtpg-recon-svc": "Service",
+    # Process Group — audit, notification, reporting, monitoring
+    "email-notification": "Process Group", "spieq-audit-trail": "Process Group",
+    "spieq-notif-svc": "Service", "connect-notification": "Service",
+    "connect-audit-svc": "Synthetic", "connect-metrics-svc": "Process Group",
+    "ode-audit-log": "Process Group", "ode-notif-svc": "Service",
+    "ccpe-notif-svc": "Service", "ccpe-report-svc": "Service",
+    "weave-audit-svc": "Process Group", "weave-report-svc": "Service",
+    "quantum-report-svc": "Service", "rtpg-notif-svc": "Service",
+    "rtpg-audit-svc": "Process Group", "rtpg-monitor-svc": "Process Group",
+}
+
 
 # (source, target) means source DEPENDS ON target
 EDGES_RAW = [
@@ -837,148 +1019,148 @@ DC_LOOKUP = {
 # Every component in every SEAL has at least one indicator
 INDICATOR_NODES = [
     # ── Connect OS (88180) — 8 indicators across 6 components ──
-    {"id": "dt-pg-cloud-gw",       "label": "connect-cloud-gateway",  "indicator_type": "process_group", "health": "amber", "component": "connect-cloud-gw"},
-    {"id": "dt-pg-portal",         "label": "connect-portal",         "indicator_type": "process_group", "health": "green", "component": "connect-portal"},
-    {"id": "dt-svc-auth",          "label": "AuthenticationSvc",      "indicator_type": "service",       "health": "green", "component": "connect-auth-svc"},
-    {"id": "dt-syn-login",         "label": "Login Flow",             "indicator_type": "synthetic",     "health": "green", "component": "connect-auth-svc"},
-    {"id": "dt-syn-home-na",       "label": "Home Page NA",           "indicator_type": "synthetic",     "health": "green", "component": "connect-home-app-na"},
-    {"id": "dt-svc-home-apac",     "label": "HomeApp-APAC",           "indicator_type": "service",       "health": "amber", "component": "connect-home-app-apac"},
-    {"id": "dt-syn-home-apac",     "label": "Home Page APAC",         "indicator_type": "synthetic",     "health": "amber", "component": "connect-home-app-apac"},
-    {"id": "dt-svc-home-emea",     "label": "HomeApp-EMEA",           "indicator_type": "service",       "health": "green", "component": "connect-home-app-emea"},
+    {"id": "dt-pg-cloud-gw",       "label": "connect-cloud-gateway",  "indicator_type": "Process Group", "health": "amber", "component": "connect-cloud-gw"},
+    {"id": "dt-pg-portal",         "label": "connect-portal",         "indicator_type": "Process Group", "health": "green", "component": "connect-portal"},
+    {"id": "dt-svc-auth",          "label": "AuthenticationSvc",      "indicator_type": "Service",       "health": "green", "component": "connect-auth-svc"},
+    {"id": "dt-syn-login",         "label": "Login Flow",             "indicator_type": "Synthetic",     "health": "green", "component": "connect-auth-svc"},
+    {"id": "dt-syn-home-na",       "label": "Home Page NA",           "indicator_type": "Synthetic",     "health": "green", "component": "connect-home-app-na"},
+    {"id": "dt-svc-home-apac",     "label": "HomeApp-APAC",           "indicator_type": "Service",       "health": "amber", "component": "connect-home-app-apac"},
+    {"id": "dt-syn-home-apac",     "label": "Home Page APAC",         "indicator_type": "Synthetic",     "health": "amber", "component": "connect-home-app-apac"},
+    {"id": "dt-svc-home-emea",     "label": "HomeApp-EMEA",           "indicator_type": "Service",       "health": "green", "component": "connect-home-app-emea"},
 
     # ── Advisor Connect (90176) — 14 indicators across 10 components ──
-    {"id": "dt-pg-profile-svc",    "label": "connect-profile-svc",    "indicator_type": "process_group", "health": "amber", "component": "connect-profile-svc"},
-    {"id": "dt-svc-profile",       "label": "ProfileService",         "indicator_type": "service",       "health": "amber", "component": "connect-profile-svc"},
-    {"id": "dt-pg-coverage-app",   "label": "connect-coverage-app",   "indicator_type": "process_group", "health": "red",   "component": "connect-coverage-app"},
-    {"id": "dt-syn-coverage",      "label": "Coverage Lookup",        "indicator_type": "synthetic",     "health": "amber", "component": "connect-coverage-app"},
-    {"id": "dt-svc-notification",  "label": "NotificationSvc",        "indicator_type": "service",       "health": "amber", "component": "connect-notification"},
-    {"id": "dt-pg-data-sync",      "label": "connect-data-sync",      "indicator_type": "process_group", "health": "green", "component": "connect-data-sync"},
-    {"id": "dt-svc-doc-svc",       "label": "DocumentService",        "indicator_type": "service",       "health": "amber", "component": "connect-doc-svc"},
-    {"id": "dt-pg-pref-svc",       "label": "connect-pref-svc",       "indicator_type": "process_group", "health": "green", "component": "connect-pref-svc"},
-    {"id": "dt-syn-audit-trail",   "label": "Audit Trail",            "indicator_type": "synthetic",     "health": "green", "component": "connect-audit-svc"},
-    {"id": "dt-svc-advisory",      "label": "ActiveAdvisorySvc",      "indicator_type": "service",       "health": "green", "component": "active-advisory"},
-    {"id": "dt-pg-ipbol-acct",     "label": "ipbol-account",          "indicator_type": "process_group", "health": "red",   "component": "ipbol-account"},
-    {"id": "dt-syn-ipbol-acct",    "label": "Account Lookup",         "indicator_type": "synthetic",     "health": "red",   "component": "ipbol-account"},
-    {"id": "dt-svc-doc-domain",    "label": "DocDomainSvc",           "indicator_type": "service",       "health": "red",   "component": "ipbol-doc-domain"},
-    {"id": "dt-pg-doc-domain",     "label": "ipbol-doc-domain",       "indicator_type": "process_group", "health": "red",   "component": "ipbol-doc-domain"},
+    {"id": "dt-pg-profile-svc",    "label": "connect-profile-svc",    "indicator_type": "Process Group", "health": "amber", "component": "connect-profile-svc"},
+    {"id": "dt-svc-profile",       "label": "ProfileService",         "indicator_type": "Service",       "health": "amber", "component": "connect-profile-svc"},
+    {"id": "dt-pg-coverage-app",   "label": "connect-coverage-app",   "indicator_type": "Process Group", "health": "red",   "component": "connect-coverage-app"},
+    {"id": "dt-syn-coverage",      "label": "Coverage Lookup",        "indicator_type": "Synthetic",     "health": "amber", "component": "connect-coverage-app"},
+    {"id": "dt-svc-notification",  "label": "NotificationSvc",        "indicator_type": "Service",       "health": "amber", "component": "connect-notification"},
+    {"id": "dt-pg-data-sync",      "label": "connect-data-sync",      "indicator_type": "Process Group", "health": "green", "component": "connect-data-sync"},
+    {"id": "dt-svc-doc-svc",       "label": "DocumentService",        "indicator_type": "Service",       "health": "amber", "component": "connect-doc-svc"},
+    {"id": "dt-pg-pref-svc",       "label": "connect-pref-svc",       "indicator_type": "Process Group", "health": "green", "component": "connect-pref-svc"},
+    {"id": "dt-syn-audit-trail",   "label": "Audit Trail",            "indicator_type": "Synthetic",     "health": "green", "component": "connect-audit-svc"},
+    {"id": "dt-svc-advisory",      "label": "ActiveAdvisorySvc",      "indicator_type": "Service",       "health": "green", "component": "active-advisory"},
+    {"id": "dt-pg-ipbol-acct",     "label": "ipbol-account",          "indicator_type": "Process Group", "health": "red",   "component": "ipbol-account"},
+    {"id": "dt-syn-ipbol-acct",    "label": "Account Lookup",         "indicator_type": "Synthetic",     "health": "red",   "component": "ipbol-account"},
+    {"id": "dt-svc-doc-domain",    "label": "DocDomainSvc",           "indicator_type": "Service",       "health": "red",   "component": "ipbol-doc-domain"},
+    {"id": "dt-pg-doc-domain",     "label": "ipbol-doc-domain",       "indicator_type": "Process Group", "health": "red",   "component": "ipbol-doc-domain"},
 
     # ── Spectrum Portfolio Mgmt (90215) — 22 indicators across 14 components ──
-    {"id": "dt-syn-ui-health",     "label": "UI Health Check",        "indicator_type": "synthetic",     "health": "green", "component": "spieq-ui-service"},
-    {"id": "dt-svc-api-gw",        "label": "APIGatewaySvc",          "indicator_type": "service",       "health": "amber", "component": "spieq-api-gateway"},
-    {"id": "dt-pg-api-gw",         "label": "spieq-api-gateway",      "indicator_type": "process_group", "health": "amber", "component": "spieq-api-gateway"},
-    {"id": "dt-pg-trade-svc",      "label": "spieq-trade-service",    "indicator_type": "process_group", "health": "red",   "component": "spieq-trade-service"},
-    {"id": "dt-svc-trade",         "label": "TradeExecutionSvc",      "indicator_type": "service",       "health": "red",   "component": "spieq-trade-service"},
-    {"id": "dt-syn-trade-submit",  "label": "Trade Submission",       "indicator_type": "synthetic",     "health": "red",   "component": "spieq-trade-service"},
-    {"id": "dt-syn-portfolio",     "label": "Portfolio View",         "indicator_type": "synthetic",     "health": "green", "component": "spieq-portfolio-svc"},
-    {"id": "dt-pg-pricing",        "label": "spieq-pricing-engine",   "indicator_type": "process_group", "health": "amber", "component": "spieq-pricing-engine"},
-    {"id": "dt-svc-pricing",       "label": "PricingEngineSvc",       "indicator_type": "service",       "health": "amber", "component": "spieq-pricing-engine"},
-    {"id": "dt-pg-risk-svc",       "label": "spieq-risk-service",     "indicator_type": "process_group", "health": "red",   "component": "spieq-risk-service"},
-    {"id": "dt-svc-risk",          "label": "RiskAssessmentSvc",      "indicator_type": "service",       "health": "red",   "component": "spieq-risk-service"},
-    {"id": "dt-svc-order-router",  "label": "OrderRouterSvc",         "indicator_type": "service",       "health": "green", "component": "spieq-order-router"},
-    {"id": "dt-pg-market-data",    "label": "MarketDataFeed",         "indicator_type": "process_group", "health": "amber", "component": "spieq-market-data"},
-    {"id": "dt-syn-compliance",    "label": "Compliance Check",       "indicator_type": "synthetic",     "health": "green", "component": "spieq-compliance-svc"},
-    {"id": "dt-svc-settlement",    "label": "SettlementSvc",          "indicator_type": "service",       "health": "amber", "component": "spieq-settlement-svc"},
-    {"id": "dt-pg-audit-trail",    "label": "spieq-audit-trail",      "indicator_type": "process_group", "health": "green", "component": "spieq-audit-trail"},
-    {"id": "dt-svc-notif",         "label": "NotificationSvc",        "indicator_type": "service",       "health": "green", "component": "spieq-notif-svc"},
-    {"id": "dt-svc-payment",       "label": "PaymentGatewaySvc",      "indicator_type": "service",       "health": "red",   "component": "payment-gateway"},
-    {"id": "dt-syn-payment",       "label": "Payment Processing",     "indicator_type": "synthetic",     "health": "red",   "component": "payment-gateway"},
-    {"id": "dt-pg-email",          "label": "email-notification",     "indicator_type": "process_group", "health": "red",   "component": "email-notification"},
+    {"id": "dt-syn-ui-health",     "label": "UI Health Check",        "indicator_type": "Synthetic",     "health": "green", "component": "spieq-ui-service"},
+    {"id": "dt-svc-api-gw",        "label": "APIGatewaySvc",          "indicator_type": "Service",       "health": "amber", "component": "spieq-api-gateway"},
+    {"id": "dt-pg-api-gw",         "label": "spieq-api-gateway",      "indicator_type": "Process Group", "health": "amber", "component": "spieq-api-gateway"},
+    {"id": "dt-pg-trade-svc",      "label": "spieq-trade-service",    "indicator_type": "Process Group", "health": "red",   "component": "spieq-trade-service"},
+    {"id": "dt-svc-trade",         "label": "TradeExecutionSvc",      "indicator_type": "Service",       "health": "red",   "component": "spieq-trade-service"},
+    {"id": "dt-syn-trade-submit",  "label": "Trade Submission",       "indicator_type": "Synthetic",     "health": "red",   "component": "spieq-trade-service"},
+    {"id": "dt-syn-portfolio",     "label": "Portfolio View",         "indicator_type": "Synthetic",     "health": "green", "component": "spieq-portfolio-svc"},
+    {"id": "dt-pg-pricing",        "label": "spieq-pricing-engine",   "indicator_type": "Process Group", "health": "amber", "component": "spieq-pricing-engine"},
+    {"id": "dt-svc-pricing",       "label": "PricingEngineSvc",       "indicator_type": "Service",       "health": "amber", "component": "spieq-pricing-engine"},
+    {"id": "dt-pg-risk-svc",       "label": "spieq-risk-service",     "indicator_type": "Process Group", "health": "red",   "component": "spieq-risk-service"},
+    {"id": "dt-svc-risk",          "label": "RiskAssessmentSvc",      "indicator_type": "Service",       "health": "red",   "component": "spieq-risk-service"},
+    {"id": "dt-svc-order-router",  "label": "OrderRouterSvc",         "indicator_type": "Service",       "health": "green", "component": "spieq-order-router"},
+    {"id": "dt-pg-market-data",    "label": "MarketDataFeed",         "indicator_type": "Process Group", "health": "amber", "component": "spieq-market-data"},
+    {"id": "dt-syn-compliance",    "label": "Compliance Check",       "indicator_type": "Synthetic",     "health": "green", "component": "spieq-compliance-svc"},
+    {"id": "dt-svc-settlement",    "label": "SettlementSvc",          "indicator_type": "Service",       "health": "amber", "component": "spieq-settlement-svc"},
+    {"id": "dt-pg-audit-trail",    "label": "spieq-audit-trail",      "indicator_type": "Process Group", "health": "green", "component": "spieq-audit-trail"},
+    {"id": "dt-svc-notif",         "label": "NotificationSvc",        "indicator_type": "Service",       "health": "green", "component": "spieq-notif-svc"},
+    {"id": "dt-svc-payment",       "label": "PaymentGatewaySvc",      "indicator_type": "Service",       "health": "red",   "component": "payment-gateway"},
+    {"id": "dt-syn-payment",       "label": "Payment Processing",     "indicator_type": "Synthetic",     "health": "red",   "component": "payment-gateway"},
+    {"id": "dt-pg-email",          "label": "email-notification",     "indicator_type": "Process Group", "health": "red",   "component": "email-notification"},
 
     # ── Morgan Money (16649) — 4 indicators across 3 components ──
-    {"id": "dt-pg-mm-ui",          "label": "morgan-money-ui",        "indicator_type": "process_group", "health": "green", "component": "mm-ui"},
-    {"id": "dt-svc-mm-api",        "label": "MorganMoneyAPI",         "indicator_type": "service",       "health": "amber", "component": "mm-api"},
-    {"id": "dt-pg-mm-data",        "label": "morgan-money-data",      "indicator_type": "process_group", "health": "red",   "component": "mm-data-svc"},
-    {"id": "dt-syn-mm-data",       "label": "Data Lookup",            "indicator_type": "synthetic",     "health": "red",   "component": "mm-data-svc"},
+    {"id": "dt-pg-mm-ui",          "label": "morgan-money-ui",        "indicator_type": "Process Group", "health": "green", "component": "mm-ui"},
+    {"id": "dt-svc-mm-api",        "label": "MorganMoneyAPI",         "indicator_type": "Service",       "health": "amber", "component": "mm-api"},
+    {"id": "dt-pg-mm-data",        "label": "morgan-money-data",      "indicator_type": "Process Group", "health": "red",   "component": "mm-data-svc"},
+    {"id": "dt-syn-mm-data",       "label": "Data Lookup",            "indicator_type": "Synthetic",     "health": "red",   "component": "mm-data-svc"},
 
     # ── PANDA (35115) — 5 indicators across 4 components ──
-    {"id": "dt-pg-panda-gw",       "label": "panda-gateway",          "indicator_type": "process_group", "health": "green", "component": "panda-gateway"},
-    {"id": "dt-svc-panda-data",    "label": "PandaDataSvc",           "indicator_type": "service",       "health": "green", "component": "panda-data-svc"},
-    {"id": "dt-pg-panda-cache",    "label": "panda-cache",            "indicator_type": "process_group", "health": "amber", "component": "panda-cache-svc"},
-    {"id": "dt-syn-panda-cache",   "label": "Cache Hit Rate",         "indicator_type": "synthetic",     "health": "amber", "component": "panda-cache-svc"},
-    {"id": "dt-svc-panda-export",  "label": "PandaExportSvc",         "indicator_type": "service",       "health": "green", "component": "panda-export-svc"},
+    {"id": "dt-pg-panda-gw",       "label": "panda-gateway",          "indicator_type": "Process Group", "health": "green", "component": "panda-gateway"},
+    {"id": "dt-svc-panda-data",    "label": "PandaDataSvc",           "indicator_type": "Service",       "health": "green", "component": "panda-data-svc"},
+    {"id": "dt-pg-panda-cache",    "label": "panda-cache",            "indicator_type": "Process Group", "health": "amber", "component": "panda-cache-svc"},
+    {"id": "dt-syn-panda-cache",   "label": "Cache Hit Rate",         "indicator_type": "Synthetic",     "health": "amber", "component": "panda-cache-svc"},
+    {"id": "dt-svc-panda-export",  "label": "PandaExportSvc",         "indicator_type": "Service",       "health": "green", "component": "panda-export-svc"},
 
     # ── Quantum (91001) — 10 indicators across 7 components ──
-    {"id": "dt-syn-quantum-portal",   "label": "Portal Health",          "indicator_type": "synthetic",     "health": "green", "component": "quantum-portal"},
-    {"id": "dt-svc-quantum-api",      "label": "QuantumAPISvc",          "indicator_type": "service",       "health": "amber", "component": "quantum-api-gw"},
-    {"id": "dt-pg-quantum-api",       "label": "quantum-api-gateway",    "indicator_type": "process_group", "health": "amber", "component": "quantum-api-gw"},
-    {"id": "dt-pg-quantum-portfolio", "label": "quantum-portfolio",      "indicator_type": "process_group", "health": "red",   "component": "quantum-portfolio-svc"},
-    {"id": "dt-svc-quantum-portfolio","label": "PortfolioSvc",           "indicator_type": "service",       "health": "red",   "component": "quantum-portfolio-svc"},
-    {"id": "dt-pg-quantum-analytics", "label": "quantum-analytics",      "indicator_type": "process_group", "health": "amber", "component": "quantum-analytics-svc"},
-    {"id": "dt-svc-quantum-report",   "label": "QuantumReportSvc",       "indicator_type": "service",       "health": "green", "component": "quantum-report-svc"},
-    {"id": "dt-pg-quantum-lake",      "label": "quantum-data-lake",      "indicator_type": "process_group", "health": "red",   "component": "quantum-data-lake"},
-    {"id": "dt-syn-quantum-lake",     "label": "Data Lake Query",        "indicator_type": "synthetic",     "health": "red",   "component": "quantum-data-lake"},
-    {"id": "dt-svc-quantum-auth",     "label": "QuantumAuthSvc",         "indicator_type": "service",       "health": "green", "component": "quantum-auth-svc"},
+    {"id": "dt-syn-quantum-portal",   "label": "Portal Health",          "indicator_type": "Synthetic",     "health": "green", "component": "quantum-portal"},
+    {"id": "dt-svc-quantum-api",      "label": "QuantumAPISvc",          "indicator_type": "Service",       "health": "amber", "component": "quantum-api-gw"},
+    {"id": "dt-pg-quantum-api",       "label": "quantum-api-gateway",    "indicator_type": "Process Group", "health": "amber", "component": "quantum-api-gw"},
+    {"id": "dt-pg-quantum-portfolio", "label": "quantum-portfolio",      "indicator_type": "Process Group", "health": "red",   "component": "quantum-portfolio-svc"},
+    {"id": "dt-svc-quantum-portfolio","label": "PortfolioSvc",           "indicator_type": "Service",       "health": "red",   "component": "quantum-portfolio-svc"},
+    {"id": "dt-pg-quantum-analytics", "label": "quantum-analytics",      "indicator_type": "Process Group", "health": "amber", "component": "quantum-analytics-svc"},
+    {"id": "dt-svc-quantum-report",   "label": "QuantumReportSvc",       "indicator_type": "Service",       "health": "green", "component": "quantum-report-svc"},
+    {"id": "dt-pg-quantum-lake",      "label": "quantum-data-lake",      "indicator_type": "Process Group", "health": "red",   "component": "quantum-data-lake"},
+    {"id": "dt-syn-quantum-lake",     "label": "Data Lake Query",        "indicator_type": "Synthetic",     "health": "red",   "component": "quantum-data-lake"},
+    {"id": "dt-svc-quantum-auth",     "label": "QuantumAuthSvc",         "indicator_type": "Service",       "health": "green", "component": "quantum-auth-svc"},
 
     # ── Order Decision Engine (81884) — 12 indicators across 8 components ──
-    {"id": "dt-pg-ode-router",        "label": "ode-order-router",       "indicator_type": "process_group", "health": "amber", "component": "ode-router"},
-    {"id": "dt-svc-ode-router",       "label": "OrderRouterSvc",         "indicator_type": "service",       "health": "amber", "component": "ode-router"},
-    {"id": "dt-pg-ode-rules",         "label": "ode-rule-engine",        "indicator_type": "process_group", "health": "green", "component": "ode-rule-engine"},
-    {"id": "dt-pg-ode-market",        "label": "ode-market-data",        "indicator_type": "process_group", "health": "amber", "component": "ode-market-feed"},
-    {"id": "dt-syn-ode-market",       "label": "Market Feed Latency",    "indicator_type": "synthetic",     "health": "amber", "component": "ode-market-feed"},
-    {"id": "dt-pg-ode-risk",          "label": "ode-risk-validation",    "indicator_type": "process_group", "health": "red",   "component": "ode-risk-check"},
-    {"id": "dt-svc-ode-risk",         "label": "RiskValidationSvc",      "indicator_type": "service",       "health": "red",   "component": "ode-risk-check"},
-    {"id": "dt-pg-ode-exec",          "label": "ode-execution-svc",      "indicator_type": "process_group", "health": "red",   "component": "ode-exec-svc"},
-    {"id": "dt-syn-ode-exec",         "label": "Order Execution",        "indicator_type": "synthetic",     "health": "red",   "component": "ode-exec-svc"},
-    {"id": "dt-pg-ode-audit",         "label": "ode-audit-log",          "indicator_type": "process_group", "health": "green", "component": "ode-audit-log"},
-    {"id": "dt-svc-ode-notif",        "label": "OdeNotifSvc",            "indicator_type": "service",       "health": "green", "component": "ode-notif-svc"},
-    {"id": "dt-svc-ode-recon",        "label": "ReconciliationSvc",      "indicator_type": "service",       "health": "amber", "component": "ode-reconcile-svc"},
+    {"id": "dt-pg-ode-router",        "label": "ode-order-router",       "indicator_type": "Process Group", "health": "amber", "component": "ode-router"},
+    {"id": "dt-svc-ode-router",       "label": "OrderRouterSvc",         "indicator_type": "Service",       "health": "amber", "component": "ode-router"},
+    {"id": "dt-pg-ode-rules",         "label": "ode-rule-engine",        "indicator_type": "Process Group", "health": "green", "component": "ode-rule-engine"},
+    {"id": "dt-pg-ode-market",        "label": "ode-market-data",        "indicator_type": "Process Group", "health": "amber", "component": "ode-market-feed"},
+    {"id": "dt-syn-ode-market",       "label": "Market Feed Latency",    "indicator_type": "Synthetic",     "health": "amber", "component": "ode-market-feed"},
+    {"id": "dt-pg-ode-risk",          "label": "ode-risk-validation",    "indicator_type": "Process Group", "health": "red",   "component": "ode-risk-check"},
+    {"id": "dt-svc-ode-risk",         "label": "RiskValidationSvc",      "indicator_type": "Service",       "health": "red",   "component": "ode-risk-check"},
+    {"id": "dt-pg-ode-exec",          "label": "ode-execution-svc",      "indicator_type": "Process Group", "health": "red",   "component": "ode-exec-svc"},
+    {"id": "dt-syn-ode-exec",         "label": "Order Execution",        "indicator_type": "Synthetic",     "health": "red",   "component": "ode-exec-svc"},
+    {"id": "dt-pg-ode-audit",         "label": "ode-audit-log",          "indicator_type": "Process Group", "health": "green", "component": "ode-audit-log"},
+    {"id": "dt-svc-ode-notif",        "label": "OdeNotifSvc",            "indicator_type": "Service",       "health": "green", "component": "ode-notif-svc"},
+    {"id": "dt-svc-ode-recon",        "label": "ReconciliationSvc",      "indicator_type": "Service",       "health": "amber", "component": "ode-reconcile-svc"},
 
     # ── Credit Card Processing Engine (45440) — 15 indicators across 11 components ──
-    {"id": "dt-pg-ccpe-ingress",      "label": "ccpe-ingress",           "indicator_type": "process_group", "health": "green", "component": "ccpe-ingress"},
-    {"id": "dt-svc-ccpe-auth",        "label": "CCAuthorizationSvc",     "indicator_type": "service",       "health": "amber", "component": "ccpe-auth-svc"},
-    {"id": "dt-syn-ccpe-auth",        "label": "Auth Response Time",     "indicator_type": "synthetic",     "health": "amber", "component": "ccpe-auth-svc"},
-    {"id": "dt-pg-ccpe-fraud",        "label": "ccpe-fraud-engine",      "indicator_type": "process_group", "health": "red",   "component": "ccpe-fraud-engine"},
-    {"id": "dt-svc-ccpe-fraud",       "label": "FraudDetectionSvc",      "indicator_type": "service",       "health": "red",   "component": "ccpe-fraud-engine"},
-    {"id": "dt-pg-ccpe-ledger",       "label": "ccpe-ledger",            "indicator_type": "process_group", "health": "red",   "component": "ccpe-ledger-svc"},
-    {"id": "dt-syn-ccpe-ledger",      "label": "Ledger Posting",         "indicator_type": "synthetic",     "health": "red",   "component": "ccpe-ledger-svc"},
-    {"id": "dt-svc-ccpe-limit",       "label": "CreditLimitSvc",         "indicator_type": "service",       "health": "amber", "component": "ccpe-limit-svc"},
-    {"id": "dt-svc-ccpe-notif",       "label": "CustomerNotifSvc",       "indicator_type": "service",       "health": "green", "component": "ccpe-notif-svc"},
-    {"id": "dt-pg-ccpe-dispute",      "label": "ccpe-dispute",           "indicator_type": "process_group", "health": "green", "component": "ccpe-dispute-svc"},
-    {"id": "dt-svc-ccpe-rewards",     "label": "RewardsSvc",             "indicator_type": "service",       "health": "green", "component": "ccpe-rewards-svc"},
-    {"id": "dt-svc-ccpe-settlement",  "label": "SettlementSvc",          "indicator_type": "service",       "health": "amber", "component": "ccpe-settlement-svc"},
-    {"id": "dt-pg-ccpe-report",       "label": "ccpe-reporting",         "indicator_type": "process_group", "health": "green", "component": "ccpe-report-svc"},
-    {"id": "dt-pg-ccpe-archive",      "label": "ccpe-archive",           "indicator_type": "process_group", "health": "green", "component": "ccpe-archive-svc"},
-    {"id": "dt-syn-ccpe-settlement",  "label": "Settlement Cycle",       "indicator_type": "synthetic",     "health": "amber", "component": "ccpe-settlement-svc"},
+    {"id": "dt-pg-ccpe-ingress",      "label": "ccpe-ingress",           "indicator_type": "Process Group", "health": "green", "component": "ccpe-ingress"},
+    {"id": "dt-svc-ccpe-auth",        "label": "CCAuthorizationSvc",     "indicator_type": "Service",       "health": "amber", "component": "ccpe-auth-svc"},
+    {"id": "dt-syn-ccpe-auth",        "label": "Auth Response Time",     "indicator_type": "Synthetic",     "health": "amber", "component": "ccpe-auth-svc"},
+    {"id": "dt-pg-ccpe-fraud",        "label": "ccpe-fraud-engine",      "indicator_type": "Process Group", "health": "red",   "component": "ccpe-fraud-engine"},
+    {"id": "dt-svc-ccpe-fraud",       "label": "FraudDetectionSvc",      "indicator_type": "Service",       "health": "red",   "component": "ccpe-fraud-engine"},
+    {"id": "dt-pg-ccpe-ledger",       "label": "ccpe-ledger",            "indicator_type": "Process Group", "health": "red",   "component": "ccpe-ledger-svc"},
+    {"id": "dt-syn-ccpe-ledger",      "label": "Ledger Posting",         "indicator_type": "Synthetic",     "health": "red",   "component": "ccpe-ledger-svc"},
+    {"id": "dt-svc-ccpe-limit",       "label": "CreditLimitSvc",         "indicator_type": "Service",       "health": "amber", "component": "ccpe-limit-svc"},
+    {"id": "dt-svc-ccpe-notif",       "label": "CustomerNotifSvc",       "indicator_type": "Service",       "health": "green", "component": "ccpe-notif-svc"},
+    {"id": "dt-pg-ccpe-dispute",      "label": "ccpe-dispute",           "indicator_type": "Process Group", "health": "green", "component": "ccpe-dispute-svc"},
+    {"id": "dt-svc-ccpe-rewards",     "label": "RewardsSvc",             "indicator_type": "Service",       "health": "green", "component": "ccpe-rewards-svc"},
+    {"id": "dt-svc-ccpe-settlement",  "label": "SettlementSvc",          "indicator_type": "Service",       "health": "amber", "component": "ccpe-settlement-svc"},
+    {"id": "dt-pg-ccpe-report",       "label": "ccpe-reporting",         "indicator_type": "Process Group", "health": "green", "component": "ccpe-report-svc"},
+    {"id": "dt-pg-ccpe-archive",      "label": "ccpe-archive",           "indicator_type": "Process Group", "health": "green", "component": "ccpe-archive-svc"},
+    {"id": "dt-syn-ccpe-settlement",  "label": "Settlement Cycle",       "indicator_type": "Synthetic",     "health": "amber", "component": "ccpe-settlement-svc"},
 
     # ── WEAVE / AWM Entitlements (102987) — 16 indicators across 12 components ──
-    {"id": "dt-pg-weave-gw",          "label": "weave-gateway",          "indicator_type": "process_group", "health": "green", "component": "weave-gateway"},
-    {"id": "dt-pg-weave-policy",      "label": "weave-policy-engine",    "indicator_type": "process_group", "health": "red",   "component": "weave-policy-engine"},
-    {"id": "dt-svc-weave-policy",     "label": "PolicyEngineSvc",        "indicator_type": "service",       "health": "red",   "component": "weave-policy-engine"},
-    {"id": "dt-svc-weave-role",       "label": "RoleServiceSvc",         "indicator_type": "service",       "health": "amber", "component": "weave-role-svc"},
-    {"id": "dt-pg-weave-user",        "label": "weave-user-store",       "indicator_type": "process_group", "health": "red",   "component": "weave-user-store"},
-    {"id": "dt-syn-weave-user",       "label": "User Lookup",            "indicator_type": "synthetic",     "health": "red",   "component": "weave-user-store"},
-    {"id": "dt-pg-weave-audit",       "label": "weave-audit",            "indicator_type": "process_group", "health": "green", "component": "weave-audit-svc"},
-    {"id": "dt-svc-weave-sync",       "label": "IdentitySyncSvc",        "indicator_type": "service",       "health": "amber", "component": "weave-sync-svc"},
-    {"id": "dt-svc-weave-token",      "label": "TokenServiceSvc",        "indicator_type": "service",       "health": "green", "component": "weave-token-svc"},
-    {"id": "dt-pg-weave-consent",     "label": "weave-consent",          "indicator_type": "process_group", "health": "green", "component": "weave-consent-svc"},
-    {"id": "dt-syn-weave-admin",      "label": "Admin Portal Health",    "indicator_type": "synthetic",     "health": "green", "component": "weave-admin-portal"},
-    {"id": "dt-svc-weave-report",     "label": "ComplianceReportSvc",    "indicator_type": "service",       "health": "amber", "component": "weave-report-svc"},
-    {"id": "dt-pg-weave-cache",       "label": "weave-cache",            "indicator_type": "process_group", "health": "green", "component": "weave-cache-layer"},
-    {"id": "dt-pg-weave-eventbus",    "label": "weave-event-bus",        "indicator_type": "process_group", "health": "red",   "component": "weave-event-bus"},
-    {"id": "dt-svc-weave-eventbus",   "label": "EventBusSvc",            "indicator_type": "service",       "health": "red",   "component": "weave-event-bus"},
-    {"id": "dt-syn-weave-entitle",    "label": "Entitlement Check",      "indicator_type": "synthetic",     "health": "red",   "component": "weave-policy-engine"},
+    {"id": "dt-pg-weave-gw",          "label": "weave-gateway",          "indicator_type": "Process Group", "health": "green", "component": "weave-gateway"},
+    {"id": "dt-pg-weave-policy",      "label": "weave-policy-engine",    "indicator_type": "Process Group", "health": "red",   "component": "weave-policy-engine"},
+    {"id": "dt-svc-weave-policy",     "label": "PolicyEngineSvc",        "indicator_type": "Service",       "health": "red",   "component": "weave-policy-engine"},
+    {"id": "dt-svc-weave-role",       "label": "RoleServiceSvc",         "indicator_type": "Service",       "health": "amber", "component": "weave-role-svc"},
+    {"id": "dt-pg-weave-user",        "label": "weave-user-store",       "indicator_type": "Process Group", "health": "red",   "component": "weave-user-store"},
+    {"id": "dt-syn-weave-user",       "label": "User Lookup",            "indicator_type": "Synthetic",     "health": "red",   "component": "weave-user-store"},
+    {"id": "dt-pg-weave-audit",       "label": "weave-audit",            "indicator_type": "Process Group", "health": "green", "component": "weave-audit-svc"},
+    {"id": "dt-svc-weave-sync",       "label": "IdentitySyncSvc",        "indicator_type": "Service",       "health": "amber", "component": "weave-sync-svc"},
+    {"id": "dt-svc-weave-token",      "label": "TokenServiceSvc",        "indicator_type": "Service",       "health": "green", "component": "weave-token-svc"},
+    {"id": "dt-pg-weave-consent",     "label": "weave-consent",          "indicator_type": "Process Group", "health": "green", "component": "weave-consent-svc"},
+    {"id": "dt-syn-weave-admin",      "label": "Admin Portal Health",    "indicator_type": "Synthetic",     "health": "green", "component": "weave-admin-portal"},
+    {"id": "dt-svc-weave-report",     "label": "ComplianceReportSvc",    "indicator_type": "Service",       "health": "amber", "component": "weave-report-svc"},
+    {"id": "dt-pg-weave-cache",       "label": "weave-cache",            "indicator_type": "Process Group", "health": "green", "component": "weave-cache-layer"},
+    {"id": "dt-pg-weave-eventbus",    "label": "weave-event-bus",        "indicator_type": "Process Group", "health": "red",   "component": "weave-event-bus"},
+    {"id": "dt-svc-weave-eventbus",   "label": "EventBusSvc",            "indicator_type": "Service",       "health": "red",   "component": "weave-event-bus"},
+    {"id": "dt-syn-weave-entitle",    "label": "Entitlement Check",      "indicator_type": "Synthetic",     "health": "red",   "component": "weave-policy-engine"},
 
     # ── Real-Time Payments Gateway (62100) — 20 indicators across 15 components ──
-    {"id": "dt-pg-rtpg-lb",           "label": "rtpg-ingress-lb",        "indicator_type": "process_group", "health": "green", "component": "rtpg-ingress-lb"},
-    {"id": "dt-svc-rtpg-api",         "label": "RTPGApiGwSvc",           "indicator_type": "service",       "health": "amber", "component": "rtpg-api-gw"},
-    {"id": "dt-pg-rtpg-api",          "label": "rtpg-api-gateway",       "indicator_type": "process_group", "health": "amber", "component": "rtpg-api-gw"},
-    {"id": "dt-svc-rtpg-validation",  "label": "ValidationSvc",          "indicator_type": "service",       "health": "green", "component": "rtpg-validation-svc"},
-    {"id": "dt-pg-rtpg-routing",      "label": "rtpg-routing-engine",    "indicator_type": "process_group", "health": "red",   "component": "rtpg-routing-engine"},
-    {"id": "dt-svc-rtpg-routing",     "label": "RoutingEngineSvc",       "indicator_type": "service",       "health": "red",   "component": "rtpg-routing-engine"},
-    {"id": "dt-syn-rtpg-routing",     "label": "Payment Routing",        "indicator_type": "synthetic",     "health": "red",   "component": "rtpg-routing-engine"},
-    {"id": "dt-svc-rtpg-sanctions",   "label": "SanctionsSvc",           "indicator_type": "service",       "health": "amber", "component": "rtpg-sanctions-svc"},
-    {"id": "dt-svc-rtpg-aml",         "label": "AMLCheckSvc",            "indicator_type": "service",       "health": "green", "component": "rtpg-aml-svc"},
-    {"id": "dt-svc-rtpg-fx",          "label": "FXConverterSvc",         "indicator_type": "service",       "health": "amber", "component": "rtpg-fx-converter"},
-    {"id": "dt-pg-rtpg-clearing",     "label": "rtpg-clearing",          "indicator_type": "process_group", "health": "red",   "component": "rtpg-clearing-svc"},
-    {"id": "dt-syn-rtpg-clearing",    "label": "Clearing Cycle",         "indicator_type": "synthetic",     "health": "red",   "component": "rtpg-clearing-svc"},
-    {"id": "dt-pg-rtpg-settlement",   "label": "rtpg-settlement",        "indicator_type": "process_group", "health": "red",   "component": "rtpg-settlement-svc"},
-    {"id": "dt-svc-rtpg-settlement",  "label": "SettlementEngineSvc",    "indicator_type": "service",       "health": "red",   "component": "rtpg-settlement-svc"},
-    {"id": "dt-svc-rtpg-ledger",      "label": "CoreLedgerSvc",          "indicator_type": "service",       "health": "amber", "component": "rtpg-ledger-svc"},
-    {"id": "dt-svc-rtpg-notif",       "label": "NotifDispatchSvc",       "indicator_type": "service",       "health": "green", "component": "rtpg-notif-svc"},
-    {"id": "dt-pg-rtpg-audit",        "label": "rtpg-audit-trail",       "indicator_type": "process_group", "health": "green", "component": "rtpg-audit-svc"},
-    {"id": "dt-svc-rtpg-recon",       "label": "ReconciliationSvc",      "indicator_type": "service",       "health": "green", "component": "rtpg-recon-svc"},
-    {"id": "dt-pg-rtpg-archive",      "label": "rtpg-archive",           "indicator_type": "process_group", "health": "green", "component": "rtpg-archive-svc"},
-    {"id": "dt-svc-rtpg-monitor",     "label": "HealthMonitorSvc",       "indicator_type": "service",       "health": "amber", "component": "rtpg-monitor-svc"},
+    {"id": "dt-pg-rtpg-lb",           "label": "rtpg-ingress-lb",        "indicator_type": "Process Group", "health": "green", "component": "rtpg-ingress-lb"},
+    {"id": "dt-svc-rtpg-api",         "label": "RTPGApiGwSvc",           "indicator_type": "Service",       "health": "amber", "component": "rtpg-api-gw"},
+    {"id": "dt-pg-rtpg-api",          "label": "rtpg-api-gateway",       "indicator_type": "Process Group", "health": "amber", "component": "rtpg-api-gw"},
+    {"id": "dt-svc-rtpg-validation",  "label": "ValidationSvc",          "indicator_type": "Service",       "health": "green", "component": "rtpg-validation-svc"},
+    {"id": "dt-pg-rtpg-routing",      "label": "rtpg-routing-engine",    "indicator_type": "Process Group", "health": "red",   "component": "rtpg-routing-engine"},
+    {"id": "dt-svc-rtpg-routing",     "label": "RoutingEngineSvc",       "indicator_type": "Service",       "health": "red",   "component": "rtpg-routing-engine"},
+    {"id": "dt-syn-rtpg-routing",     "label": "Payment Routing",        "indicator_type": "Synthetic",     "health": "red",   "component": "rtpg-routing-engine"},
+    {"id": "dt-svc-rtpg-sanctions",   "label": "SanctionsSvc",           "indicator_type": "Service",       "health": "amber", "component": "rtpg-sanctions-svc"},
+    {"id": "dt-svc-rtpg-aml",         "label": "AMLCheckSvc",            "indicator_type": "Service",       "health": "green", "component": "rtpg-aml-svc"},
+    {"id": "dt-svc-rtpg-fx",          "label": "FXConverterSvc",         "indicator_type": "Service",       "health": "amber", "component": "rtpg-fx-converter"},
+    {"id": "dt-pg-rtpg-clearing",     "label": "rtpg-clearing",          "indicator_type": "Process Group", "health": "red",   "component": "rtpg-clearing-svc"},
+    {"id": "dt-syn-rtpg-clearing",    "label": "Clearing Cycle",         "indicator_type": "Synthetic",     "health": "red",   "component": "rtpg-clearing-svc"},
+    {"id": "dt-pg-rtpg-settlement",   "label": "rtpg-settlement",        "indicator_type": "Process Group", "health": "red",   "component": "rtpg-settlement-svc"},
+    {"id": "dt-svc-rtpg-settlement",  "label": "SettlementEngineSvc",    "indicator_type": "Service",       "health": "red",   "component": "rtpg-settlement-svc"},
+    {"id": "dt-svc-rtpg-ledger",      "label": "CoreLedgerSvc",          "indicator_type": "Service",       "health": "amber", "component": "rtpg-ledger-svc"},
+    {"id": "dt-svc-rtpg-notif",       "label": "NotifDispatchSvc",       "indicator_type": "Service",       "health": "green", "component": "rtpg-notif-svc"},
+    {"id": "dt-pg-rtpg-audit",        "label": "rtpg-audit-trail",       "indicator_type": "Process Group", "health": "green", "component": "rtpg-audit-svc"},
+    {"id": "dt-svc-rtpg-recon",       "label": "ReconciliationSvc",      "indicator_type": "Service",       "health": "green", "component": "rtpg-recon-svc"},
+    {"id": "dt-pg-rtpg-archive",      "label": "rtpg-archive",           "indicator_type": "Process Group", "health": "green", "component": "rtpg-archive-svc"},
+    {"id": "dt-svc-rtpg-monitor",     "label": "HealthMonitorSvc",       "indicator_type": "Service",       "health": "amber", "component": "rtpg-monitor-svc"},
 ]
 
 # Precompute adjacency maps once at startup
@@ -1009,36 +1191,220 @@ def bfs(start_id: str, adj: dict[str, list[str]]) -> list[str]:
 # ── Endpoints ─────────────────────────────────────────────────────────────────
 
 @app.get("/api/health-summary")
-def get_health_summary():
-    return HEALTH_SUMMARY
+def get_health_summary(
+    lob: list[str] | None = Query(None), sub_lob: list[str] | None = Query(None, alias="subLob"),
+    cto: list[str] | None = Query(None), cbt: list[str] | None = Query(None),
+    seal: list[str] | None = Query(None), status: list[str] | None = Query(None),
+    search: str | None = Query(None),
+):
+    apps = _filter_dashboard_apps(lob, sub_lob, cto, cbt, seal, status, search)
+    if not apps:
+        return {"critical_issues": 0, "warnings": 0, "recurring_30d": 0, "incidents_today": 0,
+                "trends": {k: {"spark": [0]*7, "pct": 0} for k in ["critical_issues","warnings","recurring_30d","incidents_today"]}}
+    crit = sum(1 for a in apps if a["status"] == "critical")
+    warn = sum(1 for a in apps if a["status"] == "warning")
+    rec = sum(a.get("recurring_30d", 0) for a in apps)
+    inc = sum(a.get("incidents_today", 0) for a in apps)
+    # Generate plausible sparklines from the aggregated values
+    def _spark(val, trend_pct):
+        if val == 0: return [0]*7
+        base = max(1, int(val / (1 + trend_pct/100))) if trend_pct != -100 else val
+        return [max(0, base + i) for i in [2,1,1,0,1,0,0]][:7]
+    return {
+        "critical_issues": crit, "warnings": warn, "recurring_30d": rec, "incidents_today": inc,
+        "trends": {
+            "critical_issues": {"spark": _spark(crit, -33), "pct": -33 if crit > 0 else 0},
+            "warnings":        {"spark": _spark(warn, -50), "pct": -50 if warn > 0 else 0},
+            "recurring_30d":   {"spark": _spark(rec, 21),   "pct": 21 if rec > 0 else 0},
+            "incidents_today": {"spark": _spark(inc, -38),  "pct": -38 if inc > 0 else 0},
+        },
+    }
+
 
 @app.get("/api/ai-analysis")
-def get_ai_analysis():
-    return AI_ANALYSIS
+def get_ai_analysis(
+    lob: list[str] | None = Query(None), sub_lob: list[str] | None = Query(None, alias="subLob"),
+    cto: list[str] | None = Query(None), cbt: list[str] | None = Query(None),
+    seal: list[str] | None = Query(None), status: list[str] | None = Query(None),
+    search: str | None = Query(None),
+):
+    apps = _filter_dashboard_apps(lob, sub_lob, cto, cbt, seal, status, search)
+    if not apps:
+        return {"critical_alert": "No applications match the current filter scope.", "trend_analysis": "", "recommendations": []}
+    crits = [a for a in apps if a["status"] == "critical"]
+    warns = [a for a in apps if a["status"] == "warning"]
+    total_inc = sum(a.get("incidents_30d", 0) for a in apps)
+    # Build contextual AI text
+    scope_label = lob[0] if lob and len(lob) == 1 else "the selected scope"
+    if crits:
+        names = " and ".join(a["name"] for a in crits[:3])
+        alert = f"Currently tracking {len(crits)} critical application{'s' if len(crits)>1 else ''} in {scope_label}. {names} {'are' if len(crits)>1 else 'is'} experiencing active incidents requiring immediate attention."
+    elif warns:
+        alert = f"No critical issues in {scope_label}. {len(warns)} application{'s' if len(warns)>1 else ''} with warnings being monitored."
+    else:
+        alert = f"All {len(apps)} applications in {scope_label} are operating normally. No active issues detected."
+    trend_msg = f"{total_inc} incidents recorded across {len(apps)} applications in the last 30 days." if total_inc > 0 else f"No incidents across {len(apps)} applications in the last 30 days."
+    recs = []
+    for a in crits[:2]:
+        issues = a.get("recent_issues", [])
+        desc = issues[0]["description"] if issues else "active critical issue"
+        recs.append(f"Investigate {a['name']} — {desc}")
+    for a in warns[:2]:
+        issues = a.get("recent_issues", [])
+        desc = issues[0]["description"] if issues else "warning condition"
+        recs.append(f"Monitor {a['name']} — {desc}")
+    if not recs:
+        recs.append("Continue monitoring — all systems healthy in current scope")
+    return {"critical_alert": alert, "trend_analysis": trend_msg, "recommendations": recs}
+
 
 @app.get("/api/regional-status")
-def get_regional_status():
-    return REGIONAL_STATUS
+def get_regional_status(
+    lob: list[str] | None = Query(None), sub_lob: list[str] | None = Query(None, alias="subLob"),
+    cto: list[str] | None = Query(None), cbt: list[str] | None = Query(None),
+    seal: list[str] | None = Query(None), status: list[str] | None = Query(None),
+    search: str | None = Query(None),
+):
+    apps = _filter_dashboard_apps(lob, sub_lob, cto, cbt, seal, status, search)
+    regions = {}
+    for a in apps:
+        r = a.get("region", "NA")
+        if r not in regions:
+            regions[r] = {"region": r, "status": "healthy", "sod_impacts": 0, "app_issues": 0}
+        if a["status"] == "critical":
+            regions[r]["status"] = "critical"
+            regions[r]["sod_impacts"] += 1
+            regions[r]["app_issues"] += a.get("incidents_today", 0)
+        elif a["status"] == "warning" and regions[r]["status"] != "critical":
+            regions[r]["status"] = "warning"
+            regions[r]["app_issues"] += a.get("incidents_today", 0)
+    # Always show all 3 regions even if no apps match
+    for rname in ["NA", "EMEA", "APAC"]:
+        if rname not in regions:
+            regions[rname] = {"region": rname, "status": "healthy", "sod_impacts": 0, "app_issues": 0}
+    return sorted(regions.values(), key=lambda r: {"NA":0,"EMEA":1,"APAC":2}.get(r["region"],3))
+
 
 @app.get("/api/critical-apps")
-def get_critical_apps():
-    return CRITICAL_APPS
+def get_critical_apps(
+    lob: list[str] | None = Query(None), sub_lob: list[str] | None = Query(None, alias="subLob"),
+    cto: list[str] | None = Query(None), cbt: list[str] | None = Query(None),
+    seal: list[str] | None = Query(None), status: list[str] | None = Query(None),
+    search: str | None = Query(None),
+):
+    apps = _filter_dashboard_apps(lob, sub_lob, cto, cbt, seal, status, search)
+    crits = [a for a in apps if a["status"] == "critical"]
+    return [{
+        "id": a["seal"],
+        "name": a["name"],
+        "seal": f"SEAL - {a['seal']}",
+        "status": "critical",
+        "current_issues": len(a.get("recent_issues", [])),
+        "recurring_30d": a.get("recurring_30d", 0),
+        "last_incident": (a.get("recent_issues", [{}])[0].get("time_ago", "—") if a.get("recent_issues") else "—"),
+        "recent_issues": a.get("recent_issues", []),
+    } for a in crits]
+
 
 @app.get("/api/warning-apps")
-def get_warning_apps():
-    return WARNING_APPS
+def get_warning_apps(
+    lob: list[str] | None = Query(None), sub_lob: list[str] | None = Query(None, alias="subLob"),
+    cto: list[str] | None = Query(None), cbt: list[str] | None = Query(None),
+    seal: list[str] | None = Query(None), status: list[str] | None = Query(None),
+    search: str | None = Query(None),
+):
+    apps = _filter_dashboard_apps(lob, sub_lob, cto, cbt, seal, status, search)
+    warns = [a for a in apps if a["status"] == "warning"]
+    return [{
+        "id": a["seal"],
+        "name": a["name"],
+        "seal": f"SEAL - {a['seal']}",
+        "status": "warning",
+        "current_issues": len(a.get("recent_issues", [])),
+        "recurring_30d": a.get("recurring_30d", 0),
+        "last_incident": (a.get("recent_issues", [{}])[0].get("time_ago", "—") if a.get("recent_issues") else "—"),
+        "recent_issues": a.get("recent_issues", []),
+    } for a in warns]
+
 
 @app.get("/api/incident-trends")
-def get_incident_trends():
-    return {"data": INCIDENT_TRENDS, "summary": INCIDENT_TREND_SUMMARY}
+def get_incident_trends(
+    lob: list[str] | None = Query(None), sub_lob: list[str] | None = Query(None, alias="subLob"),
+    cto: list[str] | None = Query(None), cbt: list[str] | None = Query(None),
+    seal: list[str] | None = Query(None), status: list[str] | None = Query(None),
+    search: str | None = Query(None),
+):
+    apps = _filter_dashboard_apps(lob, sub_lob, cto, cbt, seal, status, search)
+    # Scale the global trend data proportionally to the filtered scope
+    total_p1 = sum(a.get("p1_30d", 0) for a in apps)
+    total_p2 = sum(a.get("p2_30d", 0) for a in apps)
+    all_p1 = sum(a.get("p1_30d", 0) for a in DASHBOARD_APPS)
+    all_p2 = sum(a.get("p2_30d", 0) for a in DASHBOARD_APPS)
+    p1_ratio = total_p1 / all_p1 if all_p1 else 0
+    p2_ratio = total_p2 / all_p2 if all_p2 else 0
+    scaled = []
+    for week in INCIDENT_TRENDS:
+        scaled.append({
+            "week": week["week"], "label": week["label"],
+            "p1": max(0, round(week["p1"] * p1_ratio)),
+            "p2": max(0, round(week["p2"] * p2_ratio)),
+        })
+    total_inc = sum(a.get("incidents_30d", 0) for a in apps)
+    res_rate = 94.2 if total_inc > 5 else 100.0 if total_inc == 0 else 88.0
+    return {"data": scaled, "summary": {**INCIDENT_TREND_SUMMARY, "resolution_rate": res_rate}}
+
 
 @app.get("/api/frequent-incidents")
 def get_frequent_incidents():
     return FREQUENT_INCIDENTS
 
 @app.get("/api/active-incidents")
-def get_active_incidents():
-    return ACTIVE_INCIDENTS
+def get_active_incidents(
+    lob: list[str] | None = Query(None), sub_lob: list[str] | None = Query(None, alias="subLob"),
+    cto: list[str] | None = Query(None), cbt: list[str] | None = Query(None),
+    seal: list[str] | None = Query(None), status: list[str] | None = Query(None),
+    search: str | None = Query(None),
+):
+    apps = _filter_dashboard_apps(lob, sub_lob, cto, cbt, seal, status, search)
+    p1_total = sum(a.get("p1_30d", 0) for a in apps)
+    p2_total = sum(a.get("p2_30d", 0) for a in apps)
+    p1_unresolved = sum(1 for a in apps if a["status"] == "critical")
+    p2_unresolved = max(1, p2_total // 3) if p2_total > 0 else 0
+    return {
+        "week_label": "Last 7 Days",
+        "p1": {
+            "total": p1_total,
+            "trend": -33 if p1_total > 0 else 0,
+            "breakdown": [
+                {"label": "Unresolved", "count": p1_unresolved, "color": "#f44336"},
+                {"label": "Resolved",   "count": max(0, p1_total - p1_unresolved), "color": "#4ade80"},
+            ],
+        },
+        "p2": {
+            "total": p2_total,
+            "trend": -20 if p2_total > 0 else 0,
+            "breakdown": [
+                {"label": "Unresolved", "count": p2_unresolved, "color": "#ffab00"},
+                {"label": "Resolved",   "count": max(0, p2_total - p2_unresolved), "color": "#4ade80"},
+            ],
+        },
+        "convey": {
+            "total": max(1, len(apps) // 5),
+            "trend": -20,
+            "breakdown": [
+                {"label": "Unresolved", "count": max(0, len(apps) // 10), "color": "#60a5fa"},
+                {"label": "Resolved",   "count": max(1, len(apps) // 5) - max(0, len(apps) // 10), "color": "#4ade80"},
+            ],
+        },
+        "spectrum": {
+            "total": max(1, len(apps) // 6),
+            "trend": 0,
+            "breakdown": [
+                {"label": "Info", "count": max(1, len(apps) // 8), "color": "#60a5fa"},
+                {"label": "High", "count": max(0, max(1, len(apps) // 6) - max(1, len(apps) // 8)), "color": "#f44336"},
+            ],
+        },
+    }
 
 @app.get("/api/recent-activities")
 def get_recent_activities():
@@ -1221,6 +1587,63 @@ PRODUCT_MAPPING = {}  # No longer needed — product info is embedded in app dat
 
 # Map each app (by lowercase name slug) to its component IDs in the knowledge graph
 # Representative mappings for apps that have known components in the graph
+# Deployment overrides: pre-built deployment lists for apps with known deployment data
+# Each deployment can have cpof (bool) and rto (hours or None)
+# Deployment overrides use component IDs (resolved to full node data at runtime)
+DEPLOYMENT_OVERRIDES = {
+    # Connect OS (88180) — 6 components across 18 deployments
+    # Components: connect-portal, connect-cloud-gw, connect-auth-svc, connect-home-app-na, connect-home-app-apac, connect-home-app-emea
+    "connect-os": [
+        {"id": "112224", "deployment_id": "112224", "label": "Connect OS Critical Applications and Services AWS - Global (xSwiss)", "status": "critical", "cpof": True,  "rto": 4,    "component_ids": ["connect-cloud-gw", "connect-auth-svc", "connect-portal"]},
+        {"id": "111848", "deployment_id": "111848", "label": "Connect OS Mobile AWS - Global",                                     "status": "warning",  "cpof": False, "rto": 8,    "component_ids": ["connect-portal"]},
+        {"id": "110175", "deployment_id": "110175", "label": "Connect OS Internet Facing Applications and Services Gaia Cloud Foundry - NA", "status": "healthy", "cpof": True, "rto": 4, "component_ids": ["connect-home-app-na", "connect-auth-svc"]},
+        {"id": "103719", "deployment_id": "103719", "label": "Connect OS Legacy Infrastructure - NA",                              "status": "healthy",  "cpof": False, "rto": 24,   "component_ids": ["connect-home-app-na"]},
+        {"id": "103720", "deployment_id": "103720", "label": "Connect Desktop - DEV",                                              "status": "healthy",  "cpof": False, "rto": None, "component_ids": []},
+        {"id": "103721", "deployment_id": "103721", "label": "Connect Desktop - UAT",                                              "status": "healthy",  "cpof": False, "rto": None, "component_ids": []},
+        {"id": "103722", "deployment_id": "103722", "label": "Connect Desktop - PROD",                                             "status": "warning",  "cpof": True,  "rto": 4,    "component_ids": ["connect-portal", "connect-cloud-gw"]},
+        {"id": "103723", "deployment_id": "103723", "label": "Connect Desktop - Global Link",                                      "status": "healthy",  "cpof": False, "rto": 12,   "component_ids": []},
+        {"id": "104739", "deployment_id": "104739", "label": "Connect OS WordPress CMS Gaia Cloud Foundry - NA",                   "status": "healthy",  "cpof": False, "rto": 24,   "component_ids": []},
+        {"id": "108750", "deployment_id": "108750", "label": "Connect OS AI Machine Learning",                                     "status": "healthy",  "cpof": False, "rto": 12,   "component_ids": []},
+        {"id": "109718", "deployment_id": "109718", "label": "Connect OS Critical Applications and Services Gaia Cloud Foundry - Global", "status": "critical", "cpof": True, "rto": 4, "component_ids": ["connect-cloud-gw", "connect-auth-svc"]},
+        {"id": "109719", "deployment_id": "109719", "label": "Connect OS Mobile Gaia Cloud Foundry - Global",                      "status": "healthy",  "cpof": False, "rto": 8,    "component_ids": ["connect-portal"]},
+        {"id": "109720", "deployment_id": "109720", "label": "Connect OS Non-Critical Applications and Services Gaia Cloud Foundry - Global", "status": "healthy", "cpof": False, "rto": 24, "component_ids": []},
+        {"id": "109739", "deployment_id": "109739", "label": "Connect OS Swiss Applications and Services Gaia Cloud Foundry - SwissNet", "status": "healthy", "cpof": True, "rto": 4, "component_ids": ["connect-auth-svc"]},
+        {"id": "111835", "deployment_id": "111835", "label": "Connect OS Gaia Oracle Services - Global",                           "status": "healthy",  "cpof": False, "rto": 12,   "component_ids": []},
+        {"id": "111836", "deployment_id": "111836", "label": "Connect OS User Metrics Elastic/Cassandra - Global",                 "status": "healthy",  "cpof": False, "rto": 24,   "component_ids": []},
+        {"id": "61867",  "deployment_id": "61867",  "label": "Connect OS Legacy Infrastructure - Asia",                            "status": "healthy",  "cpof": False, "rto": 24,   "component_ids": ["connect-home-app-apac"]},
+        {"id": "61868",  "deployment_id": "61868",  "label": "Connect OS Legacy Infrastructure - EMEA",                            "status": "healthy",  "cpof": False, "rto": 24,   "component_ids": ["connect-home-app-emea"]},
+    ],
+    # Advisor Connect (90176) — 10 components across 10 deployments
+    # Components: connect-profile-svc, connect-coverage-app, connect-notification, connect-data-sync,
+    #             connect-doc-svc, connect-pref-svc, connect-audit-svc, active-advisory, ipbol-account, ipbol-doc-domain
+    "advisor-connect": [
+        {"id": "109974", "deployment_id": "109974", "label": "Advisor Connect Suite - NA - AWS",       "status": "warning",  "cpof": True,  "rto": 4,    "component_ids": ["connect-profile-svc", "connect-coverage-app", "connect-notification", "connect-data-sync"]},
+        {"id": "112169", "deployment_id": "112169", "label": "ADVISOR CONNECT AWS - NA",               "status": "critical", "cpof": True,  "rto": 4,    "component_ids": ["connect-coverage-app", "ipbol-account", "ipbol-doc-domain"]},
+        {"id": "102024", "deployment_id": "102024", "label": "ADVISOR CONNECT - EMEA",                 "status": "healthy",  "cpof": True,  "rto": 8,    "component_ids": ["connect-profile-svc", "connect-doc-svc"]},
+        {"id": "102025", "deployment_id": "102025", "label": "ADVISOR CONNECT - Asia",                 "status": "healthy",  "cpof": False, "rto": 8,    "component_ids": ["connect-profile-svc", "connect-pref-svc"]},
+        {"id": "102026", "deployment_id": "102026", "label": "ADVISOR CONNECT - US",                   "status": "warning",  "cpof": True,  "rto": 4,    "component_ids": ["connect-coverage-app", "connect-notification", "active-advisory"]},
+        {"id": "104948", "deployment_id": "104948", "label": "JPMS Advisor Connect Deployment",        "status": "healthy",  "cpof": False, "rto": 12,   "component_ids": ["active-advisory", "connect-audit-svc"]},
+        {"id": "109355", "deployment_id": "109355", "label": "ADVISOR CONNECT - Swiss AWS",            "status": "healthy",  "cpof": True,  "rto": 4,    "component_ids": ["connect-profile-svc", "connect-pref-svc"]},
+        {"id": "62056",  "deployment_id": "62056",  "label": "Tool for Reaching and Acquiring Clients (TRAC)", "status": "healthy", "cpof": False, "rto": 24, "component_ids": ["connect-data-sync", "connect-doc-svc"]},
+        {"id": "114650", "deployment_id": "114650", "label": "ADVISOR CONNECT AWS - AP",               "status": "healthy",  "cpof": False, "rto": 8,    "component_ids": ["connect-profile-svc", "connect-notification"]},
+        {"id": "115060", "deployment_id": "115060", "label": "ADVISOR CONNECT AWS - EU",               "status": "healthy",  "cpof": False, "rto": 8,    "component_ids": ["connect-profile-svc", "connect-doc-svc", "connect-audit-svc"]},
+    ],
+    # Spectrum Portfolio Management Equities (90215) — 14 components across 5 deployments
+    # Components: spieq-ui-service, spieq-api-gateway, spieq-trade-service, spieq-portfolio-svc,
+    #             spieq-pricing-engine, spieq-risk-service, spieq-order-router, spieq-market-data,
+    #             spieq-compliance-svc, spieq-settlement-svc, spieq-audit-trail, spieq-notif-svc,
+    #             payment-gateway, email-notification
+    "spectrum-portfolio-management-(equities)": [
+        {"id": "64958",  "deployment_id": "64958",  "label": "Spectrum PI - Equities Deployment",           "status": "healthy",  "cpof": True,  "rto": 4,  "component_ids": ["spieq-ui-service", "spieq-api-gateway", "spieq-trade-service", "spieq-portfolio-svc", "spieq-order-router"]},
+        {"id": "103262", "deployment_id": "103262", "label": "Spectrum PI - Equities - Deployment",         "status": "healthy",  "cpof": False, "rto": 8,  "component_ids": ["spieq-pricing-engine", "spieq-risk-service", "spieq-market-data"]},
+        {"id": "109606", "deployment_id": "109606", "label": "Spectrum PI - Equities PSF",                  "status": "warning",  "cpof": True,  "rto": 4,  "component_ids": ["spieq-compliance-svc", "spieq-settlement-svc", "payment-gateway"]},
+        {"id": "110724", "deployment_id": "110724", "label": "Spectrum PI - Equities GKP Config Server",    "status": "healthy",  "cpof": False, "rto": 12, "component_ids": ["spieq-audit-trail", "spieq-notif-svc", "email-notification"]},
+        {"id": "112256", "deployment_id": "112256", "label": "Spectrum PI - Equities Dep 5",                "status": "healthy",  "cpof": False, "rto": 24, "component_ids": []},
+    ],
+}
+
+# Map each app (by lowercase name slug) to its component IDs in the knowledge graph
+# Representative mappings for apps that have known components in the graph
 APP_COMPONENT_MAPPING = {
     "morgan-money":                             ["connect-coverage-app", "connect-notification"],
     "quantum":                                  ["meridian-query", "meridian-order"],
@@ -1350,21 +1773,62 @@ def get_enriched_applications():
     for app in APPS_BACKEND:
         slug = _app_slug(app["name"])
 
+        # ── Dependency-propagated effective status ──
+        # Each component's effective status = worst of (own status, all transitive dependency statuses)
+        _status_rank = {"critical": 0, "warning": 1, "healthy": 2}
+
+        def _effective_status(cid):
+            node = NODE_MAP.get(cid)
+            if not node:
+                return "healthy"
+            own = node["status"]
+            dep_ids = bfs(cid, forward_adj)
+            worst = own
+            for did in dep_ids:
+                dn = NODE_MAP.get(did)
+                if dn and _status_rank.get(dn["status"], 9) < _status_rank.get(worst, 9):
+                    worst = dn["status"]
+            return worst
+
+        def _comp_slo(node, eff_status):
+            """Compute deterministic component SLO from SLA target and effective status."""
+            try:
+                target = float(node["sla"].replace("%", ""))
+            except (ValueError, KeyError):
+                target = 99.0
+            if eff_status == "critical":
+                return round(target - 1.5 - (node.get("incidents_30d", 0) * 0.08), 2)
+            elif eff_status == "warning":
+                return round(target - 0.4 - (node.get("incidents_30d", 0) * 0.05), 2)
+            else:
+                return round(target - 0.05, 2)
+
+        def _build_comp_dict(cid):
+            node = NODE_MAP.get(cid)
+            if not node:
+                return None
+            eff = _effective_status(cid)
+            return {
+                "id": cid,
+                "label": node["label"],
+                "status": eff,
+                "incidents_30d": node["incidents_30d"],
+                "indicator_type": COMPONENT_INDICATOR_MAP.get(cid, "Service"),
+                "slo": _comp_slo(node, eff),
+            }
+
+        # ── Exclusions for this app ──
+        app_excl = set(APP_EXCLUDED_INDICATORS.get(slug, []))
+
         # Components from knowledge graph
         comp_ids = APP_COMPONENT_MAPPING.get(slug, [])
         components = []
         for cid in comp_ids:
-            node = NODE_MAP.get(cid)
-            if node:
-                components.append({
-                    "id": cid,
-                    "label": node["label"],
-                    "status": node["status"],
-                    "incidents_30d": node["incidents_30d"],
-                })
+            cd = _build_comp_dict(cid)
+            if cd:
+                components.append(cd)
 
         # Deployments: nest components under their platform
-        _status_rank = {"critical": 0, "warning": 1, "healthy": 2}
         plat_comp_map = {}  # plat_id → [component dicts]
         plat_order = []     # preserve discovery order
         for cid in comp_ids:
@@ -1375,25 +1839,27 @@ def get_enriched_applications():
                 if plat_id not in plat_comp_map:
                     plat_comp_map[plat_id] = []
                     plat_order.append(plat_id)
-                plat_comp_map[plat_id].append({
-                    "id": cid,
-                    "label": node["label"],
-                    "status": node["status"],
-                    "incidents_30d": node["incidents_30d"],
-                })
+                cd = _build_comp_dict(cid)
+                if cd:
+                    plat_comp_map[plat_id].append(cd)
         deployments = []
         for plat_id in plat_order:
             pn = PLATFORM_NODE_MAP.get(plat_id)
             if not pn:
                 continue
             dep_comps = plat_comp_map[plat_id]
-            # Sort: failing components first
             dep_comps.sort(key=lambda c: _status_rank.get(c["status"], 9))
-            # Deployment status = worst of platform status and its component statuses
-            worst = pn["status"]
-            for c in dep_comps:
+            # Deployment exclusions = app-level + deployment-level
+            dep_excl = app_excl | set(DEPLOYMENT_EXCLUDED_INDICATORS.get(f"{slug}:{plat_id}", []))
+            active = [c for c in dep_comps if c["indicator_type"] not in dep_excl]
+            # Status = worst of active component statuses only (no hardcoded platform status)
+            worst = "healthy"
+            for c in active:
                 if _status_rank.get(c["status"], 9) < _status_rank.get(worst, 9):
                     worst = c["status"]
+            # SLO = min of active component SLOs
+            active_slos = [c["slo"] for c in active if c.get("slo") is not None]
+            dep_slo = min(active_slos) if active_slos else None
             deployments.append({
                 "id": plat_id,
                 "label": pn["label"],
@@ -1401,15 +1867,57 @@ def get_enriched_applications():
                 "datacenter": pn["datacenter"],
                 "status": worst,
                 "components": dep_comps,
+                "slo": dep_slo,
+                "excluded_indicators": list(DEPLOYMENT_EXCLUDED_INDICATORS.get(f"{slug}:{plat_id}", [])),
             })
-        # Sort deployments: failing first
         deployments.sort(key=lambda d: _status_rank.get(d["status"], 9))
 
-        # SLO data
-        slo = APP_SLO_DATA.get(slug, {
+        # Use deployment overrides if available — resolve component_ids to full data
+        if slug in DEPLOYMENT_OVERRIDES:
+            deployments = []
+            for ovr in DEPLOYMENT_OVERRIDES[slug]:
+                d = dict(ovr)
+                comp_ids_list = d.pop("component_ids", [])
+                dep_comps = []
+                for cid in comp_ids_list:
+                    cd = _build_comp_dict(cid)
+                    if cd:
+                        dep_comps.append(cd)
+                dep_comps.sort(key=lambda c: _status_rank.get(c["status"], 9))
+                dep_id = d.get("id", "")
+                dep_excl = app_excl | set(DEPLOYMENT_EXCLUDED_INDICATORS.get(f"{slug}:{dep_id}", []))
+                active = [c for c in dep_comps if c["indicator_type"] not in dep_excl]
+                # Status purely from active components (ignore hardcoded status)
+                worst = "healthy"
+                for c in active:
+                    if _status_rank.get(c["status"], 9) < _status_rank.get(worst, 9):
+                        worst = c["status"]
+                d["status"] = worst
+                d["components"] = dep_comps
+                active_slos = [c["slo"] for c in active if c.get("slo") is not None]
+                d["slo"] = min(active_slos) if active_slos else None
+                d["excluded_indicators"] = list(DEPLOYMENT_EXCLUDED_INDICATORS.get(f"{slug}:{dep_id}", []))
+                deployments.append(d)
+            deployments.sort(key=lambda d: _status_rank.get(d["status"], 9))
+
+        # SLO data — derive from deployment SLOs (bottom-up)
+        dep_slos = [d["slo"] for d in deployments if d.get("slo") is not None]
+        app_slo_current = min(dep_slos) if dep_slos else None
+        base_slo = APP_SLO_DATA.get(slug, {
             "target": 99.0, "current": 99.5, "error_budget": 80,
             "trend": "stable", "burn_rate": "0.2x", "breach_eta": None, "status": "healthy",
         })
+        slo = dict(base_slo)
+        if app_slo_current is not None:
+            slo["current"] = app_slo_current
+            # Derive SLO status from current vs target
+            target = slo.get("target", 99.0)
+            if app_slo_current < target - 0.5:
+                slo["status"] = "critical"
+            elif app_slo_current < target:
+                slo["status"] = "warning"
+            else:
+                slo["status"] = "healthy"
 
         # Completeness score
         has_owner = bool(app.get("appOwner"))
@@ -1431,6 +1939,15 @@ def get_enriched_applications():
             "score": score,
         }
 
+        # Resolve team references (multi-team)
+        if slug not in APP_TEAM_ASSIGNMENTS:
+            # Seed from team name string on first access
+            team_name = app.get("team", "")
+            matched_team = next((t for t in TEAMS if t["name"] == team_name), None)
+            if matched_team:
+                APP_TEAM_ASSIGNMENTS[slug] = [matched_team["id"]]
+        assigned_ids = APP_TEAM_ASSIGNMENTS.get(slug, [])
+
         results.append({
             **app,
             "id": slug,
@@ -1439,6 +1956,8 @@ def get_enriched_applications():
             "deployments": deployments,
             "slo": slo,
             "completeness": completeness,
+            "team_ids": assigned_ids,
+            "excluded_indicators": list(APP_EXCLUDED_INDICATORS.get(slug, [])),
         })
 
     return results
@@ -1782,6 +2301,164 @@ def delete_announcement(announcement_id: int):
     if len(ANNOUNCEMENTS) == before:
         raise HTTPException(status_code=404, detail="Announcement not found")
     return {"ok": True}
+
+
+# ── Teams CRUD ───────────────────────────────────────────────────────────────
+
+class TeamCreate(BaseModel):
+    name: str
+    emails: list[str] = []
+    teams_channels: list[str] = []
+
+class TeamUpdate(BaseModel):
+    name: Optional[str] = None
+    emails: Optional[list[str]] = None
+    teams_channels: Optional[list[str]] = None
+
+_next_team_id = 1
+
+def _build_initial_teams():
+    global _next_team_id
+    names = [
+        "Client Data", "Spectrum Core", "Liquidity Mgmt", "JPMAIM Platform",
+        "Portfolio Mgmt", "Trading", "Middle Office", "Transaction Mgmt",
+        "Guidelines", "Investment Acctg", "Ref Data", "Tech Shared Svc",
+        "Connect Platform", "Party & Account", "Portfolio Holdings",
+        "Service Desktop", "IPB Banking", "IPB Execute", "PBA Payments",
+        "US Brokerage", "Asset Transfers", "Content", "IPB Core Banking",
+        "Mutual Funds", "Core Accounting", "Work Orchestration",
+        "Cross Asset Trading", "Lending", "Mortgages", "Portfolio Impl",
+        "PM Toolkit", "Mobile Engineering", "Lending Platform", "Branch Tech",
+        "Cards Platform", "Data Platform", "Analytics Eng", "Data Governance",
+        "Electronic Trading", "FX Technology", "Syndicated Lending",
+        "Treasury Tech", "Payments Core", "International Pmts",
+        "Digital Platform", "API Platform", "IAM Engineering", "Observability",
+        "Cloud Eng", "Network Eng", "HR Technology", "L&D Technology",
+        "Container Eng", "Network Automation", "Traffic Eng",
+    ]
+    teams = []
+    for n in names:
+        slug = n.lower().replace(" ", "-").replace("&", "and")
+        teams.append({
+            "id": _next_team_id,
+            "name": n,
+            "emails": [f"{slug}@jpmchase.com", f"{slug}-oncall@jpmchase.com"],
+            "teams_channels": [f"#{slug}-alerts", f"#{slug}-general"],
+        })
+        _next_team_id += 1
+    return teams
+
+TEAMS = _build_initial_teams()
+
+@app.get("/api/teams")
+def get_teams():
+    return TEAMS
+
+@app.get("/api/teams/{team_id}")
+def get_team(team_id: int):
+    team = next((t for t in TEAMS if t["id"] == team_id), None)
+    if not team:
+        raise HTTPException(status_code=404, detail="Team not found")
+    return team
+
+@app.post("/api/teams")
+def create_team(payload: TeamCreate):
+    global _next_team_id
+    new = {"id": _next_team_id, "name": payload.name, "emails": payload.emails, "teams_channels": payload.teams_channels}
+    _next_team_id += 1
+    TEAMS.append(new)
+    return new
+
+@app.put("/api/teams/{team_id}")
+def update_team(team_id: int, payload: TeamUpdate):
+    team = next((t for t in TEAMS if t["id"] == team_id), None)
+    if not team:
+        raise HTTPException(status_code=404, detail="Team not found")
+    for field in ["name", "emails", "teams_channels"]:
+        val = getattr(payload, field, None)
+        if val is not None:
+            team[field] = val
+    return team
+
+@app.delete("/api/teams/{team_id}")
+def delete_team(team_id: int):
+    global TEAMS
+    before = len(TEAMS)
+    TEAMS = [t for t in TEAMS if t["id"] != team_id]
+    if len(TEAMS) == before:
+        raise HTTPException(status_code=404, detail="Team not found")
+    return {"ok": True}
+
+
+# ── App ↔ Team assignments (multi-team) ─────────────────────────────────────
+
+# In-memory map: app slug → list of team IDs
+# Seeded lazily on first enriched request (fallback in get_enriched_applications
+# resolves app.team string → team id when no explicit assignment exists)
+APP_TEAM_ASSIGNMENTS: dict[str, list[int]] = {}
+
+
+class AppTeamAssignment(BaseModel):
+    team_ids: list[int]
+
+
+@app.get("/api/applications/{app_id}/teams")
+def get_app_teams(app_id: str):
+    return {"team_ids": APP_TEAM_ASSIGNMENTS.get(app_id, [])}
+
+
+@app.put("/api/applications/{app_id}/teams")
+def set_app_teams(app_id: str, payload: AppTeamAssignment):
+    APP_TEAM_ASSIGNMENTS[app_id] = payload.team_ids
+    return {"team_ids": payload.team_ids}
+
+
+# ── Health Indicator Exclusions ──────────────────────────────────────────────
+
+APP_EXCLUDED_INDICATORS: dict[str, list[str]] = {}
+DEPLOYMENT_EXCLUDED_INDICATORS: dict[str, list[str]] = {}
+
+
+class IndicatorExclusion(BaseModel):
+    excluded_indicators: list[str]
+
+
+@app.get("/api/indicator-types")
+def get_indicator_types():
+    return INDICATOR_TYPES
+
+
+@app.put("/api/applications/{app_id}/excluded-indicators")
+def set_app_excluded_indicators(app_id: str, payload: IndicatorExclusion):
+    APP_EXCLUDED_INDICATORS[app_id] = payload.excluded_indicators
+    return {"excluded_indicators": payload.excluded_indicators}
+
+
+@app.put("/api/applications/{app_id}/deployments/{dep_id}/excluded-indicators")
+def set_dep_excluded_indicators(app_id: str, dep_id: str, payload: IndicatorExclusion):
+    key = f"{app_id}:{dep_id}"
+    DEPLOYMENT_EXCLUDED_INDICATORS[key] = payload.excluded_indicators
+    return {"excluded_indicators": payload.excluded_indicators}
+
+
+# ── Contact / Send Message ───────────────────────────────────────────────────
+
+class ContactSendRequest(BaseModel):
+    type: str  # 'email' or 'teams'
+    recipients: list[str]
+    subject: Optional[str] = None
+    message: str
+    app_name: Optional[str] = None
+
+@app.post("/api/contact/send")
+def send_contact_message(payload: ContactSendRequest):
+    """Mock endpoint — in production this would send via SMTP / MS Teams webhook."""
+    return {
+        "status": "sent",
+        "type": payload.type,
+        "recipients": payload.recipients,
+        "message_preview": payload.message[:100],
+    }
 
 
 # ── AURA Assistant Chat ──────────────────────────────────────────────────────

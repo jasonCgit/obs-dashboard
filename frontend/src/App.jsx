@@ -17,6 +17,7 @@ import IncidentZero    from './pages/IncidentZero'
 import Announcements   from './pages/Announcements'
 import Links           from './pages/Links'
 import Admin           from './pages/Admin'
+import Teams           from './pages/Teams'
 import AuraChatFab     from './aura/AuraChatFab'
 
 class ErrorBoundary extends Component {
@@ -61,6 +62,7 @@ export default function App() {
           <Route path="/incident-zero"   element={<IncidentZero />} />
           <Route path="/announcements"   element={<Announcements />} />
           <Route path="/links"           element={<Links />} />
+          <Route path="/teams"           element={<Teams />} />
           <Route path="/portals"         element={<Admin />} />
           <Route path="/admin"           element={<Navigate to="/portals" replace />} />
           <Route path="/views"           element={<Navigate to="/view-central" replace />} />

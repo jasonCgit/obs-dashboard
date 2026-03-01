@@ -10,7 +10,7 @@ export const useFilters = () => useContext(FilterContext)
 function appMatchesFilters(app, searchText, activeFilters, excludeKey = null) {
   if (searchText) {
     const q = searchText.toLowerCase()
-    const searchable = [app.name, app.seal, app.team, app.appOwner, app.cto]
+    const searchable = [app.name, app.seal, app.team, app.appOwner, app.cto, app.cbt, app.productLine, app.product]
       .join(' ').toLowerCase()
     if (!searchable.includes(q)) return false
   }
@@ -20,9 +20,10 @@ function appMatchesFilters(app, searchText, activeFilters, excludeKey = null) {
     if (key === 'seal') {
       const rawValues = values.map(parseSealDisplay)
       if (!rawValues.includes(app.seal)) return false
-    } else if (key === 'deploymentTypes') {
-      const rawValues = values.map(parseDeployDisplay)
-      if (!(app.deploymentTypes || []).some(t => rawValues.includes(t))) return false
+    } else if (key === 'deployments') {
+      const selectedIds = values.map(parseDeployDisplay)
+      const appDepIds = (app.deployments || []).map(d => d.id)
+      if (!selectedIds.some(id => appDepIds.includes(id))) return false
     } else if (!values.includes(app[key])) return false
   }
   return true
@@ -85,19 +86,24 @@ export function FilterProvider({ children }) {
     const q = searchText.toLowerCase()
     const suggestions = []
     const seen = new Set()
-    // [displayLabel, appProperty, filterKey]
+    // [displayLabel, appProperty, filterKey, source]
     const fields = [
-      ['App',     'name',        'seal'],
-      ['SEAL',    'seal',        'seal'],
-      ['Team',    'team',        null],
-      ['LOB',     'lob',         'lob'],
-      ['Sub LOB', 'subLob',      'subLob'],
-      ['Owner',   'appOwner',    'appOwner'],
-      ['CTO',     'cto',         'cto'],
-      ['CBT',     'cbt',         'cbt'],
+      // PATOOLS — Business hierarchy
+      ['App',          'name',        'seal',        'patools'],
+      ['SEAL',         'seal',        'seal',        'patools'],
+      ['LOB',          'lob',         'lob',         'patools'],
+      ['Sub LOB',      'subLob',      'subLob',      'patools'],
+      ['Product Line', 'productLine', 'productLine', 'patools'],
+      ['Product',      'product',     'product',     'patools'],
+      // V12 — Technology hierarchy
+      ['CTO',          'cto',         'cto',         'v12'],
+      ['CBT',          'cbt',         'cbt',         'v12'],
+      // Other
+      ['Owner',        'appOwner',    'appOwner',    null],
+      ['Team',         'team',        null,          null],
     ]
     for (const app of APPS) {
-      for (const [fieldLabel, fieldKey, filterKey] of fields) {
+      for (const [fieldLabel, fieldKey, filterKey, source] of fields) {
         const value = app[fieldKey]
         if (value && value.toLowerCase().includes(q) && !seen.has(`${fieldKey}:${value}`)) {
           seen.add(`${fieldKey}:${value}`)
@@ -108,7 +114,7 @@ export function FilterProvider({ children }) {
           } else if (filterKey === 'seal' && fieldKey === 'seal') {
             filterValue = SEAL_DISPLAY[value] || value
           }
-          suggestions.push({ field: fieldLabel, value, filterKey, filterValue })
+          suggestions.push({ field: fieldLabel, value, filterKey, filterValue, source })
         }
       }
     }

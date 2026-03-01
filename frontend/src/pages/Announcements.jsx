@@ -56,15 +56,6 @@ const IMPACTED_APP_OPTIONS = [
   'Connect OS (SEAL-88180)',
 ]
 
-const TEAMS_CHANNEL_OPTIONS = [
-  'Custom channel Advisor Connect Updates USPB - Advisor Connect Updates – U.S. Private Bank',
-  'General - Brokerage and TSD Team',
-  'General - Client Service Manager Chat',
-  'General - Connect Help - US Private Bank',
-  'General - IPB Connect Alerts',
-  'General - TSD - Technology Service Delivery',
-  'General - US Ops and GTSS Connect Rollout',
-]
 
 const CONNECT_ENTITY_OPTIONS = [
   'CDG-PB', 'FRA-PB', 'JIB-PB', 'LON-PB', 'MIL-PB',
@@ -199,6 +190,9 @@ export default function Announcements() {
   const [weaveInterfaces, setWeaveInterfaces] = useState([])
   const [connectValidation, setConnectValidation] = useState(null)
   const [validating, setValidating] = useState(false)
+  const [managedTeams, setManagedTeams] = useState([])
+  const [selectedTeamsForChannels, setSelectedTeamsForChannels] = useState([])
+  const [selectedTeamsForEmail, setSelectedTeamsForEmail] = useState([])
 
   const fetchData = useCallback(async () => {
     setLoading(true)
@@ -224,7 +218,24 @@ export default function Announcements() {
       .then(res => { if (!res.ok) throw new Error(res.status); return res.json() })
       .then(json => setWeaveInterfaces(Array.isArray(json) ? json : []))
       .catch(() => {})
+    fetch('/api/teams')
+      .then(r => r.json())
+      .then(setManagedTeams)
+      .catch(() => {})
   }, [])
+
+  // Derive available channels and emails from selected teams
+  const availableChannelsFromTeams = useMemo(() => {
+    const set = new Set()
+    selectedTeamsForChannels.forEach(t => t.teams_channels?.forEach(ch => set.add(ch)))
+    return [...set]
+  }, [selectedTeamsForChannels])
+
+  const availableEmailsFromTeams = useMemo(() => {
+    const set = new Set()
+    selectedTeamsForEmail.forEach(t => t.emails?.forEach(e => set.add(e)))
+    return [...set]
+  }, [selectedTeamsForEmail])
 
   const notify = (msg, severity = 'success') => setSnack({ open: true, msg, severity })
   const f = (key, val) => setForm(prev => ({ ...prev, [key]: val }))
@@ -599,26 +610,66 @@ export default function Announcements() {
           {form.channels.teams && (
             <>
               <Typography variant="body2" fontWeight={700} sx={{ mt: 1.5, mb: 1, color: CHANNEL_META.teams.color }}>Teams</Typography>
-              <Autocomplete
-                multiple size="small" disableCloseOnSelect
-                options={TEAMS_CHANNEL_OPTIONS}
-                value={form.teams_channels}
-                onChange={(_, v) => f('teams_channels', v)}
-                renderOption={(props, option, { selected }) => (
-                  <li {...props}><Checkbox size="small" checked={selected} sx={{ mr: 1 }} />
-                    <Typography sx={{ fontSize: '0.78rem' }}>{option}</Typography></li>
+              <Stack spacing={1.5}>
+                {/* Select teams to pull channels from */}
+                <Autocomplete
+                  multiple size="small" disableCloseOnSelect
+                  options={managedTeams}
+                  getOptionLabel={t => t.name}
+                  value={selectedTeamsForChannels}
+                  onChange={(_, v) => {
+                    setSelectedTeamsForChannels(v)
+                    // Auto-select all channels from newly selected teams
+                    const allCh = new Set()
+                    v.forEach(t => t.teams_channels?.forEach(ch => allCh.add(ch)))
+                    f('teams_channels', [...allCh])
+                  }}
+                  isOptionEqualToValue={(opt, val) => opt.id === val.id}
+                  renderOption={(props, option, { selected }) => (
+                    <li {...props}><Checkbox size="small" checked={selected} sx={{ mr: 1 }} />
+                      <Box>
+                        <Typography sx={{ fontSize: '0.78rem', fontWeight: 600 }}>{option.name}</Typography>
+                        <Typography sx={{ fontSize: '0.66rem', color: 'text.secondary' }}>
+                          {option.teams_channels?.length || 0} channels
+                        </Typography>
+                      </Box>
+                    </li>
+                  )}
+                  renderTags={(value, getTagProps) =>
+                    value.map((t, index) => (
+                      <Chip label={t.name} size="small" icon={<GroupsIcon sx={{ fontSize: '12px !important' }} />}
+                        sx={{ height: 22, fontSize: '0.68rem', fontWeight: 600 }} {...getTagProps({ index })} key={t.id} />
+                    ))
+                  }
+                  renderInput={params => (
+                    <TextField {...params} label="Select Teams" placeholder="Search teams..."
+                      InputLabelProps={{ sx: labelSx }} InputProps={{ ...params.InputProps, sx: { ...fieldSx, flexWrap: 'wrap' } }} />
+                  )}
+                />
+                {/* Show available channels from selected teams */}
+                {availableChannelsFromTeams.length > 0 && (
+                  <Autocomplete
+                    multiple size="small" disableCloseOnSelect
+                    options={availableChannelsFromTeams}
+                    value={form.teams_channels}
+                    onChange={(_, v) => f('teams_channels', v)}
+                    renderOption={(props, option, { selected }) => (
+                      <li {...props}><Checkbox size="small" checked={selected} sx={{ mr: 1 }} />
+                        <Typography sx={{ fontSize: '0.78rem' }}>{option}</Typography></li>
+                    )}
+                    renderTags={(value, getTagProps) =>
+                      value.map((option, index) => (
+                        <Chip label={option.length > 40 ? option.slice(0, 40) + '...' : option} size="small"
+                          sx={{ height: 20, fontSize: '0.65rem' }} {...getTagProps({ index })} key={option} />
+                      ))
+                    }
+                    renderInput={params => (
+                      <TextField {...params} label="Select Channels" placeholder="Pick channels to post to..."
+                        InputLabelProps={{ sx: labelSx }} InputProps={{ ...params.InputProps, sx: { ...fieldSx, flexWrap: 'wrap' } }} />
+                    )}
+                  />
                 )}
-                renderTags={(value, getTagProps) =>
-                  value.map((option, index) => (
-                    <Chip label={option.length > 40 ? option.slice(0, 40) + '...' : option} size="small"
-                      sx={{ height: 20, fontSize: '0.65rem' }} {...getTagProps({ index })} key={option} />
-                  ))
-                }
-                renderInput={params => (
-                  <TextField {...params} label="Select Teams Channels" placeholder="Select Teams Channels.."
-                    InputLabelProps={{ sx: labelSx }} InputProps={{ ...params.InputProps, sx: { ...fieldSx, flexWrap: 'wrap' } }} />
-                )}
-              />
+              </Stack>
             </>
           )}
 
@@ -684,24 +735,66 @@ export default function Announcements() {
                   value={form.header_message} onChange={e => f('header_message', e.target.value)}
                   InputProps={{ sx: fieldSx }} InputLabelProps={{ sx: labelSx }} />
 
-                {/* Email recipients */}
+                {/* Select teams to pull emails from */}
                 <Autocomplete
-                  multiple size="small" freeSolo options={[]}
-                  value={form.email_recipients}
-                  onChange={(_, v) => f('email_recipients', v)}
+                  multiple size="small" disableCloseOnSelect
+                  options={managedTeams}
+                  getOptionLabel={t => t.name}
+                  value={selectedTeamsForEmail}
+                  onChange={(_, v) => {
+                    setSelectedTeamsForEmail(v)
+                    // Auto-select all emails from newly selected teams
+                    const allEmails = new Set()
+                    v.forEach(t => t.emails?.forEach(e => allEmails.add(e)))
+                    f('email_recipients', [...allEmails])
+                  }}
+                  isOptionEqualToValue={(opt, val) => opt.id === val.id}
+                  renderOption={(props, option, { selected }) => (
+                    <li {...props}><Checkbox size="small" checked={selected} sx={{ mr: 1 }} />
+                      <Box>
+                        <Typography sx={{ fontSize: '0.78rem', fontWeight: 600 }}>{option.name}</Typography>
+                        <Typography sx={{ fontSize: '0.66rem', color: 'text.secondary' }}>
+                          {option.emails?.length || 0} emails
+                        </Typography>
+                      </Box>
+                    </li>
+                  )}
                   renderTags={(value, getTagProps) =>
-                    value.map((option, index) => (
-                      <Chip label={option} size="small" sx={{ height: 20, fontSize: '0.7rem' }} {...getTagProps({ index })} key={option} />
+                    value.map((t, index) => (
+                      <Chip label={t.name} size="small" icon={<GroupsIcon sx={{ fontSize: '12px !important' }} />}
+                        sx={{ height: 22, fontSize: '0.68rem', fontWeight: 600 }} {...getTagProps({ index })} key={t.id} />
                     ))
                   }
                   renderInput={params => (
-                    <TextField {...params} label="Enter emails" placeholder="example@jpmchase.com"
-                      helperText="Enter valid email and press ; or Enter"
-                      onKeyDown={handleEmailKeyDown}
-                      InputLabelProps={{ sx: labelSx }}
-                      InputProps={{ ...params.InputProps, sx: { ...fieldSx, flexWrap: 'wrap' } }} />
+                    <TextField {...params} label="Select Teams" placeholder="Search teams..."
+                      InputLabelProps={{ sx: labelSx }} InputProps={{ ...params.InputProps, sx: { ...fieldSx, flexWrap: 'wrap' } }} />
                   )}
                 />
+                {/* Email recipients from selected teams */}
+                {availableEmailsFromTeams.length > 0 && (
+                  <Autocomplete
+                    multiple size="small" freeSolo disableCloseOnSelect
+                    options={availableEmailsFromTeams}
+                    value={form.email_recipients}
+                    onChange={(_, v) => f('email_recipients', v)}
+                    renderOption={(props, option, { selected }) => (
+                      <li {...props}><Checkbox size="small" checked={selected} sx={{ mr: 1 }} />
+                        <Typography sx={{ fontSize: '0.78rem' }}>{option}</Typography></li>
+                    )}
+                    renderTags={(value, getTagProps) =>
+                      value.map((option, index) => (
+                        <Chip label={option} size="small" icon={<EmailIcon sx={{ fontSize: '12px !important' }} />}
+                          sx={{ height: 20, fontSize: '0.68rem' }} {...getTagProps({ index })} key={option} />
+                      ))
+                    }
+                    renderInput={params => (
+                      <TextField {...params} label="Select Emails" placeholder="Pick emails or type custom..."
+                        onKeyDown={handleEmailKeyDown}
+                        InputLabelProps={{ sx: labelSx }}
+                        InputProps={{ ...params.InputProps, sx: { ...fieldSx, flexWrap: 'wrap' } }} />
+                    )}
+                  />
+                )}
               </Stack>
             </>
           )}

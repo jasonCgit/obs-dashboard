@@ -1,6 +1,6 @@
-import { useRef, useEffect } from 'react'
+import { useRef, useEffect, useState, useCallback, useMemo } from 'react'
 import {
-  Popper, Box, Typography, IconButton, Chip,
+  Popper, Box, Typography, IconButton, Chip, Button,
   Autocomplete, TextField, Checkbox, Paper,
   ClickAwayListener,
 } from '@mui/material'
@@ -10,7 +10,7 @@ import TuneIcon from '@mui/icons-material/Tune'
 import CheckBoxOutlineBlankIcon from '@mui/icons-material/CheckBoxOutlineBlank'
 import CheckBoxIcon from '@mui/icons-material/CheckBox'
 import { useFilters } from '../FilterContext'
-import { FILTER_GROUPS, FILTER_FIELDS, APPS, getFilterOptions, SUB_LOB_MAP } from '../data/appData'
+import { FILTER_GROUPS, FILTER_FIELDS, APPS, getFilterOptions, SUB_LOB_MAP, parseSealDisplay, SEAL_DISPLAY } from '../data/appData'
 
 const fBody  = { fontSize: 'clamp(0.8rem, 1vw, 0.9rem)' }
 const fSmall = { fontSize: 'clamp(0.7rem, 0.9vw, 0.8rem)' }
@@ -20,43 +20,167 @@ const checkIcon     = <CheckBoxIcon sx={{ fontSize: 16 }} />
 const uncheckIcon   = <CheckBoxOutlineBlankIcon sx={{ fontSize: 16 }} />
 
 // Fields that span full width (single column)
-const FULL_WIDTH_KEYS = new Set(['seal', 'appOwner', 'deploymentTypes'])
+const FULL_WIDTH_KEYS = new Set(['seal', 'appOwner', 'deployments', 'product'])
 
 export default function SearchFilterPopover({ anchorEl, open, onClose }) {
   const {
     searchText, setSearchText,
-    activeFilters, setFilterValues, clearFilter, clearAllFilters,
-    filteredApps, totalApps, activeFilterCount,
-    getCandidateApps, searchSuggestions,
+    activeFilters, setFilterValues, clearAllFilters,
+    totalApps,
   } = useFilters()
 
   const inputRef = useRef(null)
 
-  useEffect(() => {
-    if (open) setTimeout(() => inputRef.current?.focus(), 120)
-  }, [open])
+  // ── Draft state: local copy that only commits on Apply ──
+  const [draftFilters, setDraftFilters] = useState({})
+  const [draftSearch, setDraftSearch] = useState('')
 
-  // Collect active filter chips for display
+  // Snapshot context → draft when popover opens
+  useEffect(() => {
+    if (open) {
+      setDraftFilters({ ...activeFilters })
+      setDraftSearch(searchText)
+      setTimeout(() => inputRef.current?.focus(), 120)
+    }
+  }, [open]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  const draftSetFilter = useCallback((key, values) => {
+    setDraftFilters(prev => {
+      const next = { ...prev }
+      if (!values || values.length === 0) delete next[key]
+      else next[key] = values
+      return next
+    })
+  }, [])
+
+  const draftClearFilter = useCallback((key) => {
+    setDraftFilters(prev => {
+      const next = { ...prev }
+      delete next[key]
+      return next
+    })
+  }, [])
+
+  const draftClearAll = useCallback(() => {
+    setDraftFilters({})
+    setDraftSearch('')
+  }, [])
+
+  // Compute candidate apps from draft state for cascading options
+  const draftGetCandidateApps = useCallback((excludeKey) => {
+    return APPS.filter(app => {
+      if (draftSearch) {
+        const q = draftSearch.toLowerCase()
+        const searchable = [app.name, app.seal, app.team, app.appOwner, app.cto, app.cbt, app.productLine, app.product]
+          .join(' ').toLowerCase()
+        if (!searchable.includes(q)) return false
+      }
+      for (const [key, values] of Object.entries(draftFilters)) {
+        if (key === excludeKey) continue
+        if (values.length === 0) continue
+        if (key === 'seal') {
+          const rawValues = values.map(parseSealDisplay)
+          if (!rawValues.includes(app.seal)) return false
+        } else if (!values.includes(app[key])) return false
+      }
+      return true
+    })
+  }, [draftSearch, draftFilters])
+
+  // Draft search suggestions
+  const draftSuggestions = useMemo(() => {
+    if (!draftSearch || draftSearch.length < 1) return []
+    const q = draftSearch.toLowerCase()
+    const suggestions = []
+    const seen = new Set()
+    const fields = [
+      ['App', 'name', 'seal', 'patools'], ['SEAL', 'seal', 'seal', 'patools'],
+      ['LOB', 'lob', 'lob', 'patools'], ['Sub LOB', 'subLob', 'subLob', 'patools'],
+      ['Product Line', 'productLine', 'productLine', 'patools'], ['Product', 'product', 'product', 'patools'],
+      ['CTO', 'cto', 'cto', 'v12'], ['CBT', 'cbt', 'cbt', 'v12'],
+      ['Owner', 'appOwner', 'appOwner', null], ['Team', 'team', null, null],
+    ]
+    for (const app of APPS) {
+      for (const [fieldLabel, fieldKey, filterKey, source] of fields) {
+        const value = app[fieldKey]
+        if (value && value.toLowerCase().includes(q) && !seen.has(`${fieldKey}:${value}`)) {
+          seen.add(`${fieldKey}:${value}`)
+          let filterValue = value
+          if (filterKey === 'seal' && fieldKey === 'name') filterValue = SEAL_DISPLAY[app.seal] || app.seal
+          else if (filterKey === 'seal' && fieldKey === 'seal') filterValue = SEAL_DISPLAY[value] || value
+          suggestions.push({ field: fieldLabel, value, filterKey, filterValue, source })
+        }
+      }
+    }
+    return suggestions.slice(0, 15)
+  }, [draftSearch])
+
+  // Preview count: how many apps match the draft
+  const draftMatchCount = useMemo(() => {
+    return APPS.filter(app => {
+      if (draftSearch) {
+        const q = draftSearch.toLowerCase()
+        const searchable = [app.name, app.seal, app.team, app.appOwner, app.cto, app.cbt, app.productLine, app.product]
+          .join(' ').toLowerCase()
+        if (!searchable.includes(q)) return false
+      }
+      for (const [key, values] of Object.entries(draftFilters)) {
+        if (values.length === 0) continue
+        if (key === 'seal') {
+          const rawValues = values.map(parseSealDisplay)
+          if (!rawValues.includes(app.seal)) return false
+        } else if (!values.includes(app[key])) return false
+      }
+      return true
+    }).length
+  }, [draftSearch, draftFilters])
+
+  // Check if draft differs from committed state
+  const isDirty = useMemo(() => {
+    if (draftSearch !== searchText) return true
+    const dKeys = Object.keys(draftFilters).filter(k => (draftFilters[k] || []).length > 0)
+    const aKeys = Object.keys(activeFilters).filter(k => (activeFilters[k] || []).length > 0)
+    if (dKeys.length !== aKeys.length) return true
+    for (const k of dKeys) {
+      const dv = [...(draftFilters[k] || [])].sort()
+      const av = [...(activeFilters[k] || [])].sort()
+      if (dv.length !== av.length || dv.some((v, i) => v !== av[i])) return true
+    }
+    return false
+  }, [draftFilters, draftSearch, activeFilters, searchText])
+
+  const handleApply = () => {
+    // Commit draft to real context
+    clearAllFilters()
+    setSearchText(draftSearch)
+    for (const [key, values] of Object.entries(draftFilters)) {
+      if (values && values.length > 0) setFilterValues(key, values)
+    }
+    onClose()
+  }
+
+  // Collect active filter chips for display (from draft)
   const activeChips = []
-  for (const [key, values] of Object.entries(activeFilters)) {
+  for (const [key, values] of Object.entries(draftFilters)) {
     const field = FILTER_FIELDS.find(f => f.key === key)
     if (field && values.length > 0) {
       values.forEach(v => activeChips.push({ key, label: field.label, value: v }))
     }
   }
 
-  const hasAnyFilter = activeFilterCount > 0 || searchText.length > 0
+  const draftFilterCount = Object.keys(draftFilters).filter(k => (draftFilters[k] || []).length > 0).length
+  const hasAnyFilter = draftFilterCount > 0 || draftSearch.length > 0
 
   const renderFilterField = ({ key, label }) => {
     const subLobDisabled = key === 'subLob' &&
-      !(activeFilters.lob || []).some(l => SUB_LOB_MAP[l])
+      !(draftFilters.lob || []).some(l => SUB_LOB_MAP[l])
 
-    const selected = activeFilters[key] || []
+    const selected = draftFilters[key] || []
     const selectedCount = selected.length
 
-    // Dependency-aware: get options from apps matching all OTHER filters
-    const candidateApps = getCandidateApps(key)
-    const options = getFilterOptions(key, candidateApps, activeFilters)
+    // Dependency-aware: get options from apps matching all OTHER draft filters
+    const candidateApps = draftGetCandidateApps(key)
+    const options = getFilterOptions(key, candidateApps, draftFilters)
 
     // Show narrowing indicator
     const fullOptions = getFilterOptions(key, APPS, {})
@@ -75,7 +199,7 @@ export default function SearchFilterPopover({ anchorEl, open, onClose }) {
           disabled={subLobDisabled}
           options={options}
           value={selected}
-          onChange={(_, newVal) => setFilterValues(key, newVal)}
+          onChange={(_, newVal) => draftSetFilter(key, newVal)}
           disableCloseOnSelect
           renderOption={(props, option, { selected: sel }) => {
             const { key: liKey, ...rest } = props
@@ -146,7 +270,7 @@ export default function SearchFilterPopover({ anchorEl, open, onClose }) {
               {selectedCount} selected
             </Typography>
             <Typography
-              onClick={() => clearFilter(key)}
+              onClick={() => draftClearFilter(key)}
               sx={{ ...fTiny, color: 'text.disabled', cursor: 'pointer', '&:hover': { color: 'error.main' } }}
             >
               clear
@@ -199,7 +323,7 @@ export default function SearchFilterPopover({ anchorEl, open, onClose }) {
             <Typography fontWeight={700} sx={fBody}>Search & Filter</Typography>
             {hasAnyFilter && (
               <Chip
-                label={`${activeFilterCount + (searchText ? 1 : 0)} active`}
+                label={`${draftFilterCount + (draftSearch ? 1 : 0)} active`}
                 size="small"
                 sx={{
                   height: 20, ...fTiny, fontWeight: 700,
@@ -217,25 +341,23 @@ export default function SearchFilterPopover({ anchorEl, open, onClose }) {
         {/* Type-ahead search */}
         <Autocomplete
           freeSolo
-          options={searchSuggestions}
+          options={draftSuggestions}
           getOptionLabel={(opt) => typeof opt === 'string' ? opt : opt.value}
-          inputValue={searchText}
+          inputValue={draftSearch}
           onInputChange={(_, v, reason) => {
-            if (reason !== 'reset') setSearchText(v)
+            if (reason !== 'reset') setDraftSearch(v)
           }}
           onChange={(_, val) => {
             if (val && typeof val === 'object' && val.value) {
               if (val.filterKey) {
-                // Add as a filter value (use filterValue which may differ from display value)
                 const fv = val.filterValue || val.value
-                const current = activeFilters[val.filterKey] || []
+                const current = draftFilters[val.filterKey] || []
                 if (!current.includes(fv)) {
-                  setFilterValues(val.filterKey, [...current, fv])
+                  draftSetFilter(val.filterKey, [...current, fv])
                 }
-                setSearchText('')
+                setDraftSearch('')
               } else {
-                // No filter key (e.g. Team) — use as search text
-                setSearchText(val.value)
+                setDraftSearch(val.value)
               }
             }
           }}
@@ -247,8 +369,14 @@ export default function SearchFilterPopover({ anchorEl, open, onClose }) {
             const { key: liKey, ...rest } = props
             return (
               <li key={liKey} {...rest} style={{ ...rest.style, padding: '4px 12px', display: 'flex', gap: 8, alignItems: 'center' }}>
-                <Typography sx={{ ...fTiny, color: 'text.disabled', minWidth: 40 }}>{opt.field}</Typography>
-                <Typography sx={{ ...fSmall, fontWeight: 600 }} noWrap>{opt.value}</Typography>
+                <Typography sx={{ ...fTiny, color: 'text.disabled', minWidth: 55 }}>{opt.field}</Typography>
+                <Typography sx={{ ...fSmall, fontWeight: 600, flex: 1 }} noWrap>{opt.value}</Typography>
+                {opt.source && (
+                  <Typography sx={{ ...fTiny, color: opt.source === 'v12' ? 'rgba(96,165,250,0.6)' : 'rgba(168,85,247,0.6)',
+                    fontWeight: 600, fontSize: '0.55rem', textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                    {opt.source === 'v12' ? 'V12' : 'PAT'}
+                  </Typography>
+                )}
               </li>
             )
           }}
@@ -270,8 +398,8 @@ export default function SearchFilterPopover({ anchorEl, open, onClose }) {
                 ),
                 endAdornment: (
                   <>
-                    {searchText && (
-                      <IconButton size="small" onClick={() => setSearchText('')} sx={{ p: 0.25 }}>
+                    {draftSearch && (
+                      <IconButton size="small" onClick={() => setDraftSearch('')} sx={{ p: 0.25 }}>
                         <CloseIcon sx={{ fontSize: 14 }} />
                       </IconButton>
                     )}
@@ -309,9 +437,9 @@ export default function SearchFilterPopover({ anchorEl, open, onClose }) {
               label={`${chip.label}: ${chip.value}`}
               size="small"
               onDelete={() => {
-                const current = activeFilters[chip.key] || []
+                const current = draftFilters[chip.key] || []
                 const next = current.filter(v => v !== chip.value)
-                setFilterValues(chip.key, next)
+                draftSetFilter(chip.key, next)
               }}
               sx={{
                 ...fTiny, height: 22, borderRadius: 1.5,
@@ -323,7 +451,7 @@ export default function SearchFilterPopover({ anchorEl, open, onClose }) {
             />
           ))}
           <Typography
-            onClick={clearAllFilters}
+            onClick={draftClearAll}
             sx={{
               ml: 'auto', ...fTiny, color: 'primary.main', cursor: 'pointer', fontWeight: 600,
               '&:hover': { textDecoration: 'underline' },
@@ -370,21 +498,36 @@ export default function SearchFilterPopover({ anchorEl, open, onClose }) {
       {/* Footer */}
       <Box sx={{
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        px: 2.5, py: 1,
+        px: 2.5, py: 1.25,
         borderTop: '1px solid', borderColor: 'divider',
         bgcolor: (t) => t.palette.mode === 'dark' ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.015)',
       }}>
         <Typography color="text.secondary" fontWeight={600} sx={fSmall}>
-          Showing <Box component="span" sx={{ color: 'primary.main', fontWeight: 700 }}>{filteredApps.length}</Box> of {totalApps} applications
+          Will show <Box component="span" sx={{ color: 'primary.main', fontWeight: 700 }}>{draftMatchCount}</Box> of {totalApps} applications
         </Typography>
-        {hasAnyFilter && (
-          <Typography
-            onClick={() => { clearAllFilters(); setSearchText('') }}
-            sx={{ ...fSmall, color: 'error.main', cursor: 'pointer', fontWeight: 600, '&:hover': { textDecoration: 'underline' } }}
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+          {hasAnyFilter && (
+            <Typography
+              onClick={draftClearAll}
+              sx={{ ...fSmall, color: 'error.main', cursor: 'pointer', fontWeight: 600, '&:hover': { textDecoration: 'underline' } }}
+            >
+              Reset all
+            </Typography>
+          )}
+          <Button
+            variant="contained"
+            size="small"
+            onClick={handleApply}
+            disabled={!isDirty}
+            sx={{
+              textTransform: 'none', fontWeight: 700, ...fSmall,
+              px: 3, py: 0.5, borderRadius: 1.5,
+              minWidth: 80,
+            }}
           >
-            Reset all
-          </Typography>
-        )}
+            Apply
+          </Button>
+        </Box>
       </Box>
     </Paper>
     </ClickAwayListener>

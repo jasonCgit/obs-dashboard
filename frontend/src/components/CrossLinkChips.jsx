@@ -21,18 +21,21 @@ export default function CrossLinkChips({ seal, service, only }) {
         if (seal && key === 'blast-radius') params.set('seal', seal)
         if (service) params.set('service', service)
         const q = params.toString()
+        const active = (key === 'blast-radius' && !!seal) || (key !== 'blast-radius' && !!service)
         return (
           <Chip
             key={key}
-            icon={<Icon sx={{ fontSize: '14px !important' }} />}
+            icon={<Icon sx={{ fontSize: '14px !important', color: active ? '#fff !important' : undefined }} />}
             label={label}
             size="small"
-            variant="outlined"
+            variant={active ? 'filled' : 'outlined'}
             onClick={(e) => { e.stopPropagation(); navigate(`${path}${q ? `?${q}` : ''}`) }}
             sx={{
               fontSize: '0.68rem', height: 22,
               cursor: 'pointer',
-              '&:hover': { bgcolor: 'action.hover' },
+              ...(active
+                ? { bgcolor: '#1976d2', color: '#fff', '&:hover': { bgcolor: '#1565c0' } }
+                : { '&:hover': { bgcolor: 'action.hover' } }),
             }}
           />
         )

@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import {
   Box, Typography, Chip, Divider, CircularProgress, Alert, Stack,
-  Card, CardContent, CardHeader, Autocomplete, TextField,
+  Card, CardContent, CardHeader, Autocomplete, TextField, Link,
   Tabs, Tab, IconButton, Tooltip,
 } from '@mui/material'
 import CheckIcon          from '@mui/icons-material/Check'
@@ -395,8 +395,22 @@ function NodeDetailPanel({ node, onNavigateToSeal }) {
       ['Identifier', node.label],
     ]
     statusValue = node.status
+  } else if (nodeType === 'indicatorGroup') {
+    const indicators = node.indicators || []
+    const redCount = indicators.filter(i => i.health === 'red').length
+    const amberCount = indicators.filter(i => i.health === 'amber').length
+    const greenCount = indicators.filter(i => i.health === 'green').length
+    rows = [
+      ['Component', node.componentId],
+      ['Total Indicators', indicators.length],
+    ]
+    if (redCount > 0) rows.push(['Red', redCount])
+    if (amberCount > 0) rows.push(['Amber', amberCount])
+    if (greenCount > 0) rows.push(['Green', greenCount])
+    title = `Indicators (${indicators.length})`
+    statusValue = redCount > 0 ? 'critical' : amberCount > 0 ? 'warning' : 'healthy'
   } else if (nodeType === 'indicator') {
-    const typeLabels = { process_group: 'Process Group', service: 'Service', synthetic: 'Synthetic' }
+    const typeLabels = { process_group: 'Process Group', service: 'Service', synthetic: 'Synthetic', 'Process Group': 'Process Group', 'Service': 'Service', 'Synthetic': 'Synthetic' }
     rows = [
       ['Type', typeLabels[node.indicator_type] || node.indicator_type],
       ['Health', node.health?.toUpperCase()],
@@ -408,6 +422,7 @@ function NodeDetailPanel({ node, onNavigateToSeal }) {
   const layerLabel = {
     service: 'COMPONENT', platform: 'PLATFORM',
     datacenter: 'DATA CENTER', indicator: 'INDICATOR',
+    indicatorGroup: 'HEALTH INDICATORS',
     external: 'UPSTREAM / DOWNSTREAM',
   }[nodeType] || 'NODE'
 
@@ -415,9 +430,13 @@ function NodeDetailPanel({ node, onNavigateToSeal }) {
     service: '#1565C0',
     platform: '#C27BA0',
     datacenter: '#5DA5A0',
-    indicator: '#B8976B',
+    indicator: '#94a3b8',
+    indicatorGroup: '#94a3b8',
     external: '#78716c',
   }[nodeType] || '#94a3b8'
+
+  const HEALTH_COLORS = { red: '#f44336', amber: '#ff9800', green: '#4caf50' }
+  const HEALTH_LABELS = { red: 'RED', amber: 'AMBER', green: 'GREEN' }
 
   return (
     <Card sx={{ bgcolor: (t) => t.palette.mode === 'dark' ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)', border: '1px solid rgba(128,128,128,0.2)' }}>
@@ -448,6 +467,74 @@ function NodeDetailPanel({ node, onNavigateToSeal }) {
             </Box>
           ))}
         </Stack>
+        {nodeType === 'indicatorGroup' && (node.indicators || []).length > 0 && (
+          <>
+            <Divider sx={{ my: 1.5 }} />
+            <Typography sx={{ fontSize: '0.62rem', fontWeight: 700, textTransform: 'uppercase',
+              letterSpacing: 0.5, color: 'text.secondary', mb: 1 }}>
+              Health Indicators
+            </Typography>
+            <Stack spacing={1}>
+              {(node.indicators || []).map((ind, i) => {
+                const hColor = HEALTH_COLORS[ind.health] || '#94a3b8'
+                const typeLabels = { process_group: 'Process Group', service: 'Service', synthetic: 'Synthetic', 'Process Group': 'Process Group', 'Service': 'Service', 'Synthetic': 'Synthetic' }
+                const typeLabel = typeLabels[ind.indicator_type] || ind.indicator_type
+                return (
+                  <Box
+                    key={ind.id || i}
+                    component="button"
+                    onClick={() => {/* future: navigate to external source */}}
+                    sx={{
+                      border: '1px solid',
+                      borderColor: (t) => t.palette.mode === 'dark' ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)',
+                      borderLeft: `3px solid ${hColor}`,
+                      borderRadius: 1,
+                      px: 1.25, py: 0.75,
+                      bgcolor: (t) => t.palette.mode === 'dark' ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.01)',
+                      cursor: 'pointer',
+                      textAlign: 'left',
+                      width: '100%',
+                      transition: 'all 0.15s',
+                      '&:hover': {
+                        bgcolor: (t) => t.palette.mode === 'dark' ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)',
+                        borderColor: (t) => t.palette.mode === 'dark' ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.15)',
+                      },
+                    }}
+                  >
+                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 0.5 }}>
+                      <Chip
+                        label={typeLabel}
+                        size="small"
+                        sx={{
+                          height: 16, fontSize: '0.52rem', fontWeight: 700,
+                          textTransform: 'uppercase', letterSpacing: 0.3,
+                          bgcolor: (t) => t.palette.mode === 'dark' ? 'rgba(148,163,184,0.15)' : 'rgba(148,163,184,0.12)',
+                          color: 'text.secondary',
+                        }}
+                      />
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                        <Box sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: hColor }} />
+                        <Typography sx={{ fontSize: '0.52rem', fontWeight: 700, color: hColor, textTransform: 'uppercase' }}>
+                          {HEALTH_LABELS[ind.health] || 'UNKNOWN'}
+                        </Typography>
+                      </Box>
+                    </Box>
+                    <Typography
+                      variant="caption"
+                      sx={{
+                        fontSize: '0.7rem', fontWeight: 600, display: 'block',
+                        overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                        color: 'text.primary',
+                      }}
+                    >
+                      {ind.label}
+                    </Typography>
+                  </Box>
+                )
+              })}
+            </Stack>
+          </>
+        )}
         {nodeType === 'external' && node.external_seal && (
           <>
             <Divider sx={{ my: 1 }} />
@@ -485,16 +572,22 @@ function NodeDetailPanel({ node, onNavigateToSeal }) {
 // ── Main page ───────────────────────────────────────────────────────────────
 export default function GraphLayers() {
   const { activeFilters } = useFilters()
+  const [searchParams] = useSearchParams()
+  const urlSeal = searchParams.get('seal') || ''
 
   const availableSeals = useMemo(() => {
     const sealFilter = activeFilters.seal || []
     if (sealFilter.length === 0) return ALL_SEALS
     const rawSeals = sealFilter.map(parseSealDisplay)
-    return ALL_SEALS.filter(s => rawSeals.includes(s.seal))
-  }, [activeFilters])
-
-  const [searchParams] = useSearchParams()
-  const [selectedSeal, setSelectedSeal] = useState(() => searchParams.get('seal') || '')
+    const filtered = ALL_SEALS.filter(s => rawSeals.includes(s.seal))
+    // Always include the URL seal so navigating from another page works
+    if (urlSeal && !filtered.find(s => s.seal === urlSeal)) {
+      const urlEntry = ALL_SEALS.find(s => s.seal === urlSeal)
+      if (urlEntry) filtered.unshift(urlEntry)
+    }
+    return filtered
+  }, [activeFilters, urlSeal])
+  const [selectedSeal, setSelectedSeal] = useState(urlSeal)
   const [apiData, setApiData]           = useState(null)
   const [loading, setLoading]           = useState(false)
   const [error, setError]               = useState(null)
@@ -510,8 +603,16 @@ export default function GraphLayers() {
     indicator:  false,
   })
 
+  // If navigated here with a ?seal= param, always honour it
   useEffect(() => {
-    if (availableSeals.length > 0 && !availableSeals.find(s => s.seal === selectedSeal)) {
+    if (urlSeal && urlSeal !== selectedSeal) {
+      setSelectedSeal(urlSeal)
+    }
+  }, [urlSeal]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Auto-select first available seal only when no seal is selected
+  useEffect(() => {
+    if (!selectedSeal && availableSeals.length > 0) {
       setSelectedSeal(availableSeals[0].seal)
     }
   }, [availableSeals, selectedSeal])
@@ -630,7 +731,7 @@ export default function GraphLayers() {
               fontSize: '0.6rem', fontWeight: 700, letterSpacing: 0.8,
               textTransform: 'uppercase', color: 'text.secondary', px: 0.5,
             }}>
-              Layers
+              Layers Toggle (on/off)
             </Typography>
             {LAYER_DEFS.map(d => {
               const isActive = d.always || layers[d.key]
