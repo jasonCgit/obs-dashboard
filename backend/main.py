@@ -420,9 +420,9 @@ COMPONENT_INDICATOR_MAP = {
     "mm-data-svc": "Service", "quantum-portfolio-svc": "Service",
     # Process Group — data sync, pipelines, profiles, integrations
     "data-pipeline": "Process Group", "connect-data-sync": "Process Group",
-    "connect-profile-svc": "Dependency Health", "ipbol-account": "Dependency Health",
-    "ipbol-account-green": "Dependency Health", "ipbol-doc-domain": "Dependency Health",
-    "ipbol-doc-domain-g": "Dependency Health", "ipbol-doc-delivery": "Dependency Health",
+    "connect-profile-svc": "Service", "ipbol-account": "Service",
+    "ipbol-account-green": "Service", "ipbol-doc-domain": "Service",
+    "ipbol-doc-domain-g": "Service", "ipbol-doc-delivery": "Service",
     "ipbol-contact-sync": "Process Group", "ipbol-investments": "Process Group",
     "connect-coverage-app": "Process Group", "active-advisory": "Service",
     "spieq-market-data": "Process Group", "ode-market-feed": "Process Group",
