@@ -2905,7 +2905,12 @@ async def aura_chat(payload: AuraChatRequest):
 
 # ── Serve frontend static files (production) ─────────────────────────────────
 
+# Support both layouts:
+#   repo:   backend/main.py  → parent.parent / frontend / dist
+#   deploy: main.py (root)   → parent / frontend / dist
 _FRONTEND_DIST = Path(__file__).resolve().parent.parent / "frontend" / "dist"
+if not _FRONTEND_DIST.is_dir():
+    _FRONTEND_DIST = Path(__file__).resolve().parent / "frontend" / "dist"
 
 if _FRONTEND_DIST.is_dir():
     app.mount("/assets", StaticFiles(directory=_FRONTEND_DIST / "assets"), name="static-assets")
