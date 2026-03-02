@@ -153,8 +153,8 @@ export default function SearchFilterPopover({ anchorEl, open, onClose }) {
     >
       <ClickAwayListener onClickAway={onClose}>
       <Paper elevation={8} sx={{
-        width: 'clamp(360px, 50vw, 800px)',
-        maxHeight: '80vh',
+        width: 'clamp(320px, 40vw, 580px)',
+        maxHeight: '70vh',
         resize: 'both',
         bgcolor: 'background.paper',
         border: '1px solid',
@@ -167,18 +167,18 @@ export default function SearchFilterPopover({ anchorEl, open, onClose }) {
       }}>
       {/* Header */}
       <Box sx={{
-        px: 2.5, pt: 2, pb: 1.5,
+        px: 2, pt: 1.5, pb: 1,
         background: (t) => t.palette.mode === 'dark'
           ? 'linear-gradient(135deg, rgba(21,101,192,0.12) 0%, rgba(124,58,237,0.08) 100%)'
           : 'linear-gradient(135deg, rgba(21,101,192,0.06) 0%, rgba(124,58,237,0.04) 100%)',
       }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1.5 }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
             <Box sx={{
-              width: 28, height: 28, borderRadius: 1.5, display: 'flex', alignItems: 'center', justifyContent: 'center',
+              width: 24, height: 24, borderRadius: 1.5, display: 'flex', alignItems: 'center', justifyContent: 'center',
               bgcolor: (t) => t.palette.mode === 'dark' ? 'rgba(96,165,250,0.15)' : 'rgba(21,101,192,0.1)',
             }}>
-              <SearchIcon sx={{ fontSize: 16, color: 'primary.main' }} />
+              <SearchIcon sx={{ fontSize: 14, color: 'primary.main' }} />
             </Box>
             <Typography fontWeight={700} sx={fBody}>Search & Filter</Typography>
             {hasAnyFilter && (
@@ -288,7 +288,7 @@ export default function SearchFilterPopover({ anchorEl, open, onClose }) {
       {activeChips.length > 0 && (
         <Box sx={{
           display: 'flex', alignItems: 'center', gap: 0.5, flexWrap: 'wrap',
-          px: 2.5, py: 0.75,
+          px: 2, py: 0.5,
           borderBottom: '1px solid', borderColor: 'divider',
         }}>
           {activeChips.map((chip, i) => (
@@ -323,18 +323,19 @@ export default function SearchFilterPopover({ anchorEl, open, onClose }) {
       )}
 
       {/* Filter groups — shared component */}
-      <Box sx={{ flex: 1, overflow: 'auto', px: 2.5, py: 1.5 }}>
+      <Box sx={{ flex: 1, overflow: 'auto', px: 2, py: 1 }}>
         <FilterPickerGrid
           filters={draftFilters}
           onChange={draftSetFilter}
           onClear={draftClearFilter}
+          compact
         />
       </Box>
 
       {/* Footer */}
       <Box sx={{
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        px: 2.5, py: 1.25,
+        px: 2, py: 1,
         borderTop: '1px solid', borderColor: 'divider',
         bgcolor: (t) => t.palette.mode === 'dark' ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.015)',
       }}>

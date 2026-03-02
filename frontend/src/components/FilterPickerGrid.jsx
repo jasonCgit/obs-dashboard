@@ -16,7 +16,7 @@ const fTiny  = { fontSize: 'clamp(0.65rem, 0.82vw, 0.74rem)' }
 const checkIcon   = <CheckBoxIcon sx={{ fontSize: 16 }} />
 const uncheckIcon = <CheckBoxOutlineBlankIcon sx={{ fontSize: 16 }} />
 
-const FULL_WIDTH_KEYS = new Set(['seal', 'appOwner', 'deployments', 'product'])
+const FULL_WIDTH_KEYS = new Set(['seal', 'appOwner', 'deployments'])
 
 /**
  * Shared filter picker grid used by SearchFilterPopover, Profile, and Admin TenantForm.
