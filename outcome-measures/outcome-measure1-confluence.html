@@ -1,0 +1,347 @@
+<h1>SRE Outcome Measures &mdash; Executive Report Framework</h1>
+
+<h2>Overview</h2>
+<p>An executive SRE report should answer one question: <strong>&quot;Is our technology getting more reliable, and is our investment in SRE paying off?&quot;</strong></p>
+<p>Structure the report around six pillars:</p>
+<ol>
+  <li>Stability &amp; Reliability</li>
+  <li>Time to Signal Disappearance</li>
+  <li>Proactive Prevention (AIOps360 Value)</li>
+  <li>Toil Reduction &amp; Efficiency</li>
+  <li>Alert Quality &amp; Noise Reduction</li>
+  <li>Resiliency &amp; Compliance</li>
+</ol>
+
+<hr/>
+
+<h2>Pillar 1: Stability &amp; Reliability (The Baseline Story)</h2>
+
+<table>
+  <thead>
+    <tr>
+      <th>Measure</th>
+      <th>What It Tells Executives</th>
+      <th>How to Measure</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>Incident Volume Trending</strong> (P1/P2/P3 by month)</td>
+      <td>&quot;Are we breaking less?&quot;</td>
+      <td>ServiceNow &mdash; count incidents by priority per period, filter by SEAL/LOB. Extend to 90d/180d windows.</td>
+    </tr>
+    <tr>
+      <td><strong>MTTR by Priority</strong></td>
+      <td>&quot;When things break, do we fix them faster?&quot;</td>
+      <td>ServiceNow &mdash; <code>resolution_time - opened_time</code> per incident. Compute from ticket timestamps rather than manual tracking.</td>
+    </tr>
+    <tr>
+      <td><strong>SLO Attainment Rate</strong></td>
+      <td>&quot;Are we meeting our promises?&quot;</td>
+      <td>% of applications meeting their SLO target in a given month. Report as: &quot;87% of critical apps met SLO this month, up from 82%.&quot;</td>
+    </tr>
+    <tr>
+      <td><strong>Repeat/Recurring Incidents</strong> (30d/90d)</td>
+      <td>&quot;Are we fixing root causes or just symptoms?&quot;</td>
+      <td>ServiceNow &mdash; trend <code>recurring_30d</code> over time. A declining number is a powerful story.</td>
+    </tr>
+  </tbody>
+</table>
+
+<p><strong>Executive visual:</strong> Sparkline trends per quarter. Green = improving, red = degrading. One-page view.</p>
+
+<hr/>
+
+<h2>Pillar 2: Time to Signal Disappearance (Best Original Metric)</h2>
+
+<p>This metric is better than MTTR because it is <strong>automated and honest</strong> &mdash; measured directly from monitoring data, not manual ticket updates.</p>
+
+<h3>Percentile Bands (Avoid Averages)</h3>
+
+<table>
+  <thead>
+    <tr>
+      <th>Band</th>
+      <th>Definition</th>
+      <th>What It Means</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>50th percentile</td>
+      <td>Signals resolved in X minutes</td>
+      <td>Half our issues resolve this fast</td>
+    </tr>
+    <tr>
+      <td>75th percentile</td>
+      <td>Signals resolved in Y minutes</td>
+      <td>Most issues resolve within this window</td>
+    </tr>
+    <tr>
+      <td>90th percentile</td>
+      <td>Signals resolved in Z hours</td>
+      <td>Tail-end outliers &mdash; where to focus improvement</td>
+    </tr>
+  </tbody>
+</table>
+
+<h3>How to Measure</h3>
+
+<p>Track indicator health state transitions (green/amber/red) per component:</p>
+<ul>
+  <li><code>t_start</code> = timestamp when indicator goes red/amber</li>
+  <li><code>t_end</code> = timestamp when indicator returns to green</li>
+  <li><code>duration = t_end - t_start</code></li>
+</ul>
+
+<p>Aggregate by percentile bands rather than averages. This avoids the &quot;average of 5 minutes and 5 hours = misleadingly fine&quot; problem.</p>
+
+<h3>What You Need</h3>
+
+<p>A state-change event log for health indicators. If Dynatrace provides historical state data, you can compute this retroactively. If not, start recording transitions now to establish a baseline.</p>
+
+<hr/>
+
+<h2>Pillar 3: Proactive Prevention (The AIOps360 Value Story)</h2>
+
+<p>This pillar ties AIOps360 investment directly to measurable outcomes.</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Measure</th>
+      <th>What It Tells Executives</th>
+      <th>How to Measure</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>AIOps360-Triggered Fixes</strong></td>
+      <td>&quot;AI caught this before users did&quot;</td>
+      <td>Label JIRAs with <code>AIOps360-triggered</code> when a fix originates from anomaly detection. Count per month. Make it a process, not optional.</td>
+    </tr>
+    <tr>
+      <td><strong>Proactive vs Reactive Incident Ratio</strong></td>
+      <td>&quot;Are we finding problems before they become incidents?&quot;</td>
+      <td><code>(anomalies detected that did NOT become P1/P2) / (total anomalies detected)</code>. Higher = better. Correlate AURA anomaly detections with ServiceNow incidents in a time window.</td>
+    </tr>
+    <tr>
+      <td><strong>Incidence Reduction per Onboarded SEAL</strong></td>
+      <td>&quot;Does onboarding to AIOps360 actually reduce incidents?&quot;</td>
+      <td>Before/after comparison: avg monthly incidents 6 months before onboarding vs 6 months after, per SEAL. This is the most compelling proof of value.</td>
+    </tr>
+    <tr>
+      <td><strong>Coverage Rate</strong></td>
+      <td>&quot;How much of our estate is protected?&quot;</td>
+      <td><code>(SEALs onboarded to AIOps360) / (total SEALs)</code> and <code>(Dynatrace-monitored components) / (total components)</code>.</td>
+    </tr>
+  </tbody>
+</table>
+
+<hr/>
+
+<h2>Pillar 4: Toil Reduction &amp; Efficiency</h2>
+
+<table>
+  <thead>
+    <tr>
+      <th>Measure</th>
+      <th>What It Tells Executives</th>
+      <th>How to Measure</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>ZeroTouch Automation Saves</strong></td>
+      <td>&quot;How many hours did automation save?&quot;</td>
+      <td>Track manual task time before automation x number of executions. Example: auto-remediated restart that used to take 15 min x 40 times/month = 10 hours saved/month.</td>
+    </tr>
+    <tr>
+      <td><strong>Tickets Deflected by Self-Service</strong></td>
+      <td>&quot;Are we reducing the load on support teams?&quot;</td>
+      <td>Reduction in low-priority service tickets after tooling rollout.</td>
+    </tr>
+    <tr>
+      <td><strong>Mean Time to Acknowledge (MTTA)</strong></td>
+      <td>&quot;Are we responding faster?&quot;</td>
+      <td>ServiceNow &mdash; <code>acknowledged_time - opened_time</code>. Faster MTTA means tools are surfacing problems effectively.</td>
+    </tr>
+  </tbody>
+</table>
+
+<hr/>
+
+<h2>Pillar 5: Alert Quality &amp; Noise Reduction</h2>
+
+<table>
+  <thead>
+    <tr>
+      <th>Measure</th>
+      <th>What It Tells Executives</th>
+      <th>How to Measure</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>Alert Volume Trend</strong></td>
+      <td>&quot;Are we drowning in noise?&quot;</td>
+      <td>Total alerts per week/month from AURA/Dynatrace. Trending down = AURA filtering is working.</td>
+    </tr>
+    <tr>
+      <td><strong>Signal-to-Noise Ratio</strong></td>
+      <td>&quot;Of the alerts we send, how many are actionable?&quot;</td>
+      <td><code>(alerts that led to action) / (total alerts)</code>. Requires classifying alerts as actioned vs dismissed.</td>
+    </tr>
+    <tr>
+      <td><strong>AURA Filtering Effectiveness</strong></td>
+      <td>&quot;Is AI actually helping?&quot;</td>
+      <td><code>(raw alerts from Dynatrace) - (alerts surfaced after AURA filtering) = noise suppressed</code>. Report as: &quot;AURA filtered 60% of noise, saving SREs X hours of triage.&quot;</td>
+    </tr>
+  </tbody>
+</table>
+
+<hr/>
+
+<h2>Pillar 6: Resiliency &amp; Compliance</h2>
+
+<table>
+  <thead>
+    <tr>
+      <th>Measure</th>
+      <th>What It Tells Executives</th>
+      <th>How to Measure</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>Resiliency Gaps Found &amp; Closed</strong></td>
+      <td>&quot;Are we hardening before failures?&quot;</td>
+      <td>Count of proactively identified gaps (from blast radius analysis, dependency review) vs count remediated. Trend the backlog.</td>
+    </tr>
+    <tr>
+      <td><strong>FARM/M&amp;O Compliance Score</strong></td>
+      <td>&quot;Are we meeting corporate standards?&quot;</td>
+      <td>% of apps passing corporate control checks. Track improvement quarter over quarter.</td>
+    </tr>
+    <tr>
+      <td><strong>RTO Achievement Rate</strong></td>
+      <td>&quot;Could we actually recover in time?&quot;</td>
+      <td>During DR tests or real incidents: <code>(actual recovery time) / (stated RTO)</code>.</td>
+    </tr>
+  </tbody>
+</table>
+
+<hr/>
+
+<h2>Executive Report Layout</h2>
+
+<ac:structured-macro ac:name="code" ac:schema-version="1">
+  <ac:parameter ac:name="language">text</ac:parameter>
+  <ac:plain-text-body><![CDATA[+-----------------------------------------------------------+
+|  SRE QUARTERLY OUTCOME REPORT - Q1 2026                   |
++-----------------------------------------------------------+
+|                                                           |
+|  HEADLINE METRICS (traffic-light indicators)              |
+|  +----------+ +----------+ +----------+ +----------+      |
+|  | P1s: 12  | | MTTR: 45m| | SLO Met: | |Coverage: |     |
+|  | down 25% | | down 18% | | 91%      | | 78%      |     |
+|  | GREEN    | | GREEN    | | AMBER    | | AMBER    |      |
+|  +----------+ +----------+ +----------+ +----------+      |
+|                                                           |
+|  STABILITY TREND (12-month sparklines)                    |
+|  P1/P2 Incidents  ........####   down, trending down      |
+|  Signal Duration  ........####   down, resolving faster   |
+|  Recurring Issues ........####   down, fewer repeats      |
+|                                                           |
+|  AIOPS360 VALUE                                           |
+|  - 47 proactive fixes this quarter (vs 31 last quarter)   |
+|  - 3 P1s prevented by early anomaly detection             |
+|  - Onboarded SEALs show 34% fewer incidents on avg        |
+|                                                           |
+|  TOIL & EFFICIENCY                                        |
+|  - 280 hours saved via ZeroTouch automations              |
+|  - Alert noise reduced 42% by AURA filtering              |
+|  - MTTA improved from 12min to 7min                       |
+|                                                           |
+|  BY LOB BREAKDOWN                                         |
+|  LOB    | Incidents | SLO | Coverage | Resiliency         |
+|  AWM    |   GREEN   | GRN |  AMBER   |   GREEN            |
+|  CCB    |   AMBER   | GRN |  GREEN   |   AMBER            |
+|  CIB    |   GREEN   | AMB |  AMBER   |   GREEN            |
+|                                                           |
+|  ACTION ITEMS                                             |
+|  1. Increase Dynatrace coverage for CCB (currently 62%)   |
+|  2. Address 5 open resiliency gaps in CIB Payments        |
+|  3. Onboard 12 remaining critical SEALs to AIOps360      |
++-----------------------------------------------------------+]]></ac:plain-text-body>
+</ac:structured-macro>
+
+<hr/>
+
+<h2>Readiness Assessment: What You Can Measure Today vs. What Needs Building</h2>
+
+<table>
+  <thead>
+    <tr>
+      <th>Measure</th>
+      <th>Available Now</th>
+      <th>What's Needed</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Incident counts by priority</td>
+      <td>Partially (mock <code>p1_30d</code>, <code>p2_30d</code>)</td>
+      <td>Live ServiceNow integration</td>
+    </tr>
+    <tr>
+      <td>SLO attainment</td>
+      <td>Yes (computed in enrichment)</td>
+      <td>Real SLO targets from monitoring</td>
+    </tr>
+    <tr>
+      <td>Coverage (Dynatrace/UOP)</td>
+      <td>Partially (completeness scores exist)</td>
+      <td>Actual onboarding data</td>
+    </tr>
+    <tr>
+      <td>Signal disappearance duration</td>
+      <td>No</td>
+      <td>Health indicator state-change logging</td>
+    </tr>
+    <tr>
+      <td>AIOps360-triggered fixes</td>
+      <td>No</td>
+      <td>JIRA labeling process + query</td>
+    </tr>
+    <tr>
+      <td>Alert volume/noise</td>
+      <td>No</td>
+      <td>AURA/Dynatrace alert event stream</td>
+    </tr>
+    <tr>
+      <td>ZeroTouch time saves</td>
+      <td>No</td>
+      <td>Automation execution logging</td>
+    </tr>
+    <tr>
+      <td>Resiliency gap tracking</td>
+      <td>No</td>
+      <td>Gap register + remediation tracking</td>
+    </tr>
+    <tr>
+      <td>MTTR (automated)</td>
+      <td>No</td>
+      <td>ServiceNow timestamp calculation</td>
+    </tr>
+    <tr>
+      <td>Recurring incidents</td>
+      <td>Partially (<code>recurring_30d</code> field)</td>
+      <td>ServiceNow correlation logic</td>
+    </tr>
+  </tbody>
+</table>
+
+<h3>Recommended Starting Point (Day 1)</h3>
+
+<p>Start with what you can get from <strong>ServiceNow</strong> (incidents, MTTR, recurring) and your <strong>existing dashboard</strong> (SLO attainment, coverage). Those 4-5 metrics alone tell a strong baseline story. Then build toward the more creative measures (signal disappearance, proactive detection ratio) as you instrument the data sources.</p>
