@@ -4,7 +4,7 @@ import sys
 # Ensure sibling modules (apps_registry, etc.) are importable regardless of cwd
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import FastAPI, HTTPException, Query, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
@@ -17,6 +17,98 @@ import asyncio
 import random
 import uuid
 import json
+import os
+import logging
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
+from concurrent.futures import ThreadPoolExecutor
+
+# ── Logging ──────────────────────────────────────────────────────────────────
+logger = logging.getLogger("obs-dashboard")
+logging.basicConfig(level=logging.INFO)
+
+# ── SMTP Configuration ──────────────────────────────────────────────────────
+SMTP_HOST = os.environ.get("SMTP_HOST", "")
+SMTP_PORT = int(os.environ.get("SMTP_PORT", "587"))
+SMTP_USER = os.environ.get("SMTP_USER", "")
+SMTP_PASSWORD = os.environ.get("SMTP_PASSWORD", "")
+SMTP_FROM = os.environ.get("SMTP_FROM", "obs-dashboard@example.com")
+SMTP_USE_TLS = os.environ.get("SMTP_USE_TLS", "true").lower() == "true"
+
+_smtp_configured = bool(SMTP_HOST)
+if not _smtp_configured:
+    logger.warning(
+        "SMTP_HOST not set — email sending is disabled. "
+        "Set SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASSWORD, SMTP_FROM to enable."
+    )
+
+_email_executor = ThreadPoolExecutor(max_workers=2, thread_name_prefix="smtp")
+
+
+# ── Email Sending ────────────────────────────────────────────────────────────
+
+def _send_email_sync(
+    recipients: list[str],
+    subject: str,
+    html_body: str,
+    plain_body: str = "",
+) -> dict:
+    """Send an email via SMTP (blocking). Called from a thread pool."""
+    if not _smtp_configured:
+        logger.info("SMTP not configured — skipping email to %s", recipients)
+        return {"status": "sent", "detail": "smtp_not_configured"}
+
+    if not recipients:
+        logger.warning("No recipients provided — skipping email")
+        return {"status": "sent", "detail": "no_recipients"}
+
+    msg = MIMEMultipart("alternative")
+    msg["From"] = SMTP_FROM
+    msg["To"] = ", ".join(recipients)
+    msg["Subject"] = subject
+
+    if plain_body:
+        msg.attach(MIMEText(plain_body, "plain", "utf-8"))
+    msg.attach(MIMEText(html_body, "html", "utf-8"))
+
+    try:
+        with smtplib.SMTP(SMTP_HOST, SMTP_PORT, timeout=30) as server:
+            if SMTP_USE_TLS:
+                server.ehlo()
+                server.starttls()
+                server.ehlo()
+            if SMTP_USER:
+                server.login(SMTP_USER, SMTP_PASSWORD)
+            server.sendmail(SMTP_FROM, recipients, msg.as_string())
+
+        logger.info("Email sent to %s (subject: %s)", recipients, subject)
+        return {"status": "sent"}
+    except smtplib.SMTPException as exc:
+        logger.error("SMTP error sending to %s: %s", recipients, exc)
+        return {"status": "error", "detail": str(exc)}
+    except Exception as exc:
+        logger.error("Unexpected error sending email to %s: %s", recipients, exc)
+        return {"status": "error", "detail": str(exc)}
+
+
+async def send_email_async(
+    recipients: list[str],
+    subject: str,
+    html_body: str,
+    plain_body: str = "",
+) -> dict:
+    """Non-blocking wrapper that runs _send_email_sync in a thread pool."""
+    loop = asyncio.get_running_loop()
+    return await loop.run_in_executor(
+        _email_executor,
+        _send_email_sync,
+        recipients,
+        subject,
+        html_body,
+        plain_body,
+    )
+
 
 app = FastAPI(title="Observability Dashboard API")
 
@@ -2093,7 +2185,10 @@ def get_notification_announcements():
 
 
 @app.post("/api/announcements")
-def create_announcement(payload: AnnouncementCreate):
+async def create_announcement(
+    payload: AnnouncementCreate,
+    background_tasks: BackgroundTasks,
+):
     global _next_announcement_id
     new = {
         "id": _next_announcement_id,
@@ -2131,6 +2226,24 @@ def create_announcement(payload: AnnouncementCreate):
     }
     _next_announcement_id += 1
     ANNOUNCEMENTS.insert(0, new)
+
+    # Dispatch email in background if email channel is enabled
+    if payload.channels.get("email") and payload.email_recipients:
+        subject = f"[Announcement] {payload.title}"
+        html_body = payload.email_body or f"<p>{payload.description}</p>"
+        plain_body = payload.description or payload.title
+        background_tasks.add_task(
+            _send_email_sync,
+            payload.email_recipients,
+            subject,
+            html_body,
+            plain_body,
+        )
+        logger.info(
+            "Queued announcement email (id=%d) to %d recipients",
+            new["id"], len(payload.email_recipients),
+        )
+
     return new
 
 
@@ -2311,24 +2424,317 @@ def set_dep_excluded_indicators(app_id: str, dep_id: str, payload: IndicatorExcl
     return {"excluded_indicators": payload.excluded_indicators}
 
 
+# ── View Central Notifications ────────────────────────────────────────────────
+# In-memory storage designed for future DB migration:
+#   _vc_notifications  → vc_notifications table (view_id as FK column)
+#   _vc_alert_state    → vc_alert_log table (notif_id, alert_type, app_seal, last_sent_at)
+
+class VCNotificationCreate(BaseModel):
+    name: str
+    alert_types: list[str] = ["critical"]
+    channels: dict = {"teams": False, "email": False}
+    teams_channels: list[str] = []
+    email_recipients: list[str] = []
+    frequency: str = "realtime"
+    days_of_week: list[str] = []
+    start_time: str = "08:00"
+    end_time: str = "18:00"
+    enabled: bool = True
+    view_filters: dict = {}
+
+class VCNotificationUpdate(BaseModel):
+    name: Optional[str] = None
+    alert_types: Optional[list[str]] = None
+    channels: Optional[dict] = None
+    teams_channels: Optional[list[str]] = None
+    email_recipients: Optional[list[str]] = None
+    frequency: Optional[str] = None
+    days_of_week: Optional[list[str]] = None
+    start_time: Optional[str] = None
+    end_time: Optional[str] = None
+    enabled: Optional[bool] = None
+    view_filters: Optional[dict] = None
+
+_vc_notifications: dict[str, list[dict]] = {}
+_next_vc_notif_id = 1
+_vc_alert_state: dict[str, str] = {}
+VC_ALERT_COOLDOWN = 300   # seconds — dedup window per alert
+VC_CHECK_INTERVAL = 60    # seconds between background condition checks
+
+
+@app.get("/api/vc-notifications/{view_id}")
+def get_vc_notifications(view_id: str):
+    return _vc_notifications.get(view_id, [])
+
+
+@app.post("/api/vc-notifications/{view_id}")
+def create_vc_notification(view_id: str, payload: VCNotificationCreate):
+    global _next_vc_notif_id
+    now = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
+    notif = {
+        "id": _next_vc_notif_id,
+        "view_id": view_id,
+        "name": payload.name,
+        "alert_types": payload.alert_types,
+        "channels": payload.channels,
+        "teams_channels": payload.teams_channels,
+        "email_recipients": payload.email_recipients,
+        "frequency": payload.frequency,
+        "days_of_week": payload.days_of_week,
+        "start_time": payload.start_time,
+        "end_time": payload.end_time,
+        "enabled": payload.enabled,
+        "view_filters": payload.view_filters,
+        "created_at": now,
+        "updated_at": now,
+    }
+    _next_vc_notif_id += 1
+    _vc_notifications.setdefault(view_id, []).append(notif)
+    return notif
+
+
+@app.put("/api/vc-notifications/{view_id}/{notif_id}")
+def update_vc_notification(view_id: str, notif_id: int, payload: VCNotificationUpdate):
+    notifs = _vc_notifications.get(view_id, [])
+    notif = next((n for n in notifs if n["id"] == notif_id), None)
+    if not notif:
+        raise HTTPException(status_code=404, detail="Notification not found")
+    for field in [
+        "name", "alert_types", "channels", "teams_channels",
+        "email_recipients", "frequency", "days_of_week",
+        "start_time", "end_time", "enabled", "view_filters",
+    ]:
+        val = getattr(payload, field, None)
+        if val is not None:
+            notif[field] = val
+    notif["updated_at"] = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
+    return notif
+
+
+@app.patch("/api/vc-notifications/{view_id}/{notif_id}/toggle")
+def toggle_vc_notification(view_id: str, notif_id: int):
+    notifs = _vc_notifications.get(view_id, [])
+    notif = next((n for n in notifs if n["id"] == notif_id), None)
+    if not notif:
+        raise HTTPException(status_code=404, detail="Notification not found")
+    notif["enabled"] = not notif["enabled"]
+    notif["updated_at"] = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
+    return notif
+
+
+@app.delete("/api/vc-notifications/{view_id}/{notif_id}")
+def delete_vc_notification(view_id: str, notif_id: int):
+    notifs = _vc_notifications.get(view_id, [])
+    before = len(notifs)
+    _vc_notifications[view_id] = [n for n in notifs if n["id"] != notif_id]
+    if len(_vc_notifications[view_id]) == before:
+        raise HTTPException(status_code=404, detail="Notification not found")
+    for k in [k for k in _vc_alert_state if k.startswith(f"{notif_id}:")]:
+        del _vc_alert_state[k]
+    return {"ok": True}
+
+
+@app.post("/api/vc-notifications/{view_id}/{notif_id}/test")
+async def test_vc_notification(view_id: str, notif_id: int, background_tasks: BackgroundTasks):
+    """Send a test email immediately, bypassing condition evaluation."""
+    notifs = _vc_notifications.get(view_id, [])
+    notif = next((n for n in notifs if n["id"] == notif_id), None)
+    if not notif:
+        raise HTTPException(status_code=404, detail="Notification not found")
+    if not notif["channels"].get("email") or not notif["email_recipients"]:
+        raise HTTPException(status_code=400, detail="No email recipients configured")
+    subject = f"[Test] View Central Alert: {notif['name']}"
+    html_body = _build_vc_alert_email(
+        notif_name=notif["name"],
+        view_id=view_id,
+        alerts=[{"app_name": "Test App", "app_seal": "00000", "alert_type": "critical", "detail": "This is a test alert"}],
+        is_test=True,
+    )
+    background_tasks.add_task(
+        _send_email_sync, notif["email_recipients"], subject, html_body,
+        f"Test alert for notification: {notif['name']}",
+    )
+    return {"ok": True, "detail": f"Test email queued to {len(notif['email_recipients'])} recipients"}
+
+
+# ── VC Notification Condition Evaluation & Dispatch ──────────────────────────
+
+def _build_vc_alert_email(notif_name, view_id, alerts, is_test=False):
+    """Build HTML email body for VC notification alerts."""
+    rows = ""
+    for a in alerts:
+        color = {"critical": "#f44336", "warning": "#ff9800", "slo": "#a855f7"}.get(a["alert_type"], "#60a5fa")
+        rows += (
+            f'<tr>'
+            f'<td style="padding:8px;border-bottom:1px solid #eee">{a["app_name"]} ({a["app_seal"]})</td>'
+            f'<td style="padding:8px;border-bottom:1px solid #eee">'
+            f'<span style="color:{color};font-weight:600">{a["alert_type"].upper()}</span></td>'
+            f'<td style="padding:8px;border-bottom:1px solid #eee">{a.get("detail", "")}</td>'
+            f'</tr>'
+        )
+    test_banner = '<p style="color:#ff9800;font-weight:700">[TEST] This is a test notification</p>' if is_test else ""
+    return (
+        f'<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto">'
+        f'{test_banner}'
+        f'<h2 style="color:#1e293b">View Central Alert: {notif_name}</h2>'
+        f'<p style="color:#64748b">The following conditions were detected for your monitored view:</p>'
+        f'<table style="width:100%;border-collapse:collapse;margin:16px 0">'
+        f'<thead><tr style="background:#f8fafc">'
+        f'<th style="padding:8px;text-align:left;border-bottom:2px solid #e2e8f0">Application</th>'
+        f'<th style="padding:8px;text-align:left;border-bottom:2px solid #e2e8f0">Alert</th>'
+        f'<th style="padding:8px;text-align:left;border-bottom:2px solid #e2e8f0">Detail</th>'
+        f'</tr></thead>'
+        f'<tbody>{rows}</tbody></table>'
+        f'<p style="color:#94a3b8;font-size:12px">View: {view_id} | Sent by Obs Dashboard</p>'
+        f'</div>'
+    )
+
+
+def _evaluate_vc_conditions(notif):
+    """Check enriched app data against notification alert types.
+    Returns list of {app_name, app_seal, alert_type, detail}."""
+    view_filters = notif.get("view_filters", {})
+    filter_kwargs = {
+        k: v for k, v in view_filters.items()
+        if k in ("lob", "sub_lob", "cto", "cbt", "seal", "status", "search") and v
+    }
+    apps = _filter_dashboard_apps(**filter_kwargs)
+    alert_types = set(notif.get("alert_types", []))
+    triggered = []
+
+    for app in apps:
+        if "critical" in alert_types and app["status"] == "critical":
+            triggered.append({
+                "app_name": app["name"], "app_seal": app["seal"],
+                "alert_type": "critical",
+                "detail": f'{app["name"]} is in critical status',
+            })
+        if "warning" in alert_types and app["status"] == "warning":
+            triggered.append({
+                "app_name": app["name"], "app_seal": app["seal"],
+                "alert_type": "warning",
+                "detail": f'{app["name"]} is in warning status',
+            })
+        if "slo" in alert_types:
+            enriched = get_enriched_applications()
+            match = next((e for e in enriched if e["seal"] == app["seal"]), None)
+            if match and match.get("slo", {}).get("status") in ("critical", "warning"):
+                triggered.append({
+                    "app_name": app["name"], "app_seal": app["seal"],
+                    "alert_type": "slo",
+                    "detail": f'{app["name"]} SLO is {match["slo"]["status"]} '
+                              f'(current: {match["slo"].get("current", "N/A")}%)',
+                })
+    # "change" and "deployment" alert types require real event streams — TODO
+    return triggered
+
+
+def _should_send_alert(notif_id, alert_type, app_seal):
+    """Check cooldown to avoid duplicate alerts."""
+    key = f"{notif_id}:{alert_type}:{app_seal}"
+    last_sent = _vc_alert_state.get(key)
+    if last_sent:
+        elapsed = (datetime.utcnow() - datetime.fromisoformat(last_sent)).total_seconds()
+        if elapsed < VC_ALERT_COOLDOWN:
+            return False
+    return True
+
+
+def _mark_alert_sent(notif_id, alert_type, app_seal):
+    """Record that an alert was sent."""
+    key = f"{notif_id}:{alert_type}:{app_seal}"
+    _vc_alert_state[key] = datetime.utcnow().isoformat()
+
+
+async def _evaluate_all_notifications():
+    """Iterate all enabled realtime notifications, evaluate conditions, send emails."""
+    for view_id, notifs in _vc_notifications.items():
+        for notif in notifs:
+            if not notif.get("enabled") or notif.get("frequency") != "realtime":
+                continue
+            try:
+                alerts = _evaluate_vc_conditions(notif)
+                new_alerts = [
+                    a for a in alerts
+                    if _should_send_alert(notif["id"], a["alert_type"], a["app_seal"])
+                ]
+                if not new_alerts:
+                    continue
+                if notif["channels"].get("email") and notif["email_recipients"]:
+                    subject = f'[Alert] {notif["name"]}: {len(new_alerts)} condition(s) detected'
+                    html_body = _build_vc_alert_email(
+                        notif_name=notif["name"], view_id=view_id, alerts=new_alerts,
+                    )
+                    await send_email_async(
+                        notif["email_recipients"], subject, html_body,
+                        f'Alert: {notif["name"]} - {len(new_alerts)} conditions detected',
+                    )
+                    for a in new_alerts:
+                        _mark_alert_sent(notif["id"], a["alert_type"], a["app_seal"])
+                    logger.info(
+                        "VC alert sent: notif=%d view=%s alerts=%d recipients=%d",
+                        notif["id"], view_id, len(new_alerts), len(notif["email_recipients"]),
+                    )
+            except Exception as exc:
+                logger.error("VC notification eval error (notif=%d): %s", notif.get("id", -1), exc)
+
+
+async def _vc_notification_loop():
+    """Background loop that evaluates notification conditions and dispatches alerts."""
+    logger.info("VC notification monitoring started (interval=%ds)", VC_CHECK_INTERVAL)
+    while True:
+        try:
+            await asyncio.sleep(VC_CHECK_INTERVAL)
+            await _evaluate_all_notifications()
+        except asyncio.CancelledError:
+            logger.info("VC notification monitoring stopped")
+            break
+        except Exception as exc:
+            logger.error("VC notification loop error: %s", exc)
+
+
+@app.on_event("startup")
+async def _start_vc_notification_loop():
+    asyncio.create_task(_vc_notification_loop())
+
+
 # ── Contact / Send Message ───────────────────────────────────────────────────
 
 class ContactSendRequest(BaseModel):
-    type: str  # 'email' or 'teams'
-    recipients: list[str]
+    channels: dict = {"email": False, "teams": False}
+    email_recipients: list[str] = []
+    teams_channels: list[str] = []
     subject: Optional[str] = None
-    message: str
+    email_body: Optional[str] = None
+    message: str = ""
     app_name: Optional[str] = None
 
 @app.post("/api/contact/send")
-def send_contact_message(payload: ContactSendRequest):
-    """Mock endpoint — in production this would send via SMTP / MS Teams webhook."""
-    return {
+async def send_contact_message(payload: ContactSendRequest):
+    """Send a contact message via enabled channels (email via SMTP)."""
+    result = {
         "status": "sent",
-        "type": payload.type,
-        "recipients": payload.recipients,
-        "message_preview": payload.message[:100],
+        "channels_sent": [],
+        "message_preview": payload.message[:100] if payload.message else "",
     }
+
+    if payload.channels.get("email") and payload.email_recipients:
+        subject = payload.subject or (
+            f"[{payload.app_name}] Contact Message" if payload.app_name
+            else "Message from Obs Dashboard"
+        )
+        html_body = payload.email_body or f"<p>{payload.message}</p>"
+
+        email_result = await send_email_async(
+            recipients=payload.email_recipients,
+            subject=subject,
+            html_body=html_body,
+            plain_body=payload.message,
+        )
+        result["channels_sent"].append("email")
+        result["email_status"] = email_result
+
+    return result
 
 
 # ── AURA Assistant Chat ──────────────────────────────────────────────────────
@@ -2911,16 +3317,31 @@ async def aura_chat(payload: AuraChatRequest):
 _FRONTEND_DIST = Path(__file__).resolve().parent.parent / "frontend" / "dist"
 if not _FRONTEND_DIST.is_dir():
     _FRONTEND_DIST = Path(__file__).resolve().parent / "frontend" / "dist"
+if not _FRONTEND_DIST.is_dir():
+    _FRONTEND_DIST = Path.cwd() / "frontend" / "dist"
+
+logger.info("__file__ resolved to: %s", Path(__file__).resolve())
+logger.info("cwd: %s", Path.cwd())
+logger.info("Frontend dist: %s (exists=%s)", _FRONTEND_DIST, _FRONTEND_DIST.is_dir())
 
 if _FRONTEND_DIST.is_dir():
     app.mount("/assets", StaticFiles(directory=_FRONTEND_DIST / "assets"), name="static-assets")
 
-# Serve docs/gifs — same dual-layout detection as frontend dist
+# Serve docs/gifs — try multiple layout paths + cwd fallback
 _GIFS_DIR = Path(__file__).resolve().parent.parent / "docs" / "gifs"
 if not _GIFS_DIR.is_dir():
     _GIFS_DIR = Path(__file__).resolve().parent / "docs" / "gifs"
+if not _GIFS_DIR.is_dir():
+    _GIFS_DIR = Path.cwd() / "docs" / "gifs"
+
 if _GIFS_DIR.is_dir():
     app.mount("/gifs", StaticFiles(directory=_GIFS_DIR), name="gifs")
+    logger.info("GIFs mounted at /gifs from: %s", _GIFS_DIR)
+else:
+    logger.warning("GIFs directory NOT found — tried: %s, %s, %s",
+                   Path(__file__).resolve().parent.parent / "docs" / "gifs",
+                   Path(__file__).resolve().parent / "docs" / "gifs",
+                   Path.cwd() / "docs" / "gifs")
 
 if _FRONTEND_DIST.is_dir():
     @app.get("/{full_path:path}")

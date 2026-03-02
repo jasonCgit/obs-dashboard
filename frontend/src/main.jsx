@@ -2,6 +2,7 @@ import React from 'react'
 import ReactDOM from 'react-dom/client'
 import { BrowserRouter } from 'react-router-dom'
 import { AppThemeProvider } from './ThemeContext'
+import { AuthProvider } from './AuthContext'
 import { TenantProvider } from './tenant/TenantContext'
 import { FilterProvider } from './FilterContext'
 import { RefreshProvider } from './RefreshContext'
@@ -14,6 +15,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <BrowserRouter>
       <AppThemeProvider>
+        <AuthProvider>
         <TenantProvider>
         <FilterProvider>
           <RefreshProvider>
@@ -23,6 +25,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
           </RefreshProvider>
         </FilterProvider>
         </TenantProvider>
+        </AuthProvider>
       </AppThemeProvider>
     </BrowserRouter>
   </React.StrictMode>

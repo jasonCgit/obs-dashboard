@@ -46,6 +46,8 @@ import SearchFilterPopover from './SearchFilterPopover'
 import { useRefresh } from '../RefreshContext'
 import { useTenant } from '../tenant/TenantContext'
 import { loadAllTenants, DEFAULT_TENANT } from '../tenant/tenantStorage'
+import { loadProfile } from '../utils/profileStorage'
+import { useAuth } from '../AuthContext'
 
 const ALL_TABS = [
   { label: 'Home',              path: '/',                Icon: HomeIcon,        desc: 'Dashboard overview' },
@@ -87,6 +89,13 @@ export default function TopNav() {
     return () => window.removeEventListener('obs-tabs-changed', handler)
   }, [])
 
+  // Sync profile name when profile changes
+  useEffect(() => {
+    const handler = () => setProfileName(loadProfile().displayName || 'Joe Pedone')
+    window.addEventListener('obs-profile-changed', handler)
+    return () => window.removeEventListener('obs-profile-changed', handler)
+  }, [])
+
   const [anchorEl, setAnchorEl] = useState(null)
   const [tabSearch, setTabSearch] = useState('')
   const [profileAnchor, setProfileAnchor] = useState(null)
@@ -94,6 +103,8 @@ export default function TopNav() {
   const { filteredApps, totalApps, activeFilterCount, searchText, resetToDefaults } = useFilters()
   const { refreshMs, setRefreshMs, displayTime, REFRESH_OPTIONS, triggerRefresh } = useRefresh()
   const { tenant, switchTenant } = useTenant()
+  const { isAdmin } = useAuth()
+  const [profileName, setProfileName] = useState(() => loadProfile().displayName || 'Joe Pedone')
   const [tenants, setTenants] = useState([])
   const [searchAnchor, setSearchAnchor] = useState(null)
   const [refreshAnchor, setRefreshAnchor] = useState(null)
@@ -1229,7 +1240,7 @@ export default function TopNav() {
                 '&:hover': { borderColor: 'rgba(255,255,255,0.5)' },
               }}
             >
-              JD
+              {profileName.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase() || 'JP'}
             </Avatar>
           </IconButton>
         </Tooltip>
@@ -1252,27 +1263,17 @@ export default function TopNav() {
         >
           {/* User info */}
           <Box sx={{ px: 2, py: 1.5 }}>
-            <Typography variant="body2" fontWeight={700}>Jason Davis</Typography>
-            <Typography variant="caption" color="text.secondary">jason.davis@company.com</Typography>
+            <Typography variant="body2" fontWeight={700}>{profileName}</Typography>
+            <Typography variant="caption" color="text.secondary">
+              {isAdmin ? 'Admin' : 'Viewer'}
+            </Typography>
           </Box>
           <Divider />
-          <MenuItem onClick={() => setProfileAnchor(null)} sx={{ fontSize: '0.82rem', gap: 1.5, py: 1 }}>
+          <MenuItem onClick={() => { setProfileAnchor(null); navigate('/profile') }} sx={{ fontSize: '0.82rem', gap: 1.5, py: 1 }}>
             <ListItemIcon sx={{ minWidth: 'auto' }}>
               <PersonIcon sx={{ fontSize: 18, color: 'text.secondary' }} />
             </ListItemIcon>
-            <ListItemText primaryTypographyProps={{ fontSize: '0.82rem' }}>My Profile</ListItemText>
-          </MenuItem>
-          <MenuItem onClick={() => setProfileAnchor(null)} sx={{ fontSize: '0.82rem', gap: 1.5, py: 1 }}>
-            <ListItemIcon sx={{ minWidth: 'auto' }}>
-              <ManageAccountsIcon sx={{ fontSize: 18, color: 'text.secondary' }} />
-            </ListItemIcon>
-            <ListItemText primaryTypographyProps={{ fontSize: '0.82rem' }}>Account Settings</ListItemText>
-          </MenuItem>
-          <MenuItem onClick={() => setProfileAnchor(null)} sx={{ fontSize: '0.82rem', gap: 1.5, py: 1 }}>
-            <ListItemIcon sx={{ minWidth: 'auto' }}>
-              <SettingsIcon sx={{ fontSize: 18, color: 'text.secondary' }} />
-            </ListItemIcon>
-            <ListItemText primaryTypographyProps={{ fontSize: '0.82rem' }}>Preferences</ListItemText>
+            <ListItemText primaryTypographyProps={{ fontSize: '0.82rem' }}>Profile & Settings</ListItemText>
           </MenuItem>
           {/* Tenant switcher */}
           <Divider />
@@ -1280,13 +1281,15 @@ export default function TopNav() {
             <Typography variant="caption" sx={{ fontWeight: 700, fontSize: '0.68rem', textTransform: 'uppercase', letterSpacing: 0.8, color: 'text.secondary' }}>
               Portal Instance
             </Typography>
-            <Typography
-              variant="caption"
-              onClick={() => { setProfileAnchor(null); navigate('/portals') }}
-              sx={{ fontSize: '0.68rem', color: 'primary.main', cursor: 'pointer', fontWeight: 600, '&:hover': { textDecoration: 'underline' } }}
-            >
-              Manage
-            </Typography>
+            {isAdmin && (
+              <Typography
+                variant="caption"
+                onClick={() => { setProfileAnchor(null); navigate('/portals') }}
+                sx={{ fontSize: '0.68rem', color: 'primary.main', cursor: 'pointer', fontWeight: 600, '&:hover': { textDecoration: 'underline' } }}
+              >
+                Manage
+              </Typography>
+            )}
           </Box>
           <MenuItem
             selected={!tenant.id}
@@ -1328,13 +1331,6 @@ export default function TopNav() {
             </MenuItem>
           ))}
 
-          <Divider />
-          <MenuItem onClick={() => setProfileAnchor(null)} sx={{ fontSize: '0.82rem', gap: 1.5, py: 1, color: 'error.main' }}>
-            <ListItemIcon sx={{ minWidth: 'auto' }}>
-              <LogoutIcon sx={{ fontSize: 18, color: 'error.main' }} />
-            </ListItemIcon>
-            <ListItemText primaryTypographyProps={{ fontSize: '0.82rem', color: 'error.main' }}>Sign Out</ListItemText>
-          </MenuItem>
         </Menu>
 
       </Toolbar>

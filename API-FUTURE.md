@@ -4,7 +4,7 @@ These endpoints need to be created in the backend to replace hardcoded frontend 
 
 > **Current State**: The pages listed below (Incident Zero, Customer Journey, SLO Agent) use entirely **hardcoded frontend data** — they do not call any backend API. The data structures below document what each page currently renders, so that backend endpoints can be built to match.
 
-See [current-api.md](current-api.md) for all existing backend endpoints and their mock data details.
+See [API-CURRENT.md](API-CURRENT.md) for all existing backend endpoints and their mock data details.
 
 ---
 
@@ -363,7 +363,7 @@ Agent performance metrics over rolling 24-hour window.
 
 ## AURA AI Chat Endpoint (Enhanced)
 
-The existing `POST /api/aura/chat` endpoint already uses SSE streaming. See [current-api.md](current-api.md#aura-ai-chat-endpoint) for the request/response schema, SSE event protocol, and content block types. For production, it needs to connect to the actual AURA AI service.
+The existing `POST /api/aura/chat` endpoint already uses SSE streaming. See [API-CURRENT.md](API-CURRENT.md#aura-ai-chat-endpoint) for the request/response schema, SSE event protocol, and content block types. For production, it needs to connect to the actual AURA AI service.
 
 ### AURA Summarization Use Cases
 

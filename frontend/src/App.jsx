@@ -18,7 +18,20 @@ import Announcements   from './pages/Announcements'
 import Links           from './pages/Links'
 import Admin           from './pages/Admin'
 import Teams           from './pages/Teams'
+import Profile         from './pages/Profile'
 import AuraChatFab     from './aura/AuraChatFab'
+import { useAppTheme } from './ThemeContext'
+import { useFilters } from './FilterContext'
+import { useTenant } from './tenant/TenantContext'
+
+function ProfilePage() {
+  const { themeMode, setThemeMode } = useAppTheme()
+  const { activeFilters } = useFilters()
+  const { tenant } = useTenant()
+  return (
+    <Profile themeMode={themeMode} setThemeMode={setThemeMode} activeFilters={activeFilters} tenant={tenant} />
+  )
+}
 
 class ErrorBoundary extends Component {
   constructor(props) {
@@ -57,12 +70,13 @@ export default function App() {
           <Route path="/favorites"       element={<Favorites />} />
           <Route path="/view-central"    element={<ViewCentralListing />} />
           <Route path="/view-central/:id" element={<ViewCentralDashboard />} />
-<Route path="/customer-journey"element={<CustomerJourney />} />
+          <Route path="/customer-journey" element={<CustomerJourney />} />
           <Route path="/slo-agent"       element={<SloAgent />} />
           <Route path="/incident-zero"   element={<IncidentZero />} />
           <Route path="/announcements"   element={<Announcements />} />
           <Route path="/links"           element={<Links />} />
           <Route path="/teams"           element={<Teams />} />
+          <Route path="/profile"         element={<ProfilePage />} />
           <Route path="/portals"         element={<Admin />} />
           <Route path="/admin"           element={<Navigate to="/portals" replace />} />
           <Route path="/views"           element={<Navigate to="/view-central" replace />} />

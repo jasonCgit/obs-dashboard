@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react'
 import {
   Box, Typography, Card, CardContent, CardActionArea,
   Grid, Chip,
@@ -10,58 +11,38 @@ import StorageIcon from '@mui/icons-material/Storage'
 import SecurityIcon from '@mui/icons-material/Security'
 import SpeedIcon from '@mui/icons-material/Speed'
 import GroupsIcon from '@mui/icons-material/Groups'
+import CloudIcon from '@mui/icons-material/Cloud'
+import CodeIcon from '@mui/icons-material/Code'
+import ScienceIcon from '@mui/icons-material/Science'
+import DataObjectIcon from '@mui/icons-material/DataObject'
+import DnsIcon from '@mui/icons-material/Dns'
+import HubIcon from '@mui/icons-material/Hub'
+import TerminalIcon from '@mui/icons-material/Terminal'
+import WebhookIcon from '@mui/icons-material/Webhook'
+import LinkIcon from '@mui/icons-material/Link'
 import OpenInNewIcon from '@mui/icons-material/OpenInNew'
+import { loadCategories } from '../../utils/linksStorage'
 
-const CATEGORIES = [
-  { category: 'Monitoring & Alerting', color: '#60a5fa', Icon: MonitorHeartIcon, links: [
-    { label: 'Datadog', desc: 'Metrics, traces & logs', tag: 'Primary' },
-    { label: 'Prometheus', desc: 'Time-series metrics & alerting', tag: null },
-    { label: 'Grafana', desc: 'Dashboards and visualisations', tag: null },
-    { label: 'PagerDuty', desc: 'On-call scheduling & incident alerts', tag: null },
-  ]},
-  { category: 'Incident Management', color: '#f87171', Icon: BugReportIcon, links: [
-    { label: 'ServiceNow', desc: 'ITSM and incident ticketing', tag: 'Primary' },
-    { label: 'StatusPage', desc: 'External status page for clients', tag: null },
-    { label: 'Jira', desc: 'Issue and project tracking', tag: null },
-    { label: 'Confluence PIR', desc: 'Post-incident review templates', tag: null },
-  ]},
-  { category: 'Documentation', color: '#34d399', Icon: DescriptionIcon, links: [
-    { label: 'Confluence', desc: 'Team wikis and runbooks', tag: 'Primary' },
-    { label: 'Architecture Docs', desc: 'System design and ADRs', tag: null },
-    { label: 'API Registry', desc: 'Internal API catalogue', tag: null },
-  ]},
-  { category: 'CI/CD & Deployments', color: '#fbbf24', Icon: BuildIcon, links: [
-    { label: 'Jenkins', desc: 'Build pipelines and job history', tag: 'Primary' },
-    { label: 'ArgoCD', desc: 'GitOps Kubernetes deployments', tag: null },
-    { label: 'GitHub Enterprise', desc: 'Source code and pull requests', tag: null },
-  ]},
-  { category: 'Infrastructure', color: '#a78bfa', Icon: StorageIcon, links: [
-    { label: 'AWS Console', desc: 'Cloud infrastructure management', tag: 'Primary' },
-    { label: 'Kubernetes Dashboard', desc: 'Cluster and pod management', tag: null },
-    { label: 'Vault', desc: 'Secrets management', tag: null },
-  ]},
-  { category: 'Security', color: '#fb923c', Icon: SecurityIcon, links: [
-    { label: 'Snyk', desc: 'Dependency vulnerability scanning', tag: 'Primary' },
-    { label: 'SonarQube', desc: 'Code quality and SAST analysis', tag: null },
-  ]},
-  { category: 'Performance', color: '#38bdf8', Icon: SpeedIcon, links: [
-    { label: 'Dynatrace', desc: 'APM and real user monitoring', tag: 'Primary' },
-    { label: 'Gatling Reports', desc: 'Load test results and trends', tag: null },
-  ]},
-  { category: 'Team & Comms', color: '#94a3b8', Icon: GroupsIcon, links: [
-    { label: 'Slack — #platform-ops', desc: 'Primary incident war room channel', tag: 'Primary' },
-    { label: 'MS Teams', desc: 'Business communications hub', tag: null },
-  ]},
-]
+const ICON_MAP = {
+  MonitorHeart: MonitorHeartIcon, BugReport: BugReportIcon, Description: DescriptionIcon,
+  Build: BuildIcon, Storage: StorageIcon, Security: SecurityIcon, Speed: SpeedIcon,
+  Groups: GroupsIcon, Cloud: CloudIcon, Code: CodeIcon, Science: ScienceIcon,
+  DataObject: DataObjectIcon, Dns: DnsIcon, Hub: HubIcon, Terminal: TerminalIcon,
+  Webhook: WebhookIcon,
+}
 
 export default function LinksWidget() {
+  const [categories, setCategories] = useState([])
+
+  useEffect(() => { setCategories(loadCategories()) }, [])
+
   return (
     <Box sx={{ height: '100%', overflow: 'auto', p: 1.5 }}>
       <Grid container spacing={1}>
-        {CATEGORIES.map(cat => {
-          const CatIcon = cat.Icon
+        {categories.map(cat => {
+          const CatIcon = ICON_MAP[cat.icon] || LinkIcon
           return (
-            <Grid item xs={12} sm={6} md={3} key={cat.category}>
+            <Grid item xs={12} sm={6} md={3} key={cat.id}>
               <Card sx={{ height: '100%' }}>
                 <CardContent sx={{ pb: '6px !important', pt: '10px !important', px: '10px !important' }}>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 1 }}>
@@ -71,9 +52,12 @@ export default function LinksWidget() {
                     </Typography>
                   </Box>
                   {cat.links.map((link, i) => (
-                    <Box key={link.label}>
+                    <Box key={link.id || link.label}>
                       {i > 0 && <Box sx={{ height: 1, bgcolor: 'divider', my: 0.5 }} />}
-                      <CardActionArea sx={{ borderRadius: 0.75, px: 0.5, py: 0.3, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 0.5 }}>
+                      <CardActionArea
+                        onClick={() => link.url && window.open(link.url, '_blank', 'noopener,noreferrer')}
+                        sx={{ borderRadius: 0.75, px: 0.5, py: 0.3, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 0.5 }}
+                      >
                         <Box sx={{ minWidth: 0 }}>
                           <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                             <Typography variant="body2" fontWeight={600} sx={{ fontSize: '0.72rem' }}>{link.label}</Typography>

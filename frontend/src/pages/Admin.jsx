@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import {
   Container, Typography, Box, Card, CardContent, Grid, Chip, TextField,
   InputAdornment, IconButton, Button, Tooltip, Dialog, DialogTitle,
-  DialogContent, DialogActions, Stack, Divider, Autocomplete, Checkbox,
+  DialogContent, DialogActions, Stack, Divider,
 } from '@mui/material'
 import SearchIcon from '@mui/icons-material/Search'
 import AddIcon from '@mui/icons-material/Add'
@@ -11,28 +11,19 @@ import DeleteIcon from '@mui/icons-material/Delete'
 import CheckCircleIcon from '@mui/icons-material/CheckCircle'
 import RadioButtonUncheckedIcon from '@mui/icons-material/RadioButtonUnchecked'
 import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings'
-import CheckBoxOutlineBlankIcon from '@mui/icons-material/CheckBoxOutlineBlank'
-import CheckBoxIcon from '@mui/icons-material/CheckBox'
+import LockIcon from '@mui/icons-material/Lock'
 import {
   loadAllTenants, saveTenant, deleteTenant, generateTenantId, DEFAULT_TENANT,
 } from '../tenant/tenantStorage'
 import { useTenant } from '../tenant/TenantContext'
-import { getFilterOptions, FILTER_FIELDS, SUB_LOB_MAP } from '../data/appData'
-import TuneIcon from '@mui/icons-material/Tune'
+import { FILTER_FIELDS } from '../data/appData'
+import { useAuth } from '../AuthContext'
+import FilterPickerGrid from '../components/FilterPickerGrid'
 
 const fBody  = { fontSize: 'clamp(0.75rem, 1vw, 0.85rem)' }
 const fSmall = { fontSize: 'clamp(0.6rem, 0.8vw, 0.7rem)' }
 const fTiny  = { fontSize: 'clamp(0.55rem, 0.72vw, 0.64rem)' }
 
-const checkIcon   = <CheckBoxIcon sx={{ fontSize: 16 }} />
-const uncheckIcon = <CheckBoxOutlineBlankIcon sx={{ fontSize: 16 }} />
-
-const COMPACT_KEYS = new Set(['lob', 'cpof', 'state', 'rto', 'riskRanking'])
-const FILTER_GROUPS = [
-  { label: 'Taxonomy',          keys: ['lob', 'subLob', 'seal', 'state', 'classification', 'investmentStrategy'] },
-  { label: 'People',            keys: ['cto', 'cbt', 'appOwner'] },
-  { label: 'Risk & Compliance', keys: ['cpof', 'riskRanking', 'rto'] },
-]
 
 function LogoPreview({ letter, gradient, image, size = 34 }) {
   if (image) {
@@ -212,69 +203,21 @@ function TenantForm({ open, onClose, onSave, existing }) {
             Default Scope
           </Typography>
 
-          {FILTER_GROUPS.map(group => {
-            const subLobDisabled = (key) =>
-              key === 'subLob' && !(form.defaultFilters.lob || []).some(l => SUB_LOB_MAP[l])
-
-            return (
-              <Box key={group.label}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 0.75 }}>
-                  <TuneIcon sx={{ fontSize: 12, color: 'text.disabled' }} />
-                  <Typography fontWeight={700} color="text.secondary"
-                    sx={{ textTransform: 'uppercase', letterSpacing: 0.8, ...fTiny }}>
-                    {group.label}
-                  </Typography>
-                  <Box sx={{ flex: 1, height: '1px', bgcolor: 'divider', ml: 0.5 }} />
-                </Box>
-                <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 1 }}>
-                  {group.keys.map(key => {
-                    const field = FILTER_FIELDS.find(f => f.key === key)
-                    if (!field) return null
-                    const isWide = !COMPACT_KEYS.has(key)
-                    const disabled = subLobDisabled(key)
-                    const selectedCount = (form.defaultFilters[key] || []).length
-                    return (
-                      <Box key={key} sx={{ gridColumn: isWide ? 'span 2' : 'span 1' }}>
-                        <Autocomplete
-                          multiple size="small"
-                          disabled={disabled}
-                          options={getFilterOptions(key, form.defaultFilters)}
-                          value={form.defaultFilters[key] || []}
-                          onChange={(_, newVal) => set('defaultFilters', { ...form.defaultFilters, [key]: newVal })}
-                          disableCloseOnSelect
-                          limitTags={1}
-                          renderOption={(props, option, { selected }) => {
-                            const { key: liKey, ...rest } = props
-                            return (
-                              <li key={liKey} {...rest} style={{ ...rest.style, padding: '1px 8px', minHeight: 26 }}>
-                                <Checkbox icon={uncheckIcon} checkedIcon={checkIcon} checked={selected}
-                                  sx={{ p: 0, mr: 0.75 }} size="small" />
-                                <Typography noWrap sx={fTiny}>{option}</Typography>
-                              </li>
-                            )
-                          }}
-                          ListboxProps={{ sx: { maxHeight: 180, '& .MuiAutocomplete-option': { py: 0.15, minHeight: 26 } } }}
-                          renderInput={(params) => (
-                            <TextField {...params}
-                              label={disabled ? 'Sub LOB (select AWM / CIB)' : (selectedCount > 0 ? `${field.label} (${selectedCount})` : field.label)}
-                              variant="outlined" size="small"
-                              InputLabelProps={{ sx: fSmall }}
-                              sx={{ '& .MuiInputBase-root': { ...fSmall, borderRadius: 1.5, minHeight: 32, py: '2px !important' } }}
-                            />
-                          )}
-                          sx={{
-                            '& .MuiChip-root': { height: 18, ...fTiny, borderRadius: 0.75, maxWidth: 90 },
-                            '& .MuiAutocomplete-tag': { maxWidth: 90, my: 0 },
-                            '& .MuiAutocomplete-inputRoot': { flexWrap: 'nowrap', overflow: 'hidden' },
-                          }}
-                        />
-                      </Box>
-                    )
-                  })}
-                </Box>
-              </Box>
-            )
-          })}
+          <FilterPickerGrid
+            filters={form.defaultFilters}
+            onChange={(key, values) => {
+              const next = { ...form.defaultFilters }
+              if (!values || values.length === 0) delete next[key]
+              else next[key] = values
+              set('defaultFilters', next)
+            }}
+            onClear={(key) => {
+              const next = { ...form.defaultFilters }
+              delete next[key]
+              set('defaultFilters', next)
+            }}
+            compact
+          />
         </Stack>
       </DialogContent>
       <DialogActions>
@@ -290,6 +233,7 @@ function TenantForm({ open, onClose, onSave, existing }) {
 // ── Admin Page ───────────────────────────────────────────────────────────────
 
 export default function Admin() {
+  const { isAdmin } = useAuth()
   const { tenant: activeTenant, switchTenant, refreshTenant } = useTenant()
   const [tenants, setTenants] = useState([])
   const [search, setSearch] = useState('')
@@ -298,6 +242,20 @@ export default function Admin() {
   const [deleteConfirm, setDeleteConfirm] = useState(null)
 
   useEffect(() => { setTenants(loadAllTenants()) }, [])
+
+  if (!isAdmin) {
+    return (
+      <Container maxWidth="xl" sx={{ py: { xs: 1.5, sm: 2 }, px: { xs: 2, sm: 3 } }}>
+        <Box sx={{ textAlign: 'center', mt: 10 }}>
+          <LockIcon sx={{ fontSize: 56, color: 'text.disabled', mb: 1.5 }} />
+          <Typography variant="h6" color="text.secondary" gutterBottom>Admin Access Required</Typography>
+          <Typography variant="body2" color="text.secondary">
+            You need the Admin role to manage portal instances. Change your role in Profile settings.
+          </Typography>
+        </Box>
+      </Container>
+    )
+  }
   const refresh = () => setTenants(loadAllTenants())
 
   // Strip empty filter arrays before saving

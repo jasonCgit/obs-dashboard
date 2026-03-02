@@ -13,9 +13,9 @@
 9. [Deployment Guide](#9-deployment-guide)
 10. [Appendices](#appendices)
 
-**API Documentation** — see separate files under [`apidocs/`](apidocs/):
-- [Current API Reference](apidocs/current-api.md) — all existing backend endpoints, mock data details, developer guide
-- [Future API Endpoints](apidocs/future-api.md) — endpoints to build for Incident Zero, Customer Journey, SLO Agent, AURA AI
+**API Documentation**:
+- [API-CURRENT.md](API-CURRENT.md) — all existing backend endpoints, mock data details, developer guide
+- [API-FUTURE.md](API-FUTURE.md) — endpoints to build for Incident Zero, Customer Journey, SLO Agent, AURA AI
 
 ---
 
@@ -25,7 +25,7 @@ The Application Status Observability Dashboard is a real-time operational health
 
 ### Current State
 
-The application uses **mock data** for demonstration purposes. All data structures, API contracts, and business logic are designed to be replaced with live integrations. See the [API docs](apidocs/) for exact contracts and mock data details.
+The application uses **mock data** for demonstration purposes. All data structures, API contracts, and business logic are designed to be replaced with live integrations. See [API-CURRENT.md](API-CURRENT.md) and [API-FUTURE.md](API-FUTURE.md) for exact contracts and mock data details.
 
 ### Key Capabilities
 
@@ -286,11 +286,11 @@ The knowledge graph represents application dependencies across five layers:
 
 | Node Type | Count | Fields | Source |
 |---|---|---|---|
-| Component | 90+ | id, label, status, team, sla, incidents_30d | ERMA/V12 Knowledge Graph |
+| Component | 90+ | id, label, status, team, sla, incidents_30d | Knowledge Graph |
 | Indicator | 869 | id, label, indicator_type, health, component | Dynatrace/Monitoring |
-| Platform | 10 | id, label, type, subtype, datacenter, status | Infrastructure CMDB |
-| Data Center | 6 | id, label, region, status | Infrastructure CMDB |
-| External (Cross-SEAL) | varies | Same as Component + external_seal, cross_direction | ERMA/V12 |
+| Platform | 10 | id, label, type, subtype, datacenter, status | Knowledge Graph |
+| Data Center | 6 | id, label, region, status | Knowledge Graph |
+| External (Cross-SEAL) | varies | Same as Component + external_seal, cross_direction | Knowledge Graph |
 
 ### 5.3 Edge Types
 
@@ -468,7 +468,7 @@ GET /monitoring/indicators/summary
 - Blast Radius — Impact Severity, incident count/trend, Executive Summary (business perspective)
 - Interactive chat with observability context
 
-The internal chat endpoint (`POST /api/aura/chat`) already uses SSE streaming — see [current-api.md](apidocs/current-api.md#aura-ai-chat-endpoint). Planned summarization use cases are documented in [future-api.md](apidocs/future-api.md#aura-ai-chat-endpoint-enhanced).
+The internal chat endpoint (`POST /api/aura/chat`) already uses SSE streaming — see [API-CURRENT.md](API-CURRENT.md#aura-ai-chat-endpoint). Planned summarization use cases are documented in [API-FUTURE.md](API-FUTURE.md#aura-ai-chat-endpoint-enhanced).
 
 **Integration notes**:
 - The external AURA service should accept health state, incidents, and graph context as prompt input and stream tokens back
@@ -482,7 +482,7 @@ The internal chat endpoint (`POST /api/aura/chat`) already uses SSE streaming �
 
 **Purpose**: End-to-end customer journey step health.
 
-**Currently**: Mock data with 3 journeys (Trade Execution, Client Login, Document Delivery), each with steps mapping to service components. Planned internal endpoints are documented in [future-api.md](apidocs/future-api.md#customer-journey-endpoints).
+**Currently**: Mock data with 3 journeys (Trade Execution, Client Login, Document Delivery), each with steps mapping to service components. Planned internal endpoints are documented in [API-FUTURE.md](API-FUTURE.md#customer-journey-endpoints).
 
 ---
 
@@ -576,7 +576,7 @@ ScopeBar (UI) → FilterContext (React Context) → buildFilterQueryString() →
 
 ### 8.3 Static Pages Without API Integration
 
-**Incident Zero**, **Customer Journey**, and **SLO Agent** pages use entirely hardcoded frontend data. They do not call any backend API and will need dedicated endpoints. See [Future API Endpoints](apidocs/future-api.md) for the planned endpoint specs.
+**Incident Zero**, **Customer Journey**, and **SLO Agent** pages use entirely hardcoded frontend data. They do not call any backend API and will need dedicated endpoints. See [API-FUTURE.md](API-FUTURE.md) for the planned endpoint specs.
 
 ### 8.4 Potential Bugs
 

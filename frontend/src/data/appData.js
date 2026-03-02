@@ -410,19 +410,19 @@ export const SUB_LOB_MAP = {
 // PATOOLS (Product Agility Tools): LOB → Sub LOB → Product Line → Product → Application
 // V12: LOB → CTO → CBT → Application → component dependencies
 export const FILTER_GROUPS = [
-  { label: 'PATOOLS — Business Hierarchy', source: 'patools', keys: [
+  { label: 'Organization', source: 'patools', keys: [
     { key: 'lob',         label: 'LOB' },
     { key: 'subLob',      label: 'Sub LOB' },
     { key: 'productLine', label: 'Product Line' },
     { key: 'product',     label: 'Product' },
   ]},
-  { label: 'V12 — Technology Hierarchy', source: 'v12', keys: [
+  { label: 'People', source: 'v12', keys: [
     { key: 'cto',      label: 'CTO' },
     { key: 'cbt',      label: 'CBT' },
+    { key: 'appOwner', label: 'App Owner' },
   ]},
   { label: 'Application', keys: [
     { key: 'seal',               label: 'Application' },
-    { key: 'appOwner',           label: 'App Owner' },
     { key: 'cpof',               label: 'CPOF' },
     { key: 'riskRanking',        label: 'Risk Ranking' },
     { key: 'classification',     label: 'Classification' },

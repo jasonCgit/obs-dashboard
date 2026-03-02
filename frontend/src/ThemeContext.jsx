@@ -1,19 +1,31 @@
-import { createContext, useContext, useState, useMemo } from 'react'
+import { createContext, useContext, useState, useMemo, useCallback } from 'react'
 import { ThemeProvider } from '@mui/material/styles'
 import CssBaseline from '@mui/material/CssBaseline'
 import { createAppTheme } from './theme'
 
-export const ThemeContext = createContext({ themeMode: 'dark', toggleTheme: () => {} })
+const STORAGE_KEY = 'obs-theme-mode'
+
+export const ThemeContext = createContext({ themeMode: 'dark', toggleTheme: () => {}, setThemeMode: () => {} })
 
 export const useAppTheme = () => useContext(ThemeContext)
 
 export function AppThemeProvider({ children }) {
-  const [themeMode, setThemeMode] = useState('dark')
+  const [themeMode, setThemeModeRaw] = useState(() => {
+    try { return localStorage.getItem(STORAGE_KEY) || 'dark' } catch { return 'dark' }
+  })
   const theme = useMemo(() => createAppTheme(themeMode), [themeMode])
-  const toggleTheme = () => setThemeMode(m => m === 'dark' ? 'light' : 'dark')
+
+  const setThemeMode = useCallback((mode) => {
+    setThemeModeRaw(mode)
+    try { localStorage.setItem(STORAGE_KEY, mode) } catch { /* ignore */ }
+  }, [])
+
+  const toggleTheme = useCallback(() => {
+    setThemeMode(themeMode === 'dark' ? 'light' : 'dark')
+  }, [themeMode, setThemeMode])
 
   return (
-    <ThemeContext.Provider value={{ themeMode, toggleTheme }}>
+    <ThemeContext.Provider value={{ themeMode, toggleTheme, setThemeMode }}>
       <ThemeProvider theme={theme}>
         <CssBaseline />
         {children}

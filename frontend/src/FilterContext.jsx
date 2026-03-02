@@ -1,10 +1,19 @@
 import { createContext, useContext, useState, useMemo, useCallback, useEffect } from 'react'
 import { APPS, parseSealDisplay, parseDeployDisplay, SEAL_DISPLAY } from './data/appData'
 import { useTenant } from './tenant/TenantContext'
+import { loadProfile } from './utils/profileStorage'
 
 const FilterContext = createContext()
 
 export const useFilters = () => useContext(FilterContext)
+
+function getEffectiveDefaults(tenant) {
+  const profile = loadProfile()
+  const profileDefaults = profile.defaultFilters || {}
+  const tenantDefaults = tenant.defaultFilters || {}
+  const hasProfileDefaults = Object.keys(profileDefaults).some(k => profileDefaults[k]?.length > 0)
+  return hasProfileDefaults ? profileDefaults : tenantDefaults
+}
 
 const SS_FILTER_KEY = 'obs-filter-state'
 
@@ -57,12 +66,12 @@ export function FilterProvider({ children }) {
   })
   const [activeFilters, setActiveFilters] = useState(() => {
     const saved = loadFilterState(tenant.id)
-    return saved?.activeFilters ?? (tenant.defaultFilters || {})
+    return saved?.activeFilters ?? getEffectiveDefaults(tenant)
   })
 
   // Reset filters when tenant changes
   useEffect(() => {
-    setActiveFilters(tenant.defaultFilters || {})
+    setActiveFilters(getEffectiveDefaults(tenant))
     setSearchText('')
     sessionStorage.removeItem(SS_FILTER_KEY)
   }, [tenant.id])
@@ -98,7 +107,7 @@ export function FilterProvider({ children }) {
   }, [])
 
   const resetToDefaults = useCallback(() => {
-    setActiveFilters(tenant.defaultFilters || {})
+    setActiveFilters(getEffectiveDefaults(tenant))
     setSearchText('')
   }, [tenant])
 
